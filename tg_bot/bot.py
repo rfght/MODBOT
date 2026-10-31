@@ -26,7 +26,9 @@ load_dotenv()
 BOT_TOKEN = os.getenv("BOT_TOKEN") or os.getenv("TELEGRAM_BOT_TOKEN")
 CHANNEL_ID_VALUE = os.getenv("CHANNEL_ID")
 ADMIN_IDS_VALUE = os.getenv("ADMIN_IDS") or os.getenv("TELEGRAM_ADMIN_ID")
-GROUP_ID_VALUE = os.getenv("GROUP_ID")
+
+# ВПИШИ СВОЙ ID ГРУППЫ СЮДА В КАВЫЧКАХ:
+GROUP_ID_VALUE = "-1001234567890" 
 
 # Проверяем только токен
 if not BOT_TOKEN:
@@ -62,6 +64,9 @@ if GROUP_ID_VALUE:
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+logger.info(f"DEBUG: GROUP_ID_VALUE = '{GROUP_ID_VALUE}'")
+logger.info(f"DEBUG: TARGET_CHAT_IDS = {TARGET_CHAT_IDS}")
 
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher(storage=MemoryStorage())
