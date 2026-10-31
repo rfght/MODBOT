@@ -27,4 +27,4 @@ jobs:
         BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
         CHANNEL_ID: ${{ secrets.CHANNEL_ID }}
         ADMIN_IDS: ${{ secrets.ADMIN_IDS }}
-      run: python main.py || python tg_bot/bot.py
+      run: python tg_bot/bot.py
