@@ -40,7 +40,7 @@ if CHANNEL_ID_VALUE:
     except ValueError:
         CHANNEL_ID = CHANNEL_ID_VALUE
 
-# ADMIN_IDS
+# ADMIN_IDS (нужны для проверки, но для пересылки мы их не используем)
 ADMIN_IDS = []
 if ADMIN_IDS_VALUE:
     try:
@@ -52,8 +52,8 @@ if ADMIN_IDS_VALUE:
     except ValueError:
         raise RuntimeError("ADMIN_IDS must contain numeric Telegram IDs")
 
-# Формируем список получателей для пересылки (личка админов + группа)
-TARGET_CHAT_IDS = ADMIN_IDS.copy()
+# Формируем список получателей для пересылки (ТОЛЬКО группа)
+TARGET_CHAT_IDS = []
 if GROUP_ID_VALUE:
     try:
         TARGET_CHAT_IDS.append(int(GROUP_ID_VALUE))
@@ -147,6 +147,7 @@ async def send_mod_file(chat_id: int, base_name: str):
     await bot.send_document(chat_id, file_id)
 
 async def forward_to_admins(message: Message, header: str):
+    # Теперь пересылаем ТОЛЬКО в TARGET_CHAT_IDS (группу)
     for chat_id in TARGET_CHAT_IDS:
         try:
             await bot.send_message(chat_id, header, parse_mode="HTML")
