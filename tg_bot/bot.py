@@ -32,7 +32,7 @@ ADMIN_IDS_VALUE = os.getenv("ADMIN_IDS") or os.getenv("TELEGRAM_ADMIN_ID")
 GROUP_ID_VALUE = "-1002832219010" 
 
 # ССЫЛКА НА ТВОЙ КАНАЛ (для проверки подписки)
-CHANNEL_LINK = "https://t.me/MOD_rak" 
+CHANNEL_LINK = "https://t.me/ВАШ_КАНАЛ_ТУТ" 
 
 if not BOT_TOKEN:
     raise RuntimeError("Missing required environment variable: BOT_TOKEN")
@@ -89,7 +89,6 @@ FILE_IDS = {}
 
 def load_file_ids():
     global FILE_IDS
-    # Загружаем файлы из file_ids.json (если он есть)
     try:
         with open(FILE_IDS_PATH) as file:
             FILE_IDS = json.load(file)
@@ -123,7 +122,7 @@ mods_keyboard = InlineKeyboardMarkup(
     inline_keyboard=[
         [InlineKeyboardButton(text="Старый шрифт (v1.0)", callback_data="mod_old_font")],
         [InlineKeyboardButton(text="Старые медали (v1.0)", callback_data="mod_old_medals")],
-        [InlineKeyboardButton(text="Старый UI ангара (v3.0)", callback_data="mod_old_ui")],
+        [InlineKeyboardButton(text="Старый UI ангара (v1.2)", callback_data="mod_old_ui")],
     ]
 )
 
@@ -153,10 +152,8 @@ class UserState(StatesGroup):
 # --- ФУНКЦИИ ---
 def find_file_id(base_name: str):
     base_lower = base_name.lower()
-    # Ищем точное совпадение
     if base_name in FILE_IDS:
         return base_name, FILE_IDS[base_name]
-    # Ищем без учета расширения
     for stored_name, file_id in FILE_IDS.items():
         if stored_name.rsplit(".", 1)[0].lower() == base_lower:
             return stored_name, file_id
@@ -225,7 +222,7 @@ async def btn_mods(message: Message, state: FSMContext):
     await state.clear()
     await message.answer("<b>Моды</b>\n\nВыбери мод:", parse_mode="HTML", reply_markup=mods_keyboard)
 
-# --- ОБРАБОТЧИКИ МОДОВ (с проверкой подписки и правильными расширениями) ---
+# --- ОБРАБОТЧИКИ МОДОВ ---
 
 @dp.callback_query(F.data == "mod_old_font")
 async def cb_old_font(callback: CallbackQuery):
@@ -261,7 +258,7 @@ async def cb_old_ui(callback: CallbackQuery):
         )
         return
     await callback.message.answer(
-        "Версия мода: v3.0\n\n"
+        "Версия мода: v1.2\n\n"
         "Данный мод возвращает:\n"
         "・ Старую кнопку выбора режима\n"
         "・ Старый UI хранилища\n"
@@ -292,7 +289,8 @@ async def btn_fun(message: Message, state: FSMContext):
         "• Необычная ситуация с физикой игры\n"
         "• Смешной баг или совпадение\n"
         "• Любой другой забавный случай из игры\n\n"
-        "Отправляй хоть видео, хоть фото, хоть текст",
+        "Отправляй хоть видео, хоть фото, хоть текст\n"
+        "Для отмены напиши /cancel",
         reply_markup=main_keyboard,
     )
 
@@ -369,7 +367,7 @@ async def btn_suggest_mod(message: Message, state: FSMContext):
     await message.answer(
         "<b>Предложить идею для мода</b>\n\n"
         "Напиши описание мода и как что работает, фото/видео/голосовые/видеосообщения не принимаются.\n"
-        "Переслано администратору.\n\n"
+        "Оно будет переслано администратору.\n\n"
         "Для отмены напиши /cancel",
         parse_mode="HTML",
     )
@@ -414,7 +412,8 @@ async def btn_donate(message: Message, state: FSMContext):
 async def btn_bug_report(message: Message, state: FSMContext):
     await state.set_state(UserState.awaiting_bug_report)
     await message.answer(
-        "Опиши ошибку в моде. Напиши название мода и что именно не так, всё будет передано парням из дружного коллектива MOD_rak.rar.",
+        "Опиши ошибку в моде. Напиши название мода и что именно не так, всё будет передано парням из дружного коллектива MOD_rak.rar.\n"
+        "Для отмены напиши /cancel",
         reply_markup=main_keyboard,
     )
 
@@ -453,7 +452,7 @@ async def cb_misc_team(callback: CallbackQuery):
         "<b>О команде</b>\n\n"
         "Мы парни-мододелы\n"
         "Мы те, кто могут отстоять точку зрения\n"
-        "А наша точка зрения, это старый вид игры\n"
+        "А наша точка зрения — это старый вид игры\n"
         "И мы не собираемся от неё отступать",
         parse_mode="HTML"
     )
@@ -467,6 +466,39 @@ async def cb_misc_join(callback: CallbackQuery):
         "сфокусированы на текущих проектах.\n\n"
         "Но ты всегда можешь предложить идею для мода через главное меню!"
     )
+
+# --- УМНАЯ ЗАГЛУШКА ---
+@dp.message(F.text)
+async def unknown_message(message: Message, state: FSMContext):
+    # Если пользователь сейчас пишет заявку/ошибку/прикол - не мешаем
+    if await state.get_state() is not None:
+        return 
+
+    text = message.text.strip()
+    
+    # Простая эвристика на беберду
+    is_gibberish = False
+    
+    # Если символов больше 50, и нет ни одного пробела - это спам
+    if len(text) > 50 and " " not in text:
+        is_gibberish = True
+    # Если символов мало (меньше 3), или там только цифры/знаки (нет букв)
+    elif len(text) < 3 or text.isdigit() or not any(c.isalpha() for c in text):
+        is_gibberish = True
+        
+    if is_gibberish:
+        # Смешной ответ для спама/беберды
+        await message.answer(
+            "Братан, может скорую?🤔",
+            reply_markup=main_keyboard
+        )
+    else:
+        # Вежливый ответ для осмысленного текста
+        await message.answer(
+            "Не совсем понял.\n"
+            "Пожалуйста, выбери нужный раздел ниже",
+            reply_markup=main_keyboard
+        )
 
 async def main():
     logger.info("Bot started")
