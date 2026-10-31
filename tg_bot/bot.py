@@ -27,34 +27,29 @@ BOT_TOKEN = os.getenv("BOT_TOKEN") or os.getenv("TELEGRAM_BOT_TOKEN")
 CHANNEL_ID_VALUE = os.getenv("CHANNEL_ID")
 ADMIN_IDS_VALUE = os.getenv("ADMIN_IDS") or os.getenv("TELEGRAM_ADMIN_ID")
 
-missing_variables = [
-    name
-    for name, value in (
-        ("BOT_TOKEN", BOT_TOKEN),
-        ("CHANNEL_ID", CHANNEL_ID_VALUE),
-        ("ADMIN_IDS", ADMIN_IDS_VALUE),
-    )
-    if not value
-]
-if missing_variables:
-    raise RuntimeError(
-        "Missing required environment variables: " + ", ".join(missing_variables)
-    )
+# Проверяем только токен (он критичен)
+if not BOT_TOKEN:
+    raise RuntimeError("Missing required environment variable: BOT_TOKEN")
 
-try:
-    CHANNEL_ID = int(CHANNEL_ID_VALUE)
-    ADMIN_IDS = [
-        int(admin_id.strip())
-        for admin_id in ADMIN_IDS_VALUE.split(",")
-        if admin_id.strip()
-    ]
-except ValueError as exc:
-    raise RuntimeError(
-        "CHANNEL_ID and ADMIN_IDS must contain numeric Telegram IDs"
-    ) from exc
+# CHANNEL_ID теперь необязателен
+CHANNEL_ID = None
+if CHANNEL_ID_VALUE:
+    try:
+        CHANNEL_ID = int(CHANNEL_ID_VALUE)
+    except ValueError:
+        CHANNEL_ID = CHANNEL_ID_VALUE # Оставляем как строку, если это @юзернейм
 
-if not ADMIN_IDS:
-    raise RuntimeError("ADMIN_IDS must contain at least one Telegram user ID")
+# ADMIN_IDS тоже делаем безопасным
+ADMIN_IDS = []
+if ADMIN_IDS_VALUE:
+    try:
+        ADMIN_IDS = [
+            int(admin_id.strip())
+            for admin_id in ADMIN_IDS_VALUE.split(",")
+            if admin_id.strip()
+        ]
+    except ValueError:
+        raise RuntimeError("ADMIN_IDS must contain numeric Telegram IDs")
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -64,23 +59,19 @@ dp = Dispatcher(storage=MemoryStorage())
 
 keep_alive_app = Flask(__name__)
 
-
 @keep_alive_app.route("/")
 def index():
     return "Bot is running!"
 
-
 def run_keep_alive():
     port = int(os.getenv("PORT", "8080"))
     keep_alive_app.run(host="0.0.0.0", port=port)
-
 
 if not os.getenv("REPLIT_DEV_DOMAIN"):
     Thread(target=run_keep_alive, daemon=True).start()
 
 FILE_IDS_PATH = "file_ids.json"
 FILE_IDS = {}
-
 
 def load_file_ids():
     global FILE_IDS
@@ -90,11 +81,9 @@ def load_file_ids():
     except (OSError, json.JSONDecodeError):
         FILE_IDS = {}
 
-
 def save_file_ids():
     with open(FILE_IDS_PATH, "w") as file:
         json.dump(FILE_IDS, file)
-
 
 load_file_ids()
 
@@ -120,31 +109,16 @@ help_keyboard = InlineKeyboardMarkup(
     inline_keyboard=[
         [InlineKeyboardButton(text="Как установить мод", callback_data="help_install")],
         [InlineKeyboardButton(text="Как удалить мод", callback_data="help_remove")],
-        [
-            InlineKeyboardButton(
-                text="Зачем нужны данные модификации", callback_data="help_why"
-            )
-        ],
-        [
-            InlineKeyboardButton(
-                text="Сколько разрабатываются моды", callback_data="help_time"
-            )
-        ],
-        [
-            InlineKeyboardButton(
-                text="Почему моды только на возвращение старого в игру",
-                callback_data="help_why_old",
-            )
-        ],
+        [InlineKeyboardButton(text="Зачем нужны данные модификации", callback_data="help_why")],
+        [InlineKeyboardButton(text="Сколько разрабатываются моды", callback_data="help_time")],
+        [InlineKeyboardButton(text="Почему моды только на возвращение старого в игру", callback_data="help_why_old")],
     ]
 )
-
 
 class UserState(StatesGroup):
     awaiting_mod_suggestion = State()
     awaiting_fun = State()
     awaiting_bug_report = State()
-
 
 def find_file_id(base_name: str):
     base_lower = base_name.lower()
@@ -155,7 +129,6 @@ def find_file_id(base_name: str):
             return stored_name, file_id
     return None
 
-
 async def send_mod_file(chat_id: int, base_name: str):
     result = find_file_id(base_name)
     if not result:
@@ -164,21 +137,20 @@ async def send_mod_file(chat_id: int, base_name: str):
     _, file_id = result
     await bot.send_document(chat_id, file_id)
 
-
 async def forward_to_admins(message: Message, header: str):
     for admin_id in ADMIN_IDS:
         await bot.send_message(admin_id, header, parse_mode="HTML")
         await message.forward(admin_id)
 
-
-@dp.message(F.chat.id == CHANNEL_ID, F.document)
+@dp.message(F.document)
 async def group_document_handler(message: Message):
-    doc = message.document
-    if doc.file_name:
-        FILE_IDS[doc.file_name] = doc.file_id
-        save_file_ids()
-        logger.info("Saved file from group: %s", doc.file_name)
-
+    # Сохраняем файлы, если они приходят в канал/группу
+    if CHANNEL_ID and message.chat.id == CHANNEL_ID:
+        doc = message.document
+        if doc.file_name:
+            FILE_IDS[doc.file_name] = doc.file_id
+            save_file_ids()
+            logger.info("Saved file from group: %s", doc.file_name)
 
 @dp.message(CommandStart())
 async def cmd_start(message: Message, state: FSMContext):
@@ -189,39 +161,28 @@ async def cmd_start(message: Message, state: FSMContext):
         reply_markup=main_keyboard,
     )
 
-
 @dp.message(Command("cancel"))
 async def cmd_cancel(message: Message, state: FSMContext):
     if await state.get_state():
         await state.clear()
-        await message.answer(
-            "❌ Отменено. Возвращаюсь в главное меню.", reply_markup=main_keyboard
-        )
+        await message.answer("❌ Отменено. Возвращаюсь в главное меню.", reply_markup=main_keyboard)
     else:
         await message.answer("Нечего отменять.", reply_markup=main_keyboard)
-
 
 @dp.message(F.text == "Моды")
 async def btn_mods(message: Message, state: FSMContext):
     await state.clear()
-    await message.answer(
-        "<b>Моды</b>\n\nВыбери мод:",
-        parse_mode="HTML",
-        reply_markup=mods_keyboard,
-    )
-
+    await message.answer("<b>Моды</b>\n\nВыбери мод:", parse_mode="HTML", reply_markup=mods_keyboard)
 
 @dp.callback_query(F.data == "mod_old_font")
 async def cb_old_font(callback: CallbackQuery):
     await callback.answer()
     await send_mod_file(callback.from_user.id, "old_font")
 
-
 @dp.callback_query(F.data == "mod_old_medals")
 async def cb_old_medals(callback: CallbackQuery):
     await callback.answer()
     await send_mod_file(callback.from_user.id, "old_medals")
-
 
 @dp.callback_query(F.data == "mod_old_ui")
 async def cb_old_ui(callback: CallbackQuery):
@@ -245,7 +206,6 @@ async def cb_old_ui(callback: CallbackQuery):
     )
     await send_mod_file(callback.from_user.id, "old_ui")
 
-
 @dp.message(F.text == "Приколы")
 async def btn_fun(message: Message, state: FSMContext):
     await state.set_state(UserState.awaiting_fun)
@@ -260,7 +220,6 @@ async def btn_fun(message: Message, state: FSMContext):
         reply_markup=main_keyboard,
     )
 
-
 MENU_BUTTONS = {
     "Моды",
     "Приколы",
@@ -270,7 +229,6 @@ MENU_BUTTONS = {
     "Донат",
     "Сообщить об ошибке",
 }
-
 
 @dp.message(UserState.awaiting_fun, ~F.text.in_(MENU_BUTTONS))
 async def receive_fun(message: Message, state: FSMContext):
@@ -287,73 +245,55 @@ async def receive_fun(message: Message, state: FSMContext):
     except Exception as exc:
         logger.error("Failed to forward fun: %s", exc)
     await message.answer(
-        "Спасибо! Твой прикол принят. Когда его проверят моддераторы, "
-        "он попадёт в наш канал.",
+        "Спасибо! Твой прикол принят. Когда его проверят моддераторы, он попадёт в наш канал.",
         reply_markup=main_keyboard,
     )
-
 
 @dp.message(F.text == "Помощь")
 async def btn_help(message: Message, state: FSMContext):
     await state.clear()
-    await message.answer(
-        "<b>Помощь</b>\n\nВыбери вопрос:",
-        parse_mode="HTML",
-        reply_markup=help_keyboard,
-    )
-
+    await message.answer("<b>Помощь</b>\n\nВыбери вопрос:", parse_mode="HTML", reply_markup=help_keyboard)
 
 @dp.callback_query(F.data == "help_install")
 async def cb_help_install(callback: CallbackQuery):
     await callback.answer()
     await callback.message.answer(
-        "Как установить мод:\n\nШаг 1. Скачать мод с официального сайта For Blitz "
-        "или в нашем боте\n‼️Обрати внимание, мод только на ПК‼️\n"
+        "Как установить мод:\n\nШаг 1. Скачать мод с официального сайта For Blitz или в нашем боте\n"
+        "‼️Обрати внимание, мод только на ПК‼️\n"
         "Шаг 2. Распаковать архив или просто зайти в него\n"
         "Шаг 3. Скопировать папку Data\n"
         "Шаг 4. Зайти в папку игры: C:\\Games\\Tanks Blitz\n"
         "Шаг 5. Нажать вставить скопированную папку Data с заменой"
     )
 
-
 @dp.callback_query(F.data == "help_remove")
 async def cb_help_remove(callback: CallbackQuery):
     await callback.answer()
-    await callback.message.answer(
-        "Как удалить мод:\n\nСамый простой способ — нажать в приложении LGC "
-        "восстановление игры"
-    )
-
+    await callback.message.answer("Как удалить мод:\n\nСамый простой способ — нажать в приложении LGC восстановление игры")
 
 @dp.callback_query(F.data == "help_why")
 async def cb_help_why(callback: CallbackQuery):
     await callback.answer()
     await callback.message.answer(
-        "Зачем нужны данные модификации:\n\nМоды возвращают удалённые функции "
-        "и интерфейс, к которым привыкли игроки. Это делает игру комфортнее и "
-        "привычнее для тех, кто играл раньше. Иногда старое — это просто лучше."
+        "Зачем нужны данные модификации:\n\nМоды возвращают удалённые функции и интерфейс, "
+        "к которым привыкли игроки. Это делает игру комфортнее и привычнее для тех, кто играл раньше."
     )
-
 
 @dp.callback_query(F.data == "help_time")
 async def cb_help_time(callback: CallbackQuery):
     await callback.answer()
     await callback.message.answer(
-        "Сколько разрабатываются моды:\n\nВремя разработки зависит от размера мода, "
-        "сложности, свободного времени у мододела, а также от того, насколько часто "
-        "бывают бухие сервера у картошки"
+        "Сколько разрабатываются моды:\n\nВремя разработки зависит от размера мода, сложности, "
+        "свободного времени у мододела, а также от того, насколько часто бывают бухие сервера у картошки"
     )
-
 
 @dp.callback_query(F.data == "help_why_old")
 async def cb_help_why_old(callback: CallbackQuery):
     await callback.answer()
     await callback.message.answer(
-        "Почему модификации только на возвращение старого в игру:\n\nЧтобы делать "
-        "что-то новое, нужно настроение. У нашей команды пока настроение только "
-        "делать старое, к тому же новое делать намного сложнее"
+        "Почему модификации только на возвращение старого в игру:\n\nЧтобы делать что-то новое, "
+        "нужно настроение. У нашей команды пока настроение только делать старое..."
     )
-
 
 @dp.message(F.text == "Предложить мод")
 async def btn_suggest_mod(message: Message, state: FSMContext):
@@ -365,7 +305,6 @@ async def btn_suggest_mod(message: Message, state: FSMContext):
         "Для отмены напиши /cancel",
         parse_mode="HTML",
     )
-
 
 @dp.message(UserState.awaiting_mod_suggestion, ~F.text.in_(MENU_BUTTONS))
 async def receive_mod_suggestion(message: Message, state: FSMContext):
@@ -379,17 +318,10 @@ async def receive_mod_suggestion(message: Message, state: FSMContext):
     )
     try:
         await forward_to_admins(message, header)
-        await message.answer(
-            "✅ Твой мод отправлен на рассмотрение! Спасибо!",
-            reply_markup=main_keyboard,
-        )
+        await message.answer("✅ Твой мод отправлен на рассмотрение! Спасибо!", reply_markup=main_keyboard)
     except Exception as exc:
         logger.error("Failed to forward mod: %s", exc)
-        await message.answer(
-            "⚠️ Не удалось отправить мод. Попробуй позже.",
-            reply_markup=main_keyboard,
-        )
-
+        await message.answer("⚠️ Не удалось отправить мод. Попробуй позже.", reply_markup=main_keyboard)
 
 @dp.message(F.text == "В разработке")
 async def btn_in_dev(message: Message, state: FSMContext):
@@ -405,14 +337,12 @@ async def btn_in_dev(message: Message, state: FSMContext):
         reply_markup=main_keyboard,
     )
 
-
 @dp.message(F.text == "Донат")
 async def btn_donate(message: Message, state: FSMContext):
     await state.clear()
     await message.answer(
         "Поддержать разработку модов\n\n"
-        "Пока мы не принимаем донаты, но если хочешь сказать спасибо — "
-        "вот что можно сделать:\n\n"
+        "Пока мы не принимаем донаты, но если хочешь сказать спасибо — вот что можно сделать:\n\n"
         "• Расскажи о нашем канале и боте друзьям\n"
         "• Предложи идею для нового мода\n"
         "• Присоединись к команде тестировщиков (скоро можно будет)\n\n"
@@ -420,26 +350,18 @@ async def btn_donate(message: Message, state: FSMContext):
         reply_markup=main_keyboard,
     )
 
-
 @dp.message(F.text == "Сообщить об ошибке")
 async def btn_bug_report(message: Message, state: FSMContext):
     await state.set_state(UserState.awaiting_bug_report)
     await message.answer(
-        "Опиши ошибку в моде. Напиши название мода и что именно не так, "
-        "всё будет передано разработчикам.",
+        "Опиши ошибку в моде. Напиши название мода и что именно не так, всё будет передано разработчикам.",
         reply_markup=main_keyboard,
     )
 
-
 @dp.message(UserState.awaiting_bug_report, ~F.text.in_(MENU_BUTTONS))
 async def receive_bug_report(message: Message, state: FSMContext):
-    if message.voice or (
-        not message.text and not message.photo and not message.video and not message.document
-    ):
-        await message.answer(
-            "Напиши подробности текстом и по возможности фото или видео. "
-            "Голосовые и пустые сообщения не принимаются."
-        )
+    if message.voice or (not message.text and not message.photo and not message.video and not message.document):
+        await message.answer("Напиши подробности текстом и по возможности фото или видео. Голосовые и пустые сообщения не принимаются.")
         return
     await state.clear()
     user = message.from_user
@@ -454,16 +376,13 @@ async def receive_bug_report(message: Message, state: FSMContext):
     except Exception as exc:
         logger.error("Failed to forward bug report: %s", exc)
     await message.answer(
-        "✅ Спасибо, сообщение об ошибке передано разработчикам. "
-        "Постараемся исправить в ближайшее время.",
+        "✅ Спасибо, сообщение об ошибке передано разработчикам. Постараемся исправить в ближайшее время.",
         reply_markup=main_keyboard,
     )
-
 
 async def main():
     logger.info("Bot started")
     await dp.start_polling(bot)
-
 
 if __name__ == "__main__":
     asyncio.run(main())
