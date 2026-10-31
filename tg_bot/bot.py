@@ -261,7 +261,7 @@ async def cb_old_ui(callback: CallbackQuery):
         )
         return
     await callback.message.answer(
-        "Версия мода: v1.2\n\n"
+        "Версия мода: v3.0\n\n"
         "Данный мод возвращает:\n"
         "・ Старую кнопку выбора режима\n"
         "・ Старый UI хранилища\n"
