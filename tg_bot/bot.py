@@ -28,11 +28,11 @@ BOT_TOKEN = os.getenv("BOT_TOKEN") or os.getenv("TELEGRAM_BOT_TOKEN")
 CHANNEL_ID_VALUE = os.getenv("CHANNEL_ID")
 ADMIN_IDS_VALUE = os.getenv("ADMIN_IDS") or os.getenv("TELEGRAM_ADMIN_ID")
 
-# ТВОЙ ID ГРУППЫ (куда летят заявки и откуда бот берет моды)
+# ТВОЙ ID ГРУППЫ
 GROUP_ID_VALUE = "-1002832219010" 
 
 # ССЫЛКА НА ТВОЙ КАНАЛ (для проверки подписки)
-CHANNEL_LINK = "https://t.me/MOD_rak" 
+CHANNEL_LINK = "https://t.me/ВАШ_КАНАЛ_ТУТ" 
 
 if not BOT_TOKEN:
     raise RuntimeError("Missing required environment variable: BOT_TOKEN")
@@ -89,11 +89,20 @@ FILE_IDS = {}
 
 def load_file_ids():
     global FILE_IDS
+    # === ВШИВАЕМ ФАЙЛЫ СЮДА ===
+    # Замени "ВСТАВЬ_СЮДА..." на длинные ID из логов
+    FILE_IDS = {
+        "old_font.rar": "ВСТАВЬ_СЮДА_FILE_ID_ОТ_ШРИФТА",
+        "old_medals.zip": "ВСТАВЬ_СЮДА_FILE_ID_ОТ_МЕДАЛЕЙ",
+        "old_ui.rar": "ВСТАВЬ_СЮДА_FILE_ID_ОТ_АНГАРА",
+    }
+    # Пытаемся загрузить остальные из файла (если есть)
     try:
         with open(FILE_IDS_PATH) as file:
-            FILE_IDS = json.load(file)
+            loaded = json.load(file)
+            FILE_IDS.update(loaded)
     except (OSError, json.JSONDecodeError):
-        FILE_IDS = {}
+        pass
 
 def save_file_ids():
     with open(FILE_IDS_PATH, "w") as file:
@@ -122,7 +131,7 @@ mods_keyboard = InlineKeyboardMarkup(
     inline_keyboard=[
         [InlineKeyboardButton(text="Старый шрифт (v1.0)", callback_data="mod_old_font")],
         [InlineKeyboardButton(text="Старые медали (v1.0)", callback_data="mod_old_medals")],
-        [InlineKeyboardButton(text="Старый UI ангара (v1.2)", callback_data="mod_old_ui")],
+        [InlineKeyboardButton(text="Старый UI ангара (v3.0)", callback_data="mod_old_ui")],
     ]
 )
 
@@ -160,15 +169,14 @@ def find_file_id(base_name: str):
     return None
 
 async def check_subscription(user_id: int) -> bool:
-    """Проверяет, подписан ли пользователь на канал."""
     if not CHANNEL_ID:
-        return True # Если ID канала не задан, пускаем всех
+        return True
     try:
         member = await bot.get_chat_member(chat_id=CHANNEL_ID, user_id=user_id)
         if member.status in ["creator", "administrator", "member"]:
             return True
     except TelegramBadRequest as e:
-        logger.error(f"Ошибка проверки подписки (бот не админ в канале?): {e}")
+        logger.error(f"Ошибка проверки подписки: {e}")
     return False
 
 async def send_mod_file(chat_id: int, base_name: str):
@@ -180,33 +188,27 @@ async def send_mod_file(chat_id: int, base_name: str):
     await bot.send_document(chat_id, file_id)
 
 async def forward_to_admins(message: Message, header: str):
-    logger.info(f"Пытаюсь переслать сообщение. Список получателей: {TARGET_CHAT_IDS}")
     if not TARGET_CHAT_IDS:
-        logger.error("ОШИБКА: Список TARGET_CHAT_IDS пуст! Проверь GROUP_ID.")
         return
-
     for chat_id in TARGET_CHAT_IDS:
         try:
             await bot.send_message(chat_id, header, parse_mode="HTML")
             await message.forward(chat_id)
-            logger.info(f"Успешно отправлено в {chat_id}")
         except Exception as exc:
             logger.error(f"Не удалось отправить в {chat_id}. Ошибка: {exc}")
 
 # --- ХЕНДЛЕРЫ ---
 
-# ЛОВИМ ФАЙЛЫ В ГРУППЕ
 @dp.message(F.document)
 async def group_document_handler(message: Message):
-    # Если сообщение пришло в ту самую группу
     if GROUP_ID_VALUE and str(message.chat.id) == str(GROUP_ID_VALUE):
         doc = message.document
         if doc.file_name:
             FILE_IDS[doc.file_name] = doc.file_id
             save_file_ids()
-            logger.info(f"Сохранен файл из группы: {doc.file_name}")
-            # Можно добавить ответ, чтобы ты видел, что бот сохранил
-            await message.answer(f"Файл {doc.file_name} сохранен в базе бота.")
+            # Выводим file_id в логи, чтобы ты мог его скопировать
+            logger.info(f"Сохранен файл из группы: {doc.file_name} | FILE_ID: {doc.file_id}")
+            await message.answer(f"Файл {doc.file_name} сохранен.")
 
 @dp.message(CommandStart())
 async def cmd_start(message: Message, state: FSMContext):
@@ -230,7 +232,7 @@ async def btn_mods(message: Message, state: FSMContext):
     await state.clear()
     await message.answer("<b>Моды</b>\n\nВыбери мод:", parse_mode="HTML", reply_markup=mods_keyboard)
 
-# --- ОБРАБОТЧИКИ МОДОВ С ПРОВЕРКОЙ ПОДПИСКИ ---
+# --- ОБРАБОТЧИКИ МОДОВ (с проверкой подписки и правильными расширениями) ---
 
 @dp.callback_query(F.data == "mod_old_font")
 async def cb_old_font(callback: CallbackQuery):
@@ -242,7 +244,7 @@ async def cb_old_font(callback: CallbackQuery):
         )
         return
     await callback.message.answer("Версия мода: v1.0")
-    await send_mod_file(callback.from_user.id, "old_font")
+    await send_mod_file(callback.from_user.id, "old_font.rar") # <--- ИСПРАВЛЕНО
 
 @dp.callback_query(F.data == "mod_old_medals")
 async def cb_old_medals(callback: CallbackQuery):
@@ -254,7 +256,7 @@ async def cb_old_medals(callback: CallbackQuery):
         )
         return
     await callback.message.answer("Версия мода: v1.0")
-    await send_mod_file(callback.from_user.id, "old_medals")
+    await send_mod_file(callback.from_user.id, "old_medals.zip") # <--- ИСПРАВЛЕНО
 
 @dp.callback_query(F.data == "mod_old_ui")
 async def cb_old_ui(callback: CallbackQuery):
@@ -283,7 +285,7 @@ async def cb_old_ui(callback: CallbackQuery):
         "・ Старый UI окна уведомлений\n"
         "・ Всякие мелочи"
     )
-    await send_mod_file(callback.from_user.id, "old_ui")
+    await send_mod_file(callback.from_user.id, "old_ui.rar") # <--- ИСПРАВЛЕНО
 
 # --- ОСТАЛЬНОЕ МЕНЮ ---
 
