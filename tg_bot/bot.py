@@ -31,7 +31,7 @@ ADMIN_IDS_VALUE = os.getenv("ADMIN_IDS") or os.getenv("TELEGRAM_ADMIN_ID")
 GROUP_ID_VALUE = "-1002832219010" 
 
 # СЮДА ВПИШИ ССЫЛКУ НА ТВОЙ КАНАЛ (например, "https://t.me/my_channel")
-CHANNEL_LINK = "https://t.me/ВАШ_КАНАЛ_ТУТ" 
+CHANNEL_LINK = "https://t.me/MOD_rak" 
 
 if not BOT_TOKEN:
     raise RuntimeError("Missing required environment variable: BOT_TOKEN")
