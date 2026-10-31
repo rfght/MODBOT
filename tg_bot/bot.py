@@ -28,11 +28,11 @@ CHANNEL_ID_VALUE = os.getenv("CHANNEL_ID")
 ADMIN_IDS_VALUE = os.getenv("ADMIN_IDS") or os.getenv("TELEGRAM_ADMIN_ID")
 GROUP_ID_VALUE = os.getenv("GROUP_ID")
 
-# Проверяем только токен (он критичен)
+# Проверяем только токен
 if not BOT_TOKEN:
     raise RuntimeError("Missing required environment variable: BOT_TOKEN")
 
-# CHANNEL_ID теперь необязателен
+# CHANNEL_ID
 CHANNEL_ID = None
 if CHANNEL_ID_VALUE:
     try:
@@ -40,7 +40,7 @@ if CHANNEL_ID_VALUE:
     except ValueError:
         CHANNEL_ID = CHANNEL_ID_VALUE
 
-# ADMIN_IDS (нужны для проверки, но для пересылки мы их не используем)
+# ADMIN_IDS
 ADMIN_IDS = []
 if ADMIN_IDS_VALUE:
     try:
@@ -147,13 +147,18 @@ async def send_mod_file(chat_id: int, base_name: str):
     await bot.send_document(chat_id, file_id)
 
 async def forward_to_admins(message: Message, header: str):
-    # Теперь пересылаем ТОЛЬКО в TARGET_CHAT_IDS (группу)
+    logger.info(f"Пытаюсь переслать сообщение. Список получателей: {TARGET_CHAT_IDS}")
+    if not TARGET_CHAT_IDS:
+        logger.error("ОШИБКА: Список TARGET_CHAT_IDS пуст! Проверь GROUP_ID в секретах.")
+        return
+
     for chat_id in TARGET_CHAT_IDS:
         try:
             await bot.send_message(chat_id, header, parse_mode="HTML")
             await message.forward(chat_id)
+            logger.info(f"Успешно отправлено в {chat_id}")
         except Exception as exc:
-            logger.error(f"Failed to forward to {chat_id}: {exc}")
+            logger.error(f"Не удалось отправить в {chat_id}. Ошибка: {exc}")
 
 @dp.message(F.document)
 async def group_document_handler(message: Message):
