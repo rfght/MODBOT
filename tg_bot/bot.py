@@ -32,7 +32,7 @@ ADMIN_IDS_VALUE = os.getenv("ADMIN_IDS") or os.getenv("TELEGRAM_ADMIN_ID")
 GROUP_ID_VALUE = "-1002832219010" 
 
 # ССЫЛКА НА ТВОЙ КАНАЛ (для проверки подписки)
-CHANNEL_LINK = "https://t.me/ВАШ_КАНАЛ_ТУТ" 
+CHANNEL_LINK = "https://t.me/MOD_rak" 
 
 if not BOT_TOKEN:
     raise RuntimeError("Missing required environment variable: BOT_TOKEN")
@@ -123,7 +123,7 @@ mods_keyboard = InlineKeyboardMarkup(
     inline_keyboard=[
         [InlineKeyboardButton(text="Старый шрифт (v1.0)", callback_data="mod_old_font")],
         [InlineKeyboardButton(text="Старые медали (v1.0)", callback_data="mod_old_medals")],
-        [InlineKeyboardButton(text="Старый UI ангара (v1.2)", callback_data="mod_old_ui")],
+        [InlineKeyboardButton(text="Старый UI ангара (v3.0)", callback_data="mod_old_ui")],
     ]
 )
 
