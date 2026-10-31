@@ -28,15 +28,16 @@ BOT_TOKEN = os.getenv("BOT_TOKEN") or os.getenv("TELEGRAM_BOT_TOKEN")
 CHANNEL_ID_VALUE = os.getenv("CHANNEL_ID")
 ADMIN_IDS_VALUE = os.getenv("ADMIN_IDS") or os.getenv("TELEGRAM_ADMIN_ID")
 
+# ТВОЙ ID ГРУППЫ (куда летят заявки и откуда бот берет моды)
 GROUP_ID_VALUE = "-1002832219010" 
 
-# СЮДА ВПИШИ ССЫЛКУ НА ТВОЙ КАНАЛ (например, "https://t.me/my_channel")
+# ССЫЛКА НА ТВОЙ КАНАЛ (для проверки подписки)
 CHANNEL_LINK = "https://t.me/MOD_rak" 
 
 if not BOT_TOKEN:
     raise RuntimeError("Missing required environment variable: BOT_TOKEN")
 
-# CHANNEL_ID
+# CHANNEL_ID (для проверки подписки)
 CHANNEL_ID = None
 if CHANNEL_ID_VALUE:
     try:
@@ -111,7 +112,6 @@ main_keyboard = ReplyKeyboardMarkup(
     resize_keyboard=True,
 )
 
-# Кнопка подписки (появится, если человек не подписан)
 subscribe_keyboard = InlineKeyboardMarkup(
     inline_keyboard=[
         [InlineKeyboardButton(text="Подписаться на канал", url=CHANNEL_LINK)]
@@ -160,21 +160,21 @@ def find_file_id(base_name: str):
     return None
 
 async def check_subscription(user_id: int) -> bool:
-    """Проверяет, подписан ли пользователь на канал. Если CHANNEL_ID не задан - пускает всех."""
+    """Проверяет, подписан ли пользователь на канал."""
     if not CHANNEL_ID:
-        return True
+        return True # Если ID канала не задан, пускаем всех
     try:
         member = await bot.get_chat_member(chat_id=CHANNEL_ID, user_id=user_id)
         if member.status in ["creator", "administrator", "member"]:
             return True
     except TelegramBadRequest as e:
-        logger.error(f"Ошибка проверки подписки (возможно, бот не админ в канале): {e}")
+        logger.error(f"Ошибка проверки подписки (бот не админ в канале?): {e}")
     return False
 
 async def send_mod_file(chat_id: int, base_name: str):
     result = find_file_id(base_name)
     if not result:
-        await bot.send_message(chat_id, "Файл пока недоступен. Попробуй позже.")
+        await bot.send_message(chat_id, "Файл пока недоступен. Убедись, что файл был отправлен в группу.")
         return
     _, file_id = result
     await bot.send_document(chat_id, file_id)
@@ -195,14 +195,18 @@ async def forward_to_admins(message: Message, header: str):
 
 # --- ХЕНДЛЕРЫ ---
 
+# ЛОВИМ ФАЙЛЫ В ГРУППЕ
 @dp.message(F.document)
 async def group_document_handler(message: Message):
-    if CHANNEL_ID and message.chat.id == CHANNEL_ID:
+    # Если сообщение пришло в ту самую группу
+    if GROUP_ID_VALUE and str(message.chat.id) == str(GROUP_ID_VALUE):
         doc = message.document
         if doc.file_name:
             FILE_IDS[doc.file_name] = doc.file_id
             save_file_ids()
-            logger.info("Saved file from group: %s", doc.file_name)
+            logger.info(f"Сохранен файл из группы: {doc.file_name}")
+            # Можно добавить ответ, чтобы ты видел, что бот сохранил
+            await message.answer(f"Файл {doc.file_name} сохранен в базе бота.")
 
 @dp.message(CommandStart())
 async def cmd_start(message: Message, state: FSMContext):
