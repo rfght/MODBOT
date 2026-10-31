@@ -89,20 +89,12 @@ FILE_IDS = {}
 
 def load_file_ids():
     global FILE_IDS
-    # === ВШИВАЕМ ФАЙЛЫ СЮДА ===
-    # Замени "ВСТАВЬ_СЮДА..." на длинные ID из логов
-    FILE_IDS = {
-        "old_font.rar": "ВСТАВЬ_СЮДА_FILE_ID_ОТ_ШРИФТА",
-        "old_medals.zip": "ВСТАВЬ_СЮДА_FILE_ID_ОТ_МЕДАЛЕЙ",
-        "old_ui.rar": "ВСТАВЬ_СЮДА_FILE_ID_ОТ_АНГАРА",
-    }
-    # Пытаемся загрузить остальные из файла (если есть)
+    # Загружаем файлы из file_ids.json (если он есть)
     try:
         with open(FILE_IDS_PATH) as file:
-            loaded = json.load(file)
-            FILE_IDS.update(loaded)
+            FILE_IDS = json.load(file)
     except (OSError, json.JSONDecodeError):
-        pass
+        FILE_IDS = {}
 
 def save_file_ids():
     with open(FILE_IDS_PATH, "w") as file:
@@ -131,7 +123,7 @@ mods_keyboard = InlineKeyboardMarkup(
     inline_keyboard=[
         [InlineKeyboardButton(text="Старый шрифт (v1.0)", callback_data="mod_old_font")],
         [InlineKeyboardButton(text="Старые медали (v1.0)", callback_data="mod_old_medals")],
-        [InlineKeyboardButton(text="Старый UI ангара (v3.0)", callback_data="mod_old_ui")],
+        [InlineKeyboardButton(text="Старый UI ангара (v1.2)", callback_data="mod_old_ui")],
     ]
 )
 
@@ -161,8 +153,10 @@ class UserState(StatesGroup):
 # --- ФУНКЦИИ ---
 def find_file_id(base_name: str):
     base_lower = base_name.lower()
+    # Ищем точное совпадение
     if base_name in FILE_IDS:
         return base_name, FILE_IDS[base_name]
+    # Ищем без учета расширения
     for stored_name, file_id in FILE_IDS.items():
         if stored_name.rsplit(".", 1)[0].lower() == base_lower:
             return stored_name, file_id
@@ -206,7 +200,6 @@ async def group_document_handler(message: Message):
         if doc.file_name:
             FILE_IDS[doc.file_name] = doc.file_id
             save_file_ids()
-            # Выводим file_id в логи, чтобы ты мог его скопировать
             logger.info(f"Сохранен файл из группы: {doc.file_name} | FILE_ID: {doc.file_id}")
             await message.answer(f"Файл {doc.file_name} сохранен.")
 
@@ -244,7 +237,7 @@ async def cb_old_font(callback: CallbackQuery):
         )
         return
     await callback.message.answer("Версия мода: v1.0")
-    await send_mod_file(callback.from_user.id, "old_font.rar") # <--- ИСПРАВЛЕНО
+    await send_mod_file(callback.from_user.id, "old_font.rar")
 
 @dp.callback_query(F.data == "mod_old_medals")
 async def cb_old_medals(callback: CallbackQuery):
@@ -256,7 +249,7 @@ async def cb_old_medals(callback: CallbackQuery):
         )
         return
     await callback.message.answer("Версия мода: v1.0")
-    await send_mod_file(callback.from_user.id, "old_medals.zip") # <--- ИСПРАВЛЕНО
+    await send_mod_file(callback.from_user.id, "old_medals.zip")
 
 @dp.callback_query(F.data == "mod_old_ui")
 async def cb_old_ui(callback: CallbackQuery):
@@ -285,7 +278,7 @@ async def cb_old_ui(callback: CallbackQuery):
         "・ Старый UI окна уведомлений\n"
         "・ Всякие мелочи"
     )
-    await send_mod_file(callback.from_user.id, "old_ui.rar") # <--- ИСПРАВЛЕНО
+    await send_mod_file(callback.from_user.id, "old_ui.rar")
 
 # --- ОСТАЛЬНОЕ МЕНЮ ---
 
