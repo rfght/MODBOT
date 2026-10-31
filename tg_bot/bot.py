@@ -26,6 +26,7 @@ load_dotenv()
 BOT_TOKEN = os.getenv("BOT_TOKEN") or os.getenv("TELEGRAM_BOT_TOKEN")
 CHANNEL_ID_VALUE = os.getenv("CHANNEL_ID")
 ADMIN_IDS_VALUE = os.getenv("ADMIN_IDS") or os.getenv("TELEGRAM_ADMIN_ID")
+GROUP_ID_VALUE = os.getenv("GROUP_ID")
 
 # Проверяем только токен (он критичен)
 if not BOT_TOKEN:
@@ -37,9 +38,9 @@ if CHANNEL_ID_VALUE:
     try:
         CHANNEL_ID = int(CHANNEL_ID_VALUE)
     except ValueError:
-        CHANNEL_ID = CHANNEL_ID_VALUE # Оставляем как строку, если это @юзернейм
+        CHANNEL_ID = CHANNEL_ID_VALUE
 
-# ADMIN_IDS тоже делаем безопасным
+# ADMIN_IDS
 ADMIN_IDS = []
 if ADMIN_IDS_VALUE:
     try:
@@ -50,6 +51,14 @@ if ADMIN_IDS_VALUE:
         ]
     except ValueError:
         raise RuntimeError("ADMIN_IDS must contain numeric Telegram IDs")
+
+# Формируем список получателей для пересылки (личка админов + группа)
+TARGET_CHAT_IDS = ADMIN_IDS.copy()
+if GROUP_ID_VALUE:
+    try:
+        TARGET_CHAT_IDS.append(int(GROUP_ID_VALUE))
+    except ValueError:
+        TARGET_CHAT_IDS.append(GROUP_ID_VALUE)
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -138,13 +147,15 @@ async def send_mod_file(chat_id: int, base_name: str):
     await bot.send_document(chat_id, file_id)
 
 async def forward_to_admins(message: Message, header: str):
-    for admin_id in ADMIN_IDS:
-        await bot.send_message(admin_id, header, parse_mode="HTML")
-        await message.forward(admin_id)
+    for chat_id in TARGET_CHAT_IDS:
+        try:
+            await bot.send_message(chat_id, header, parse_mode="HTML")
+            await message.forward(chat_id)
+        except Exception as exc:
+            logger.error(f"Failed to forward to {chat_id}: {exc}")
 
 @dp.message(F.document)
 async def group_document_handler(message: Message):
-    # Сохраняем файлы, если они приходят в канал/группу
     if CHANNEL_ID and message.chat.id == CHANNEL_ID:
         doc = message.document
         if doc.file_name:
@@ -221,13 +232,8 @@ async def btn_fun(message: Message, state: FSMContext):
     )
 
 MENU_BUTTONS = {
-    "Моды",
-    "Приколы",
-    "Помощь",
-    "Предложить мод",
-    "В разработке",
-    "Донат",
-    "Сообщить об ошибке",
+    "Моды", "Приколы", "Помощь", "Предложить мод",
+    "В разработке", "Донат", "Сообщить об ошибке",
 }
 
 @dp.message(UserState.awaiting_fun, ~F.text.in_(MENU_BUTTONS))
@@ -240,12 +246,9 @@ async def receive_fun(message: Message, state: FSMContext):
         f"👤 {user.full_name} ({username})\n"
         f"🆔 <code>{user.id}</code>\n\n"
     )
-    try:
-        await forward_to_admins(message, header)
-    except Exception as exc:
-        logger.error("Failed to forward fun: %s", exc)
+    await forward_to_admins(message, header)
     await message.answer(
-        "Спасибо! Твой прикол принят. Когда его проверят моддераторы, он попадёт в наш канал.",
+        "Спасибо! Твой прикол принят. Когда его проверят модераторы, он попадёт в наш канал.",
         reply_markup=main_keyboard,
     )
 
@@ -316,12 +319,8 @@ async def receive_mod_suggestion(message: Message, state: FSMContext):
         f"👤 {user.full_name} ({username})\n"
         f"🆔 <code>{user.id}</code>\n\n"
     )
-    try:
-        await forward_to_admins(message, header)
-        await message.answer("✅ Твой мод отправлен на рассмотрение! Спасибо!", reply_markup=main_keyboard)
-    except Exception as exc:
-        logger.error("Failed to forward mod: %s", exc)
-        await message.answer("⚠️ Не удалось отправить мод. Попробуй позже.", reply_markup=main_keyboard)
+    await forward_to_admins(message, header)
+    await message.answer("✅ Твой мод отправлен на рассмотрение! Спасибо!", reply_markup=main_keyboard)
 
 @dp.message(F.text == "В разработке")
 async def btn_in_dev(message: Message, state: FSMContext):
@@ -371,10 +370,7 @@ async def receive_bug_report(message: Message, state: FSMContext):
         f"👤 {user.full_name} ({username})\n"
         f"🆔 <code>{user.id}</code>\n\n"
     )
-    try:
-        await forward_to_admins(message, header)
-    except Exception as exc:
-        logger.error("Failed to forward bug report: %s", exc)
+    await forward_to_admins(message, header)
     await message.answer(
         "✅ Спасибо, сообщение об ошибке передано разработчикам. Постараемся исправить в ближайшее время.",
         reply_markup=main_keyboard,
@@ -385,4 +381,4 @@ async def main():
     await dp.start_polling(bot)
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    await main()
