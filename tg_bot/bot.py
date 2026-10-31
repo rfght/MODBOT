@@ -20,6 +20,7 @@ from aiogram.types import (
     Message,
     ReplyKeyboardMarkup,
 )
+from aiogram.exceptions import TelegramBadRequest
 
 load_dotenv()
 
@@ -28,6 +29,9 @@ CHANNEL_ID_VALUE = os.getenv("CHANNEL_ID")
 ADMIN_IDS_VALUE = os.getenv("ADMIN_IDS") or os.getenv("TELEGRAM_ADMIN_ID")
 
 GROUP_ID_VALUE = "-1002832219010" 
+
+# СЮДА ВПИШИ ССЫЛКУ НА ТВОЙ КАНАЛ (например, "https://t.me/my_channel")
+CHANNEL_LINK = "https://t.me/ВАШ_КАНАЛ_ТУТ" 
 
 if not BOT_TOKEN:
     raise RuntimeError("Missing required environment variable: BOT_TOKEN")
@@ -107,11 +111,18 @@ main_keyboard = ReplyKeyboardMarkup(
     resize_keyboard=True,
 )
 
+# Кнопка подписки (появится, если человек не подписан)
+subscribe_keyboard = InlineKeyboardMarkup(
+    inline_keyboard=[
+        [InlineKeyboardButton(text="Подписаться на канал", url=CHANNEL_LINK)]
+    ]
+)
+
 mods_keyboard = InlineKeyboardMarkup(
     inline_keyboard=[
-        [InlineKeyboardButton(text="Старый шрифт", callback_data="mod_old_font")],
-        [InlineKeyboardButton(text="Старые медали", callback_data="mod_old_medals")],
-        [InlineKeyboardButton(text="Старый UI ангара", callback_data="mod_old_ui")],
+        [InlineKeyboardButton(text="Старый шрифт (v1.0)", callback_data="mod_old_font")],
+        [InlineKeyboardButton(text="Старые медали (v1.0)", callback_data="mod_old_medals")],
+        [InlineKeyboardButton(text="Старый UI ангара (v1.2)", callback_data="mod_old_ui")],
     ]
 )
 
@@ -147,6 +158,18 @@ def find_file_id(base_name: str):
         if stored_name.rsplit(".", 1)[0].lower() == base_lower:
             return stored_name, file_id
     return None
+
+async def check_subscription(user_id: int) -> bool:
+    """Проверяет, подписан ли пользователь на канал. Если CHANNEL_ID не задан - пускает всех."""
+    if not CHANNEL_ID:
+        return True
+    try:
+        member = await bot.get_chat_member(chat_id=CHANNEL_ID, user_id=user_id)
+        if member.status in ["creator", "administrator", "member"]:
+            return True
+    except TelegramBadRequest as e:
+        logger.error(f"Ошибка проверки подписки (возможно, бот не админ в канале): {e}")
+    return False
 
 async def send_mod_file(chat_id: int, base_name: str):
     result = find_file_id(base_name)
@@ -203,20 +226,43 @@ async def btn_mods(message: Message, state: FSMContext):
     await state.clear()
     await message.answer("<b>Моды</b>\n\nВыбери мод:", parse_mode="HTML", reply_markup=mods_keyboard)
 
+# --- ОБРАБОТЧИКИ МОДОВ С ПРОВЕРКОЙ ПОДПИСКИ ---
+
 @dp.callback_query(F.data == "mod_old_font")
 async def cb_old_font(callback: CallbackQuery):
     await callback.answer()
+    if not await check_subscription(callback.from_user.id):
+        await callback.message.answer(
+            "Чтобы скачать этот мод, пожалуйста, подпишись на наш канал!",
+            reply_markup=subscribe_keyboard
+        )
+        return
+    await callback.message.answer("Версия мода: v1.0")
     await send_mod_file(callback.from_user.id, "old_font")
 
 @dp.callback_query(F.data == "mod_old_medals")
 async def cb_old_medals(callback: CallbackQuery):
     await callback.answer()
+    if not await check_subscription(callback.from_user.id):
+        await callback.message.answer(
+            "Чтобы скачать этот мод, пожалуйста, подпишись на наш канал!",
+            reply_markup=subscribe_keyboard
+        )
+        return
+    await callback.message.answer("Версия мода: v1.0")
     await send_mod_file(callback.from_user.id, "old_medals")
 
 @dp.callback_query(F.data == "mod_old_ui")
 async def cb_old_ui(callback: CallbackQuery):
     await callback.answer()
+    if not await check_subscription(callback.from_user.id):
+        await callback.message.answer(
+            "Чтобы скачать этот мод, пожалуйста, подпишись на наш канал!",
+            reply_markup=subscribe_keyboard
+        )
+        return
     await callback.message.answer(
+        "Версия мода: v1.2\n\n"
         "Данный мод возвращает:\n"
         "・ Старую кнопку выбора режима\n"
         "・ Старый UI хранилища\n"
@@ -234,6 +280,8 @@ async def cb_old_ui(callback: CallbackQuery):
         "・ Всякие мелочи"
     )
     await send_mod_file(callback.from_user.id, "old_ui")
+
+# --- ОСТАЛЬНОЕ МЕНЮ ---
 
 @dp.message(F.text == "Приколы")
 async def btn_fun(message: Message, state: FSMContext):
@@ -390,7 +438,6 @@ async def receive_bug_report(message: Message, state: FSMContext):
         reply_markup=main_keyboard,
     )
 
-# --- НОВАЯ КНОПКА "РАЗНОЕ" ---
 @dp.message(F.text == "Разное")
 async def btn_misc(message: Message, state: FSMContext):
     await state.clear()
@@ -405,10 +452,10 @@ async def cb_misc_team(callback: CallbackQuery):
     await callback.answer()
     await callback.message.answer(
         "<b>О команде</b>\n\n"
-        "Мы парни-мододелы.\n"
-        "Мы те, кто могут отстоять точку зрения.\n"
-        "А наша точка зрения — это старый вид игры.\n"
-        "И мы не собираемся от неё отступать.",
+        "Мы парни-мододелы\n"
+        "Мы те, кто могут отстоять точку зрения\n"
+        "А наша точка зрения — это старый вид игры\n"
+        "И мы не собираемся от неё отступать",
         parse_mode="HTML"
     )
 
@@ -422,10 +469,9 @@ async def cb_misc_join(callback: CallbackQuery):
         "Но ты всегда можешь предложить идею для мода через главное меню!"
     )
 
-
 async def main():
     logger.info("Bot started")
     await dp.start_polling(bot)
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    await main()
