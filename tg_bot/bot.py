@@ -28,7 +28,7 @@ CHANNEL_ID_VALUE = os.getenv("CHANNEL_ID")
 ADMIN_IDS_VALUE = os.getenv("ADMIN_IDS") or os.getenv("TELEGRAM_ADMIN_ID")
 
 # ВПИШИ СВОЙ ID ГРУППЫ СЮДА В КАВЫЧКАХ:
-GROUP_ID_VALUE = "-1001234567890" 
+GROUP_ID_VALUE = "-1002832219010" 
 
 # Проверяем только токен
 if not BOT_TOKEN:
