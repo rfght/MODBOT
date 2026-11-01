@@ -83,11 +83,17 @@ FILE_IDS = {}
 
 def load_file_ids():
     global FILE_IDS
+    FILE_IDS = {
+        "old_font.rar": "BQACAgIAAyEFAASo0DuCAAPRaudEoy_WaUJytv6Ax-5vHj49Zk8AAqqZAAJuI4FJZH-8dxswqq09BA",
+        "old_medals.zip": "BQACAgIAAyEFAASo0DuCAAPQaudEo89jj1q6kdFa5l4mjYzZCmoAAqmZAAJuI4FJly1Z9B-lN4E9BA",
+        "old_ui.rar": "BQACAgIAAyEFAASo0DuCAAPSaudEozVgaEGz-USX1kCO8mw9czsAAp-qAAJqFCBLsufG1Xs4z3E9BA",
+    }
     try:
         with open(FILE_IDS_PATH) as file:
-            FILE_IDS = json.load(file)
+            loaded = json.load(file)
+            FILE_IDS.update(loaded)
     except (OSError, json.JSONDecodeError):
-        FILE_IDS = {}
+        pass
 
 def save_file_ids():
     with open(FILE_IDS_PATH, "w") as file:
@@ -127,6 +133,7 @@ help_keyboard = InlineKeyboardMarkup(
         [InlineKeyboardButton(text="Зачем нужны данные модификации", callback_data="help_why")],
         [InlineKeyboardButton(text="Сколько разрабатываются моды", callback_data="help_time")],
         [InlineKeyboardButton(text="Почему моды только на возвращение старого в игру", callback_data="help_why_old")],
+        [InlineKeyboardButton(text="Бот не отвечает", callback_data="help_sleep")],
     ]
 )
 
@@ -134,6 +141,7 @@ misc_keyboard = InlineKeyboardMarkup(
     inline_keyboard=[
         [InlineKeyboardButton(text="О команде MOD_rak.rar", callback_data="misc_team")],
         [InlineKeyboardButton(text="Можно ли присоединиться к вам", callback_data="misc_join")],
+        [InlineKeyboardButton(text="Поделиться ботом", url="https://t.me/share/url?url=https://t.me/ModRak1_bot&text=Смотри, какой крутой бот для модов!")],
     ]
 )
 
@@ -166,7 +174,7 @@ async def check_subscription(user_id: int) -> bool:
 async def send_mod_file(chat_id: int, base_name: str):
     result = find_file_id(base_name)
     if not result:
-        await bot.send_message(chat_id, "Файл пока недоступен. Убедись, что файл был отправлен в группу.")
+        await bot.send_message(chat_id, "Временно недоступно")
         return
     _, file_id = result
     await bot.send_document(chat_id, file_id)
@@ -348,6 +356,15 @@ async def cb_help_why_old(callback: CallbackQuery):
         "Почему модификации только на возвращение старого в игру:\n\nНастальгия у всей команды по старой игре"
     )
 
+@dp.callback_query(F.data == "help_sleep")
+async def cb_help_sleep(callback: CallbackQuery):
+    await callback.answer()
+    await callback.message.answer(
+        "Бот не отвечает?\n\n"
+        "Не пугайся! У нашего бота есть свой график работы (техобслуживание серверов). "
+        "Обычно перерыв длится не больше часа. Пожалуйста, попробуй написать чуть позже!"
+    )
+
 @dp.message(F.text == "Предложить мод")
 async def btn_suggest_mod(message: Message, state: FSMContext):
     await state.set_state(UserState.awaiting_mod_suggestion)
@@ -493,7 +510,6 @@ async def cb_misc_join(callback: CallbackQuery):
         "Но ты всегда можешь предложить идею для мода через главное меню!"
     )
 
-# ОБРАБОТЧИК ОТВЕТОВ ИЗ ГРУППЫ
 @dp.message(F.reply_to_message, F.chat.id.in_(TARGET_CHAT_IDS))
 async def handle_group_reply(message: Message):
     replied_msg = message.reply_to_message
@@ -544,8 +560,8 @@ async def unknown_media(message: Message, state: FSMContext):
         return
 
     await message.answer(
-        "Ого, что это? 🤔 Я понимаю только текст и кнопки. "
-        "Пожалуйста, выбери нужный раздел на клавиатуре ниже 👇",
+        "Эт что? Я понимаю только текст и кнопки. "
+        "Пожалуйста, выбери нужный раздел на клавиатуре ниже",
         reply_markup=main_keyboard
     )
 
