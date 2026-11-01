@@ -28,16 +28,12 @@ BOT_TOKEN = os.getenv("BOT_TOKEN") or os.getenv("TELEGRAM_BOT_TOKEN")
 CHANNEL_ID_VALUE = os.getenv("CHANNEL_ID")
 ADMIN_IDS_VALUE = os.getenv("ADMIN_IDS") or os.getenv("TELEGRAM_ADMIN_ID")
 
-# ТВОЙ ID ГРУППЫ
 GROUP_ID_VALUE = "-1002832219010" 
-
-# ССЫЛКА НА ТВОЙ КАНАЛ (для проверки подписки)
-CHANNEL_LINK = "https://t.me/ВАШ_КАНАЛ_ТУТ" 
+CHANNEL_LINK = "https://t.me/MOD_rak" 
 
 if not BOT_TOKEN:
     raise RuntimeError("Missing required environment variable: BOT_TOKEN")
 
-# CHANNEL_ID (для проверки подписки)
 CHANNEL_ID = None
 if CHANNEL_ID_VALUE:
     try:
@@ -45,7 +41,6 @@ if CHANNEL_ID_VALUE:
     except ValueError:
         CHANNEL_ID = CHANNEL_ID_VALUE
 
-# ADMIN_IDS
 ADMIN_IDS = []
 if ADMIN_IDS_VALUE:
     try:
@@ -57,7 +52,6 @@ if ADMIN_IDS_VALUE:
     except ValueError:
         raise RuntimeError("ADMIN_IDS must contain numeric Telegram IDs")
 
-# Формируем список получателей для пересылки (ТОЛЬКО группа)
 TARGET_CHAT_IDS = []
 if GROUP_ID_VALUE:
     try:
@@ -101,13 +95,13 @@ def save_file_ids():
 
 load_file_ids()
 
-# --- КЛАВИАТУРЫ ---
 main_keyboard = ReplyKeyboardMarkup(
     keyboard=[
         [KeyboardButton(text="Моды"), KeyboardButton(text="Приколы")],
         [KeyboardButton(text="Помощь"), KeyboardButton(text="Предложить мод")],
         [KeyboardButton(text="В разработке"), KeyboardButton(text="Поддержать")],
-        [KeyboardButton(text="Сообщить об ошибке"), KeyboardButton(text="Разное")],
+        [KeyboardButton(text="Сообщить об ошибке"), KeyboardButton(text="Задать вопрос")],
+        [KeyboardButton(text="Разное")],
     ],
     resize_keyboard=True,
 )
@@ -122,7 +116,7 @@ mods_keyboard = InlineKeyboardMarkup(
     inline_keyboard=[
         [InlineKeyboardButton(text="Старый шрифт (v1.0)", callback_data="mod_old_font")],
         [InlineKeyboardButton(text="Старые медали (v1.0)", callback_data="mod_old_medals")],
-        [InlineKeyboardButton(text="Старый UI ангара (v1.2)", callback_data="mod_old_ui")],
+        [InlineKeyboardButton(text="Старый UI ангара (v3.0)", callback_data="mod_old_ui")],
     ]
 )
 
@@ -143,13 +137,12 @@ misc_keyboard = InlineKeyboardMarkup(
     ]
 )
 
-# --- СОСТОЯНИЯ ---
 class UserState(StatesGroup):
     awaiting_mod_suggestion = State()
     awaiting_fun = State()
     awaiting_bug_report = State()
+    awaiting_question = State()
 
-# --- ФУНКЦИИ ---
 def find_file_id(base_name: str):
     base_lower = base_name.lower()
     if base_name in FILE_IDS:
@@ -188,8 +181,6 @@ async def forward_to_admins(message: Message, header: str):
         except Exception as exc:
             logger.error(f"Не удалось отправить в {chat_id}. Ошибка: {exc}")
 
-# --- ХЕНДЛЕРЫ ---
-
 @dp.message(F.document)
 async def group_document_handler(message: Message):
     if GROUP_ID_VALUE and str(message.chat.id) == str(GROUP_ID_VALUE):
@@ -221,8 +212,6 @@ async def cmd_cancel(message: Message, state: FSMContext):
 async def btn_mods(message: Message, state: FSMContext):
     await state.clear()
     await message.answer("<b>Моды</b>\n\nВыбери мод:", parse_mode="HTML", reply_markup=mods_keyboard)
-
-# --- ОБРАБОТЧИКИ МОДОВ ---
 
 @dp.callback_query(F.data == "mod_old_font")
 async def cb_old_font(callback: CallbackQuery):
@@ -258,7 +247,7 @@ async def cb_old_ui(callback: CallbackQuery):
         )
         return
     await callback.message.answer(
-        "Версия мода: v1.2\n\n"
+        "Версия мода: v3.0\n\n"
         "Данный мод возвращает:\n"
         "・ Старую кнопку выбора режима\n"
         "・ Старый UI хранилища\n"
@@ -277,8 +266,6 @@ async def cb_old_ui(callback: CallbackQuery):
     )
     await send_mod_file(callback.from_user.id, "old_ui.rar")
 
-# --- ОСТАЛЬНОЕ МЕНЮ ---
-
 @dp.message(F.text == "Приколы")
 async def btn_fun(message: Message, state: FSMContext):
     await state.set_state(UserState.awaiting_fun)
@@ -296,7 +283,7 @@ async def btn_fun(message: Message, state: FSMContext):
 
 MENU_BUTTONS = {
     "Моды", "Приколы", "Помощь", "Предложить мод",
-    "В разработке", "Поддержать", "Сообщить об ошибке", "Разное",
+    "В разработке", "Поддержать", "Сообщить об ошибке", "Задать вопрос", "Разное",
 }
 
 @dp.message(UserState.awaiting_fun, ~F.text.in_(MENU_BUTTONS))
@@ -436,6 +423,45 @@ async def receive_bug_report(message: Message, state: FSMContext):
         reply_markup=main_keyboard,
     )
 
+@dp.message(F.text == "Задать вопрос")
+async def btn_question(message: Message, state: FSMContext):
+    await state.set_state(UserState.awaiting_question)
+    await message.answer(
+        "Задай свой вопрос, и мы ответим тебе прямо здесь!\n"
+        "Напиши свой вопрос или опиши проблему.\n"
+        "Для отмены напиши /cancel",
+        reply_markup=main_keyboard,
+    )
+
+@dp.message(UserState.awaiting_question, ~F.text.in_(MENU_BUTTONS))
+async def receive_question(message: Message, state: FSMContext):
+    await state.clear()
+    user = message.from_user
+    username = f"@{user.username}" if user.username else "нет username"
+    
+    header = (
+        "<b>Вопрос от пользователя!</b>\n"
+        f"👤 {user.full_name} ({username})\n"
+        f"🆔 <code>{user.id}</code>\n\n"
+        "Ответьте на это сообщение (Reply), чтобы отправить ответ пользователю."
+    )
+    
+    if not TARGET_CHAT_IDS:
+        await message.answer("Ошибка: группа для заявок не настроена.")
+        return
+        
+    for chat_id in TARGET_CHAT_IDS:
+        try:
+            await bot.send_message(chat_id, header, parse_mode="HTML")
+            await message.forward(chat_id)
+        except Exception as exc:
+            logger.error(f"Не удалось отправить в {chat_id}. Ошибка: {exc}")
+            
+    await message.answer(
+        "Твой вопрос отправлен! Ожидай ответа здесь.",
+        reply_markup=main_keyboard,
+    )
+
 @dp.message(F.text == "Разное")
 async def btn_misc(message: Message, state: FSMContext):
     await state.clear()
@@ -467,38 +493,61 @@ async def cb_misc_join(callback: CallbackQuery):
         "Но ты всегда можешь предложить идею для мода через главное меню!"
     )
 
-# --- УМНАЯ ЗАГЛУШКА ---
+# ОБРАБОТЧИК ОТВЕТОВ ИЗ ГРУППЫ
+@dp.message(F.reply_to_message, F.chat.id.in_(TARGET_CHAT_IDS))
+async def handle_group_reply(message: Message):
+    replied_msg = message.reply_to_message
+    
+    if not replied_msg.forward_from:
+        return
+        
+    user_id = replied_msg.forward_from.id
+    
+    try:
+        await bot.send_message(
+            user_id,
+            f"<b>Ответ от поддержки:</b>\n\n{message.text}",
+            parse_mode="HTML"
+        )
+        await message.reply("Ответ успешно отправлен пользователю!")
+    except Exception as e:
+        await message.reply(f"Не удалось отправить ответ (возможно, пользователь заблокировал бота). Ошибка: {e}")
+
 @dp.message(F.text)
 async def unknown_message(message: Message, state: FSMContext):
-    # Если пользователь сейчас пишет заявку/ошибку/прикол - не мешаем
     if await state.get_state() is not None:
         return 
 
     text = message.text.strip()
-    
-    # Простая эвристика на беберду
     is_gibberish = False
     
-    # Если символов больше 50, и нет ни одного пробела - это спам
     if len(text) > 50 and " " not in text:
         is_gibberish = True
-    # Если символов мало (меньше 3), или там только цифры/знаки (нет букв)
     elif len(text) < 3 or text.isdigit() or not any(c.isalpha() for c in text):
         is_gibberish = True
         
     if is_gibberish:
-        # Смешной ответ для спама/беберды
-        await message.answer(
-            "Братан, может скорую?🤔",
-            reply_markup=main_keyboard
-        )
+        await message.answer("Братан, может скорую?🤔", reply_markup=main_keyboard)
     else:
-        # Вежливый ответ для осмысленного текста
         await message.answer(
             "Не совсем понял.\n"
             "Пожалуйста, выбери нужный раздел ниже",
             reply_markup=main_keyboard
         )
+
+@dp.message()
+async def unknown_media(message: Message, state: FSMContext):
+    if await state.get_state() is not None:
+        return 
+
+    if GROUP_ID_VALUE and str(message.chat.id) == str(GROUP_ID_VALUE):
+        return
+
+    await message.answer(
+        "Ого, что это? 🤔 Я понимаю только текст и кнопки. "
+        "Пожалуйста, выбери нужный раздел на клавиатуре ниже 👇",
+        reply_markup=main_keyboard
+    )
 
 async def main():
     logger.info("Bot started")
