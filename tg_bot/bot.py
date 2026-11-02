@@ -31,6 +31,9 @@ ADMIN_IDS_VALUE = os.getenv("ADMIN_IDS") or os.getenv("TELEGRAM_ADMIN_ID")
 GROUP_ID_VALUE = "-1002832219010" 
 CHANNEL_LINK = "https://t.me/MOD_rak" 
 
+# СЮДА ВСТАВЬ ID СООБЩЕНИЯ СТАТИСТИКИ (когда бот пришлет его в логи)
+STATS_MESSAGE_ID = None  
+
 if not BOT_TOKEN:
     raise RuntimeError("Missing required environment variable: BOT_TOKEN")
 
@@ -81,6 +84,9 @@ if not os.getenv("REPLIT_DEV_DOMAIN"):
 FILE_IDS_PATH = "file_ids.json"
 FILE_IDS = {}
 
+STATS_PATH = "stats.json"
+STATS = {"old_ui": {"likes": 0, "dislikes": 0}}
+
 def load_file_ids():
     global FILE_IDS
     FILE_IDS = {
@@ -99,7 +105,20 @@ def save_file_ids():
     with open(FILE_IDS_PATH, "w") as file:
         json.dump(FILE_IDS, file)
 
+def load_stats():
+    global STATS
+    try:
+        with open(STATS_PATH) as file:
+            STATS = json.load(file)
+    except (OSError, json.JSONDecodeError):
+        STATS = {"old_ui": {"likes": 0, "dislikes": 0}}
+
+def save_stats():
+    with open(STATS_PATH, "w") as file:
+        json.dump(STATS, file)
+
 load_file_ids()
+load_stats()
 
 main_keyboard = ReplyKeyboardMarkup(
     keyboard=[
@@ -123,6 +142,16 @@ mods_keyboard = InlineKeyboardMarkup(
         [InlineKeyboardButton(text="Старый шрифт (v1.0)", callback_data="mod_old_font")],
         [InlineKeyboardButton(text="Старые медали (v1.0)", callback_data="mod_old_medals")],
         [InlineKeyboardButton(text="Старый UI ангара (v3.0)", callback_data="mod_old_ui")],
+    ]
+)
+
+mod_ui_info_keyboard = InlineKeyboardMarkup(
+    inline_keyboard=[
+        [InlineKeyboardButton(text="Описание мода", callback_data="mod_old_ui_info")],
+        [
+            InlineKeyboardButton(text="👍 Лайк", callback_data="like_old_ui"),
+            InlineKeyboardButton(text="👎 Дизлайк", callback_data="dislike_old_ui")
+        ]
     ]
 )
 
@@ -171,13 +200,13 @@ async def check_subscription(user_id: int) -> bool:
         logger.error(f"Ошибка проверки подписки: {e}")
     return False
 
-async def send_mod_file(chat_id: int, base_name: str):
+async def send_mod_file(chat_id: int, base_name: str, reply_markup=None):
     result = find_file_id(base_name)
     if not result:
         await bot.send_message(chat_id, "Временно недоступно")
         return
     _, file_id = result
-    await bot.send_document(chat_id, file_id)
+    await bot.send_document(chat_id, file_id, reply_markup=reply_markup)
 
 async def forward_to_admins(message: Message, header: str):
     if not TARGET_CHAT_IDS:
@@ -188,6 +217,22 @@ async def forward_to_admins(message: Message, header: str):
             await message.forward(chat_id)
         except Exception as exc:
             logger.error(f"Не удалось отправить в {chat_id}. Ошибка: {exc}")
+
+async def update_stats_message(mod_key: str, mod_name: str):
+    global STATS_MESSAGE_ID
+    likes = STATS[mod_key]["likes"]
+    dislikes = STATS[mod_key]["dislikes"]
+    text = f"{mod_name}\n👍 {likes} | 👎 {dislikes}"
+    
+    if STATS_MESSAGE_ID:
+        try:
+            await bot.edit_message_text(
+                text=text,
+                chat_id=TARGET_CHAT_IDS[0],
+                message_id=STATS_MESSAGE_ID
+            )
+        except Exception as e:
+            logger.error(f"Не удалось обновить сообщение статистики: {e}")
 
 @dp.message(F.document)
 async def group_document_handler(message: Message):
@@ -254,8 +299,13 @@ async def cb_old_ui(callback: CallbackQuery):
             reply_markup=subscribe_keyboard
         )
         return
+    await callback.message.answer("Версия мода: v3.0")
+    await send_mod_file(callback.from_user.id, "old_ui.rar", reply_markup=mod_ui_info_keyboard)
+
+@dp.callback_query(F.data == "mod_old_ui_info")
+async def cb_old_ui_info(callback: CallbackQuery):
+    await callback.answer()
     await callback.message.answer(
-        "Версия мода: v3.0\n\n"
         "Данный мод возвращает:\n"
         "・ Старую кнопку выбора режима\n"
         "・ Старый UI хранилища\n"
@@ -272,7 +322,24 @@ async def cb_old_ui(callback: CallbackQuery):
         "・ Старый UI окна уведомлений\n"
         "・ Всякие мелочи"
     )
-    await send_mod_file(callback.from_user.id, "old_ui.rar")
+
+@dp.callback_query(F.data == "like_old_ui")
+async def cb_like_old_ui(callback: CallbackQuery):
+    await callback.answer("Лайк учтен!")
+    STATS["old_ui"]["likes"] += 1
+    save_stats()
+    await update_stats_message("old_ui", "Старый UI ангара")
+    if TARGET_CHAT_IDS:
+        await bot.send_message(TARGET_CHAT_IDS[0], "Пользователь поставил 👍 моду «Старый UI ангара»")
+
+@dp.callback_query(F.data == "dislike_old_ui")
+async def cb_dislike_old_ui(callback: CallbackQuery):
+    await callback.answer("Дизлайк учтен!")
+    STATS["old_ui"]["dislikes"] += 1
+    save_stats()
+    await update_stats_message("old_ui", "Старый UI ангара")
+    if TARGET_CHAT_IDS:
+        await bot.send_message(TARGET_CHAT_IDS[0], "Пользователь поставил 👎 моду «Старый UI ангара»")
 
 @dp.message(F.text == "Приколы")
 async def btn_fun(message: Message, state: FSMContext):
@@ -566,7 +633,18 @@ async def unknown_media(message: Message, state: FSMContext):
     )
 
 async def main():
+    global STATS_MESSAGE_ID
     logger.info("Bot started")
+    
+    if not STATS_MESSAGE_ID and TARGET_CHAT_IDS:
+        msg = await bot.send_message(
+            TARGET_CHAT_IDS[0],
+            f"Старый UI ангара\n👍 {STATS['old_ui']['likes']} | 👎 {STATS['old_ui']['dislikes']}"
+        )
+        STATS_MESSAGE_ID = msg.message_id
+        logger.info(f"Создано сообщение статистики с ID: {STATS_MESSAGE_ID}")
+        logger.info("ВСТАВЬ ЭТОТ ID В ПЕРЕМЕННУЮ STATS_MESSAGE_ID В КОДЕ!")
+
     await dp.start_polling(bot)
 
 if __name__ == "__main__":
