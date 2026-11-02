@@ -168,23 +168,23 @@ mods_keyboard = InlineKeyboardMarkup(
 
 font_keyboard = InlineKeyboardMarkup(
     inline_keyboard=[
-        [InlineKeyboardButton(text="👍 Лайк", callback_data="like_old_font"),
-         InlineKeyboardButton(text="👎 Дизлайк", callback_data="dislike_old_font")]
+        [InlineKeyboardButton(text="👍", callback_data="like_old_font"),
+         InlineKeyboardButton(text="👎", callback_data="dislike_old_font")]
     ]
 )
 
 medals_keyboard = InlineKeyboardMarkup(
     inline_keyboard=[
-        [InlineKeyboardButton(text="👍 Лайк", callback_data="like_old_medals"),
-         InlineKeyboardButton(text="👎 Дизлайк", callback_data="dislike_old_medals")]
+        [InlineKeyboardButton(text="👍", callback_data="like_old_medals"),
+         InlineKeyboardButton(text="👎", callback_data="dislike_old_medals")]
     ]
 )
 
 ui_keyboard = InlineKeyboardMarkup(
     inline_keyboard=[
         [InlineKeyboardButton(text="Описание мода", callback_data="mod_old_ui_info")],
-        [InlineKeyboardButton(text="👍 Лайк", callback_data="like_old_ui"),
-         InlineKeyboardButton(text="👎 Дизлайк", callback_data="dislike_old_ui")]
+        [InlineKeyboardButton(text="👍", callback_data="like_old_ui"),
+         InlineKeyboardButton(text="👎", callback_data="dislike_old_ui")]
     ]
 )
 
