@@ -2,6 +2,7 @@ import asyncio
 import json
 import logging
 import os
+import re
 from threading import Thread
 
 from dotenv import load_dotenv
@@ -28,11 +29,8 @@ BOT_TOKEN = os.getenv("BOT_TOKEN") or os.getenv("TELEGRAM_BOT_TOKEN")
 CHANNEL_ID_VALUE = os.getenv("CHANNEL_ID")
 ADMIN_IDS_VALUE = os.getenv("ADMIN_IDS") or os.getenv("TELEGRAM_ADMIN_ID")
 
-GROUP_ID_VALUE = "-1002832219010" 
-CHANNEL_LINK = "https://t.me/MOD_rak" 
-
-# СЮДА ВСТАВЬ ID СООБЩЕНИЯ СТАТИСТИКИ (когда бот пришлет его в логи)
-STATS_MESSAGE_ID = None  
+GROUP_ID_VALUE = os.getenv("GROUP_ID", "-1002832219010")
+CHANNEL_LINK = os.getenv("CHANNEL_LINK", "https://t.me/MOD_rak")
 
 if not BOT_TOKEN:
     raise RuntimeError("Missing required environment variable: BOT_TOKEN")
@@ -70,13 +68,16 @@ dp = Dispatcher(storage=MemoryStorage())
 
 keep_alive_app = Flask(__name__)
 
+
 @keep_alive_app.route("/")
 def index():
     return "Bot is running!"
 
+
 def run_keep_alive():
     port = int(os.getenv("PORT", "8080"))
     keep_alive_app.run(host="0.0.0.0", port=port)
+
 
 if not os.getenv("REPLIT_DEV_DOMAIN"):
     Thread(target=run_keep_alive, daemon=True).start()
@@ -85,7 +86,18 @@ FILE_IDS_PATH = "file_ids.json"
 FILE_IDS = {}
 
 STATS_PATH = "stats.json"
-STATS = {"old_ui": {"likes": 0, "dislikes": 0}}
+STATS = {
+    "old_font":   {"likes": 0, "dislikes": 0, "msg_id": None, "voters": {}},
+    "old_medals": {"likes": 0, "dislikes": 0, "msg_id": None, "voters": {}},
+    "old_ui":     {"likes": 0, "dislikes": 0, "msg_id": None, "voters": {}},
+}
+
+MOD_NAMES = {
+    "old_font": "Старый шрифт",
+    "old_medals": "Старые медали",
+    "old_ui": "Старый UI ангара",
+}
+
 
 def load_file_ids():
     global FILE_IDS
@@ -101,21 +113,30 @@ def load_file_ids():
     except (OSError, json.JSONDecodeError):
         pass
 
+
 def save_file_ids():
     with open(FILE_IDS_PATH, "w") as file:
         json.dump(FILE_IDS, file)
+
 
 def load_stats():
     global STATS
     try:
         with open(STATS_PATH) as file:
-            STATS = json.load(file)
+            loaded = json.load(file)
+            for key in STATS:
+                if key in loaded:
+                    STATS[key].update(loaded[key])
+                    # миграция старых данных без voters
+                    STATS[key].setdefault("voters", {})
     except (OSError, json.JSONDecodeError):
-        STATS = {"old_ui": {"likes": 0, "dislikes": 0}}
+        pass
+
 
 def save_stats():
     with open(STATS_PATH, "w") as file:
         json.dump(STATS, file)
+
 
 load_file_ids()
 load_stats()
@@ -145,13 +166,25 @@ mods_keyboard = InlineKeyboardMarkup(
     ]
 )
 
-mod_ui_info_keyboard = InlineKeyboardMarkup(
+font_keyboard = InlineKeyboardMarkup(
+    inline_keyboard=[
+        [InlineKeyboardButton(text="👍 Лайк", callback_data="like_old_font"),
+         InlineKeyboardButton(text="👎 Дизлайк", callback_data="dislike_old_font")]
+    ]
+)
+
+medals_keyboard = InlineKeyboardMarkup(
+    inline_keyboard=[
+        [InlineKeyboardButton(text="👍 Лайк", callback_data="like_old_medals"),
+         InlineKeyboardButton(text="👎 Дизлайк", callback_data="dislike_old_medals")]
+    ]
+)
+
+ui_keyboard = InlineKeyboardMarkup(
     inline_keyboard=[
         [InlineKeyboardButton(text="Описание мода", callback_data="mod_old_ui_info")],
-        [
-            InlineKeyboardButton(text="👍 Лайк", callback_data="like_old_ui"),
-            InlineKeyboardButton(text="👎 Дизлайк", callback_data="dislike_old_ui")
-        ]
+        [InlineKeyboardButton(text="👍 Лайк", callback_data="like_old_ui"),
+         InlineKeyboardButton(text="👎 Дизлайк", callback_data="dislike_old_ui")]
     ]
 )
 
@@ -174,11 +207,13 @@ misc_keyboard = InlineKeyboardMarkup(
     ]
 )
 
+
 class UserState(StatesGroup):
     awaiting_mod_suggestion = State()
     awaiting_fun = State()
     awaiting_bug_report = State()
     awaiting_question = State()
+
 
 def find_file_id(base_name: str):
     base_lower = base_name.lower()
@@ -188,6 +223,7 @@ def find_file_id(base_name: str):
         if stored_name.rsplit(".", 1)[0].lower() == base_lower:
             return stored_name, file_id
     return None
+
 
 async def check_subscription(user_id: int) -> bool:
     if not CHANNEL_ID:
@@ -200,6 +236,7 @@ async def check_subscription(user_id: int) -> bool:
         logger.error(f"Ошибка проверки подписки: {e}")
     return False
 
+
 async def send_mod_file(chat_id: int, base_name: str, reply_markup=None):
     result = find_file_id(base_name)
     if not result:
@@ -207,6 +244,7 @@ async def send_mod_file(chat_id: int, base_name: str, reply_markup=None):
         return
     _, file_id = result
     await bot.send_document(chat_id, file_id, reply_markup=reply_markup)
+
 
 async def forward_to_admins(message: Message, header: str):
     if not TARGET_CHAT_IDS:
@@ -218,21 +256,86 @@ async def forward_to_admins(message: Message, header: str):
         except Exception as exc:
             logger.error(f"Не удалось отправить в {chat_id}. Ошибка: {exc}")
 
+
 async def update_stats_message(mod_key: str, mod_name: str):
-    global STATS_MESSAGE_ID
     likes = STATS[mod_key]["likes"]
     dislikes = STATS[mod_key]["dislikes"]
+    msg_id = STATS[mod_key]["msg_id"]
     text = f"{mod_name}\n👍 {likes} | 👎 {dislikes}"
-    
-    if STATS_MESSAGE_ID:
+
+    if msg_id and TARGET_CHAT_IDS:
         try:
             await bot.edit_message_text(
                 text=text,
                 chat_id=TARGET_CHAT_IDS[0],
-                message_id=STATS_MESSAGE_ID
+                message_id=msg_id,
             )
         except Exception as e:
-            logger.error(f"Не удалось обновить сообщение статистики: {e}")
+            logger.error(f"Не удалось обновить сообщение статистики {mod_key}: {e}")
+            # сообщение могли удалить — обнулим, чтобы пересоздать при следующем голосе
+            STATS[mod_key]["msg_id"] = None
+            save_stats()
+
+
+# ---------- Голосование (один голос на пользователя, можно менять) ----------
+
+def make_vote_handler(mod_key: str, mod_name: str, vote: str):
+    async def handler(callback: CallbackQuery):
+        user_id = str(callback.from_user.id)
+        voters = STATS[mod_key].setdefault("voters", {})
+        prev = voters.get(user_id)
+
+        # Повторное нажатие тем же голосом — отменяем
+        if prev == vote:
+            voters.pop(user_id, None)
+            field = "likes" if vote == "like" else "dislikes"
+            STATS[mod_key][field] = max(0, STATS[mod_key][field] - 1)
+            save_stats()
+            await update_stats_message(mod_key, mod_name)
+            await callback.answer("Голос отменён")
+            return
+
+        # Откат прошлого голоса, если он был противоположным
+        if prev == "like":
+            STATS[mod_key]["likes"] = max(0, STATS[mod_key]["likes"] - 1)
+        elif prev == "dislike":
+            STATS[mod_key]["dislikes"] = max(0, STATS[mod_key]["dislikes"] - 1)
+
+        voters[user_id] = vote
+        emoji = "👍" if vote == "like" else "👎"
+        if vote == "like":
+            STATS[mod_key]["likes"] += 1
+        else:
+            STATS[mod_key]["dislikes"] += 1
+
+        save_stats()
+        await update_stats_message(mod_key, mod_name)
+        await callback.answer("Голос учтён!")
+
+        if TARGET_CHAT_IDS:
+            try:
+                await bot.send_message(
+                    TARGET_CHAT_IDS[0],
+                    f"Пользователь поставил {emoji} моду «{mod_name}»",
+                )
+            except Exception as exc:
+                logger.error(f"Не удалось уведомить группу о голосе: {exc}")
+
+    return handler
+
+
+for _mod_key, _mod_name in MOD_NAMES.items():
+    dp.callback_query.register(
+        make_vote_handler(_mod_key, _mod_name, "like"),
+        F.data == f"like_{_mod_key}",
+    )
+    dp.callback_query.register(
+        make_vote_handler(_mod_key, _mod_name, "dislike"),
+        F.data == f"dislike_{_mod_key}",
+    )
+
+
+# ---------- Обработчики ----------
 
 @dp.message(F.document)
 async def group_document_handler(message: Message):
@@ -244,6 +347,7 @@ async def group_document_handler(message: Message):
             logger.info(f"Сохранен файл из группы: {doc.file_name} | FILE_ID: {doc.file_id}")
             await message.answer(f"Файл {doc.file_name} сохранен.")
 
+
 @dp.message(CommandStart())
 async def cmd_start(message: Message, state: FSMContext):
     await state.clear()
@@ -253,6 +357,7 @@ async def cmd_start(message: Message, state: FSMContext):
         reply_markup=main_keyboard,
     )
 
+
 @dp.message(Command("cancel"))
 async def cmd_cancel(message: Message, state: FSMContext):
     if await state.get_state():
@@ -261,10 +366,12 @@ async def cmd_cancel(message: Message, state: FSMContext):
     else:
         await message.answer("Нечего отменять.", reply_markup=main_keyboard)
 
+
 @dp.message(F.text == "Моды")
 async def btn_mods(message: Message, state: FSMContext):
     await state.clear()
     await message.answer("<b>Моды</b>\n\nВыбери мод:", parse_mode="HTML", reply_markup=mods_keyboard)
+
 
 @dp.callback_query(F.data == "mod_old_font")
 async def cb_old_font(callback: CallbackQuery):
@@ -272,11 +379,12 @@ async def cb_old_font(callback: CallbackQuery):
     if not await check_subscription(callback.from_user.id):
         await callback.message.answer(
             "Чтобы скачать этот мод, пожалуйста, подпишись на наш канал!",
-            reply_markup=subscribe_keyboard
+            reply_markup=subscribe_keyboard,
         )
         return
     await callback.message.answer("Версия мода: v1.0")
-    await send_mod_file(callback.from_user.id, "old_font.rar")
+    await send_mod_file(callback.from_user.id, "old_font.rar", reply_markup=font_keyboard)
+
 
 @dp.callback_query(F.data == "mod_old_medals")
 async def cb_old_medals(callback: CallbackQuery):
@@ -284,11 +392,12 @@ async def cb_old_medals(callback: CallbackQuery):
     if not await check_subscription(callback.from_user.id):
         await callback.message.answer(
             "Чтобы скачать этот мод, пожалуйста, подпишись на наш канал!",
-            reply_markup=subscribe_keyboard
+            reply_markup=subscribe_keyboard,
         )
         return
     await callback.message.answer("Версия мода: v1.0")
-    await send_mod_file(callback.from_user.id, "old_medals.zip")
+    await send_mod_file(callback.from_user.id, "old_medals.zip", reply_markup=medals_keyboard)
+
 
 @dp.callback_query(F.data == "mod_old_ui")
 async def cb_old_ui(callback: CallbackQuery):
@@ -296,11 +405,12 @@ async def cb_old_ui(callback: CallbackQuery):
     if not await check_subscription(callback.from_user.id):
         await callback.message.answer(
             "Чтобы скачать этот мод, пожалуйста, подпишись на наш канал!",
-            reply_markup=subscribe_keyboard
+            reply_markup=subscribe_keyboard,
         )
         return
     await callback.message.answer("Версия мода: v3.0")
-    await send_mod_file(callback.from_user.id, "old_ui.rar", reply_markup=mod_ui_info_keyboard)
+    await send_mod_file(callback.from_user.id, "old_ui.rar", reply_markup=ui_keyboard)
+
 
 @dp.callback_query(F.data == "mod_old_ui_info")
 async def cb_old_ui_info(callback: CallbackQuery):
@@ -323,23 +433,6 @@ async def cb_old_ui_info(callback: CallbackQuery):
         "・ Всякие мелочи"
     )
 
-@dp.callback_query(F.data == "like_old_ui")
-async def cb_like_old_ui(callback: CallbackQuery):
-    await callback.answer("Лайк учтен!")
-    STATS["old_ui"]["likes"] += 1
-    save_stats()
-    await update_stats_message("old_ui", "Старый UI ангара")
-    if TARGET_CHAT_IDS:
-        await bot.send_message(TARGET_CHAT_IDS[0], "Пользователь поставил 👍 моду «Старый UI ангара»")
-
-@dp.callback_query(F.data == "dislike_old_ui")
-async def cb_dislike_old_ui(callback: CallbackQuery):
-    await callback.answer("Дизлайк учтен!")
-    STATS["old_ui"]["dislikes"] += 1
-    save_stats()
-    await update_stats_message("old_ui", "Старый UI ангара")
-    if TARGET_CHAT_IDS:
-        await bot.send_message(TARGET_CHAT_IDS[0], "Пользователь поставил 👎 моду «Старый UI ангара»")
 
 @dp.message(F.text == "Приколы")
 async def btn_fun(message: Message, state: FSMContext):
@@ -356,10 +449,12 @@ async def btn_fun(message: Message, state: FSMContext):
         reply_markup=main_keyboard,
     )
 
+
 MENU_BUTTONS = {
     "Моды", "Приколы", "Помощь", "Предложить мод",
     "В разработке", "Поддержать", "Сообщить об ошибке", "Задать вопрос", "Разное",
 }
+
 
 @dp.message(UserState.awaiting_fun, ~F.text.in_(MENU_BUTTONS))
 async def receive_fun(message: Message, state: FSMContext):
@@ -377,10 +472,12 @@ async def receive_fun(message: Message, state: FSMContext):
         reply_markup=main_keyboard,
     )
 
+
 @dp.message(F.text == "Помощь")
 async def btn_help(message: Message, state: FSMContext):
     await state.clear()
     await message.answer("<b>Помощь</b>\n\nВыбери вопрос:", parse_mode="HTML", reply_markup=help_keyboard)
+
 
 @dp.callback_query(F.data == "help_install")
 async def cb_help_install(callback: CallbackQuery):
@@ -395,10 +492,12 @@ async def cb_help_install(callback: CallbackQuery):
         "Шаг 5. Нажать вставить скопированную папку Data с заменой"
     )
 
+
 @dp.callback_query(F.data == "help_remove")
 async def cb_help_remove(callback: CallbackQuery):
     await callback.answer()
     await callback.message.answer("Как удалить мод:\n\nСамый простой способ — нажать в приложении LGC восстановление игры")
+
 
 @dp.callback_query(F.data == "help_why")
 async def cb_help_why(callback: CallbackQuery):
@@ -408,6 +507,7 @@ async def cb_help_why(callback: CallbackQuery):
         "к которым привыкли игроки. Это делает игру комфортнее и привычнее для тех, кто играл раньше."
     )
 
+
 @dp.callback_query(F.data == "help_time")
 async def cb_help_time(callback: CallbackQuery):
     await callback.answer()
@@ -416,12 +516,14 @@ async def cb_help_time(callback: CallbackQuery):
         "свободного времени у мододелов, а также от того, насколько часто бывают бухие сервера у картошки"
     )
 
+
 @dp.callback_query(F.data == "help_why_old")
 async def cb_help_why_old(callback: CallbackQuery):
     await callback.answer()
     await callback.message.answer(
         "Почему модификации только на возвращение старого в игру:\n\nНастальгия у всей команды по старой игре"
     )
+
 
 @dp.callback_query(F.data == "help_sleep")
 async def cb_help_sleep(callback: CallbackQuery):
@@ -431,6 +533,7 @@ async def cb_help_sleep(callback: CallbackQuery):
         "Не пугайся! У нашего бота есть свой график работы (техобслуживание серверов). "
         "Обычно перерыв длится не больше часа. Пожалуйста, попробуй написать чуть позже!"
     )
+
 
 @dp.message(F.text == "Предложить мод")
 async def btn_suggest_mod(message: Message, state: FSMContext):
@@ -442,6 +545,7 @@ async def btn_suggest_mod(message: Message, state: FSMContext):
         "Для отмены напиши /cancel",
         parse_mode="HTML",
     )
+
 
 @dp.message(UserState.awaiting_mod_suggestion, ~F.text.in_(MENU_BUTTONS))
 async def receive_mod_suggestion(message: Message, state: FSMContext):
@@ -456,6 +560,7 @@ async def receive_mod_suggestion(message: Message, state: FSMContext):
     await forward_to_admins(message, header)
     await message.answer("Твоя идея отправлена на рассмотрение! Спасибо!", reply_markup=main_keyboard)
 
+
 @dp.message(F.text == "В разработке")
 async def btn_in_dev(message: Message, state: FSMContext):
     await state.clear()
@@ -469,6 +574,7 @@ async def btn_in_dev(message: Message, state: FSMContext):
         reply_markup=main_keyboard,
     )
 
+
 @dp.message(F.text == "Поддержать")
 async def btn_donate(message: Message, state: FSMContext):
     await state.clear()
@@ -479,6 +585,7 @@ async def btn_donate(message: Message, state: FSMContext):
         reply_markup=main_keyboard,
     )
 
+
 @dp.message(F.text == "Сообщить об ошибке")
 async def btn_bug_report(message: Message, state: FSMContext):
     await state.set_state(UserState.awaiting_bug_report)
@@ -487,6 +594,7 @@ async def btn_bug_report(message: Message, state: FSMContext):
         "Для отмены напиши /cancel",
         reply_markup=main_keyboard,
     )
+
 
 @dp.message(UserState.awaiting_bug_report, ~F.text.in_(MENU_BUTTONS))
 async def receive_bug_report(message: Message, state: FSMContext):
@@ -507,6 +615,7 @@ async def receive_bug_report(message: Message, state: FSMContext):
         reply_markup=main_keyboard,
     )
 
+
 @dp.message(F.text == "Задать вопрос")
 async def btn_question(message: Message, state: FSMContext):
     await state.set_state(UserState.awaiting_question)
@@ -517,34 +626,36 @@ async def btn_question(message: Message, state: FSMContext):
         reply_markup=main_keyboard,
     )
 
+
 @dp.message(UserState.awaiting_question, ~F.text.in_(MENU_BUTTONS))
 async def receive_question(message: Message, state: FSMContext):
     await state.clear()
     user = message.from_user
     username = f"@{user.username}" if user.username else "нет username"
-    
+
     header = (
         "<b>Вопрос от пользователя!</b>\n"
         f"👤 {user.full_name} ({username})\n"
         f"🆔 <code>{user.id}</code>\n\n"
         "Ответьте на это сообщение (Reply), чтобы отправить ответ пользователю."
     )
-    
+
     if not TARGET_CHAT_IDS:
         await message.answer("Ошибка: группа для заявок не настроена.")
         return
-        
+
     for chat_id in TARGET_CHAT_IDS:
         try:
             await bot.send_message(chat_id, header, parse_mode="HTML")
             await message.forward(chat_id)
         except Exception as exc:
             logger.error(f"Не удалось отправить в {chat_id}. Ошибка: {exc}")
-            
+
     await message.answer(
         "Твой вопрос отправлен! Ожидай ответа здесь.",
         reply_markup=main_keyboard,
     )
+
 
 @dp.message(F.text == "Разное")
 async def btn_misc(message: Message, state: FSMContext):
@@ -555,6 +666,7 @@ async def btn_misc(message: Message, state: FSMContext):
         reply_markup=misc_keyboard,
     )
 
+
 @dp.callback_query(F.data == "misc_team")
 async def cb_misc_team(callback: CallbackQuery):
     await callback.answer()
@@ -564,8 +676,9 @@ async def cb_misc_team(callback: CallbackQuery):
         "Мы те, кто могут отстоять точку зрения\n"
         "А наша точка зрения — это старый вид игры\n"
         "И мы не собираемся от неё отступать",
-        parse_mode="HTML"
+        parse_mode="HTML",
     )
+
 
 @dp.callback_query(F.data == "misc_join")
 async def cb_misc_join(callback: CallbackQuery):
@@ -577,51 +690,60 @@ async def cb_misc_join(callback: CallbackQuery):
         "Но ты всегда можешь предложить идею для мода через главное меню!"
     )
 
+
+USER_ID_RE = re.compile(r"🆔 <code>(\d+)</code>")
+
+
 @dp.message(F.reply_to_message, F.chat.id.in_(TARGET_CHAT_IDS))
 async def handle_group_reply(message: Message):
     replied_msg = message.reply_to_message
-    
-    if not replied_msg.forward_from:
+    if not replied_msg or not replied_msg.text:
         return
-        
-    user_id = replied_msg.forward_from.id
-    
+
+    match = USER_ID_RE.search(replied_msg.text)
+    if not match:
+        return
+
+    user_id = int(match.group(1))
+
     try:
         await bot.send_message(
             user_id,
             f"<b>Ответ от поддержки:</b>\n\n{message.text}",
-            parse_mode="HTML"
+            parse_mode="HTML",
         )
         await message.reply("Ответ успешно отправлен пользователю!")
     except Exception as e:
         await message.reply(f"Не удалось отправить ответ (возможно, пользователь заблокировал бота). Ошибка: {e}")
 
+
 @dp.message(F.text)
 async def unknown_message(message: Message, state: FSMContext):
     if await state.get_state() is not None:
-        return 
+        return
 
     text = message.text.strip()
     is_gibberish = False
-    
+
     if len(text) > 50 and " " not in text:
         is_gibberish = True
     elif len(text) < 3 or text.isdigit() or not any(c.isalpha() for c in text):
         is_gibberish = True
-        
+
     if is_gibberish:
         await message.answer("Братан, может скорую?🤔", reply_markup=main_keyboard)
     else:
         await message.answer(
             "Не совсем понял.\n"
             "Пожалуйста, выбери нужный раздел ниже",
-            reply_markup=main_keyboard
+            reply_markup=main_keyboard,
         )
+
 
 @dp.message()
 async def unknown_media(message: Message, state: FSMContext):
     if await state.get_state() is not None:
-        return 
+        return
 
     if GROUP_ID_VALUE and str(message.chat.id) == str(GROUP_ID_VALUE):
         return
@@ -629,23 +751,26 @@ async def unknown_media(message: Message, state: FSMContext):
     await message.answer(
         "Эт что? Я понимаю только текст и кнопки. "
         "Пожалуйста, выбери нужный раздел на клавиатуре ниже",
-        reply_markup=main_keyboard
+        reply_markup=main_keyboard,
     )
 
+
 async def main():
-    global STATS_MESSAGE_ID
     logger.info("Bot started")
-    
-    if not STATS_MESSAGE_ID and TARGET_CHAT_IDS:
-        msg = await bot.send_message(
-            TARGET_CHAT_IDS[0],
-            f"Старый UI ангара\n👍 {STATS['old_ui']['likes']} | 👎 {STATS['old_ui']['dislikes']}"
-        )
-        STATS_MESSAGE_ID = msg.message_id
-        logger.info(f"Создано сообщение статистики с ID: {STATS_MESSAGE_ID}")
-        logger.info("ВСТАВЬ ЭТОТ ID В ПЕРЕМЕННУЮ STATS_MESSAGE_ID В КОДЕ!")
+
+    if TARGET_CHAT_IDS:
+        for mod_key, mod_name in MOD_NAMES.items():
+            if not STATS[mod_key]["msg_id"]:
+                msg = await bot.send_message(
+                    TARGET_CHAT_IDS[0],
+                    f"{mod_name}\n👍 {STATS[mod_key]['likes']} | 👎 {STATS[mod_key]['dislikes']}",
+                )
+                STATS[mod_key]["msg_id"] = msg.message_id
+                save_stats()
+                logger.info(f"Создано сообщение статистики для {mod_key} с ID: {msg.message_id}")
 
     await dp.start_polling(bot)
+
 
 if __name__ == "__main__":
     asyncio.run(main())
