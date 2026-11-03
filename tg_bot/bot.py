@@ -4,12 +4,14 @@ import logging
 import os
 import random
 import re
+import time
 from threading import Thread
 
 from dotenv import load_dotenv
 from flask import Flask
 
 from aiogram import Bot, Dispatcher, F
+from aiogram.enums import ChatAction
 from aiogram.filters import Command, CommandStart
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
@@ -24,6 +26,8 @@ from aiogram.types import (
 )
 from aiogram.exceptions import TelegramBadRequest
 
+from openai import AsyncOpenAI
+
 load_dotenv()
 
 BOT_TOKEN = os.getenv("BOT_TOKEN") or os.getenv("TELEGRAM_BOT_TOKEN")
@@ -32,6 +36,10 @@ ADMIN_IDS_VALUE = os.getenv("ADMIN_IDS") or os.getenv("TELEGRAM_ADMIN_ID")
 
 GROUP_ID_VALUE = os.getenv("GROUP_ID", "-1002832219010")
 CHANNEL_LINK = os.getenv("CHANNEL_LINK", "https://t.me/MOD_rak")
+
+LLM_API_KEY = os.getenv("LLM_API_KEY")
+LLM_BASE_URL = os.getenv("LLM_BASE_URL", "https://api.deepseek.com/v1")
+LLM_MODEL = os.getenv("LLM_MODEL", "deepseek-chat")
 
 if not BOT_TOKEN:
     raise RuntimeError("Missing required environment variable: BOT_TOKEN")
@@ -66,6 +74,12 @@ logger = logging.getLogger(__name__)
 
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher(storage=MemoryStorage())
+
+llm_client = (
+    AsyncOpenAI(api_key=LLM_API_KEY, base_url=LLM_BASE_URL)
+    if LLM_API_KEY
+    else None
+)
 
 keep_alive_app = Flask(__name__)
 
@@ -145,9 +159,9 @@ main_keyboard = ReplyKeyboardMarkup(
     keyboard=[
         [KeyboardButton(text="Моды"), KeyboardButton(text="Приколы")],
         [KeyboardButton(text="Помощь"), KeyboardButton(text="Предложить мод")],
-        [KeyboardButton(text="В разработке"), KeyboardButton(text="Поддержать")],
-        [KeyboardButton(text="Сообщить об ошибке"), KeyboardButton(text="Задать вопрос")],
-        [KeyboardButton(text="Разное")],
+        [KeyboardButton(text="Идея через ИИ"), KeyboardButton(text="В разработке")],
+        [KeyboardButton(text="Поддержать"), KeyboardButton(text="Сообщить об ошибке")],
+        [KeyboardButton(text="Задать вопрос"), KeyboardButton(text="Разное")],
     ],
     resize_keyboard=True,
 )
@@ -207,16 +221,23 @@ misc_keyboard = InlineKeyboardMarkup(
     ]
 )
 
+idea_result_keyboard = InlineKeyboardMarkup(
+    inline_keyboard=[
+        [InlineKeyboardButton(text="Ещё вариант", callback_data="idea_more")],
+        [InlineKeyboardButton(text="Отправить админам", callback_data="idea_send")],
+    ]
+)
+
 
 class UserState(StatesGroup):
     awaiting_mod_suggestion = State()
     awaiting_fun = State()
     awaiting_bug_report = State()
     awaiting_question = State()
+    awaiting_idea = State()
 
 
 # ---------- Фразы для непонятных сообщений ----------
-# Без эмодзи, без точки в конце.
 FALLBACK_REPLIES = [
     "Тут я бессилен. Кнопки внизу выручат",
     "Не догнал тебя. Жми кнопку из меню",
@@ -428,6 +449,78 @@ GIBBERISH_REPLIES = [
 ]
 
 
+# ---------- Пасхалки ----------
+EASTER_EGGS = {
+    "рак": "Сам такой 🦀",
+    "рак?": "Сам такой 🦀",
+    "sudo": "Доступ запрещён. Хорошая попытка 😎",
+    "sudo su": "Ты кто такой? Иди сюда",
+    "старый": "Старый — это классика. Ты наш человек",
+    "картошка": "Сервера картошки — отдельный вид искусства",
+    "танк": "Какой танк? У нас тут моды, а не полигон",
+    "лол": "Лол принят. Возвращайся с идеями",
+    "ааа": "Тише-тише, я тут",
+    "бля": "Спокойно, без нервов. Кнопки внизу",
+    "блять": "Спокойно, без нервов. Кнопки внизу",
+    "мод": "Мод? Тогда тебе в «Моды» 👇",
+    "привет": "Привет-привет. Выбирай раздел ниже",
+    "прив": "Прив. Чё хотел? Кнопки внизу",
+    "здарова": "Здарова. Чё по модам?",
+    "как дела": "Всё отлично, моды пилим. А у тебя?",
+    "кто ты": "Я бот MOD_rak.rar. Раздаю моды и собираю идеи",
+    "ты бот": "Да, и горжусь этим. Нажми кнопку",
+    "помоги": "Кнопка «Помощь» в меню ниже 👇",
+    "где моды": "Кнопка «Моды» в меню ниже 👇",
+    "скачать": "Кнопка «Моды» в меню ниже 👇",
+    "3 часа ночи": "Ты чего не спишь? Иди спать, моды подождут",
+    "3 часа": "Ты чего не спишь? Иди спать, моды подождут",
+    "ракета": "Ракета не тут. У нас раки 🦀",
+    "google": "Гугли сам, я моды раздаю",
+    "яндекс": "Яндекс не поможет. Только кнопки ниже",
+}
+
+EASTER_EGG_HITS = {}
+
+
+# ---------- ИИ-генератор идей ----------
+IDEA_SYSTEM_PROMPT = (
+    "Ты — креативный мододел из команды MOD_rak.rar для игры Tanks Blitz. "
+    "Пользователь описывает, какой мод он хочет. Придумай концепт мода. "
+    "Ответ строго в формате:\n"
+    "Название: <короткое цепляющее название>\n"
+    "Суть: <1-2 предложения, что делает мод>\n"
+    "Что меняет: <2-4 пункта через •>\n"
+    "Сложность: <Низкая/Средняя/Высокая>\n\n"
+    "Без эмодзи. Без лишних вступлений. Пиши по-русски, коротко и по делу."
+)
+
+IDEA_CACHE: dict[int, dict] = {}
+IDEA_LAST_CALL: dict[int, float] = {}
+IDEA_COOLDOWN = 10  # секунд
+
+
+async def generate_idea(user_prompt: str) -> str:
+    if not llm_client:
+        return (
+            "Название: Мод по заявке\n"
+            f"Суть: {user_prompt}\n"
+            "Что меняет: • Тут будет твоя идея\n"
+            "Сложность: Средняя\n\n"
+            "(ИИ не подключён — админ увидит сырой запрос)"
+        )
+    resp = await llm_client.chat.completions.create(
+        model=LLM_MODEL,
+        messages=[
+            {"role": "system", "content": IDEA_SYSTEM_PROMPT},
+            {"role": "user", "content": user_prompt},
+        ],
+        temperature=0.9,
+        max_tokens=300,
+    )
+    return resp.choices[0].message.content.strip()
+
+
+# ---------- Утилиты ----------
 def find_file_id(base_name: str):
     base_lower = base_name.lower()
     if base_name in FILE_IDS:
@@ -490,7 +583,6 @@ async def update_stats_message(mod_key: str, mod_name: str):
 
 
 # ---------- Голосование ----------
-
 def make_vote_handler(mod_key: str, mod_name: str, vote: str):
     async def handler(callback: CallbackQuery):
         user_id = str(callback.from_user.id)
@@ -545,8 +637,14 @@ for _mod_key, _mod_name in MOD_NAMES.items():
     )
 
 
-# ---------- Обработчики ----------
+MENU_BUTTONS = {
+    "Моды", "Приколы", "Помощь", "Предложить мод",
+    "Идея через ИИ", "В разработке", "Поддержать",
+    "Сообщить об ошибке", "Задать вопрос", "Разное",
+}
 
+
+# ---------- Обработчики ----------
 @dp.message(F.document)
 async def group_document_handler(message: Message):
     if GROUP_ID_VALUE and str(message.chat.id) == str(GROUP_ID_VALUE):
@@ -660,12 +758,6 @@ async def btn_fun(message: Message, state: FSMContext):
     )
 
 
-MENU_BUTTONS = {
-    "Моды", "Приколы", "Помощь", "Предложить мод",
-    "В разработке", "Поддержать", "Сообщить об ошибке", "Задать вопрос", "Разное",
-}
-
-
 @dp.message(UserState.awaiting_fun, ~F.text.in_(MENU_BUTTONS))
 async def receive_fun(message: Message, state: FSMContext):
     await state.clear()
@@ -771,6 +863,138 @@ async def receive_mod_suggestion(message: Message, state: FSMContext):
     await message.answer("Твоя идея отправлена на рассмотрение! Спасибо!", reply_markup=main_keyboard)
 
 
+# ---------- ИИ-генератор: хендлеры ----------
+@dp.message(Command("idea"))
+async def cmd_idea(message: Message, state: FSMContext):
+    await state.set_state(UserState.awaiting_idea)
+    await message.answer(
+        "Опиши, какой мод хочешь. Например:\n"
+        "«старые иконки танков в ангаре»\n"
+        "«вернуть старую музыку в меню»\n\n"
+        "Я придумаю концепт и оформлю идею. Для отмены /cancel",
+        reply_markup=main_keyboard,
+    )
+
+
+@dp.message(F.text == "Идея через ИИ")
+async def btn_idea_ai(message: Message, state: FSMContext):
+    await cmd_idea(message, state)
+
+
+@dp.message(UserState.awaiting_idea, ~F.text.in_(MENU_BUTTONS))
+async def receive_idea(message: Message, state: FSMContext):
+    await state.clear()
+    prompt = message.text.strip()
+    if len(prompt) < 3:
+        await message.answer("Слишком коротко. Опиши идею подробнее.")
+        return
+
+    # rate-limit
+    now = time.time()
+    last = IDEA_LAST_CALL.get(message.from_user.id, 0)
+    if now - last < IDEA_COOLDOWN:
+        wait = int(IDEA_COOLDOWN - (now - last))
+        await message.answer(
+            f"Не так быстро. Подожди {wait} сек и попробуй снова",
+            reply_markup=main_keyboard,
+        )
+        return
+    IDEA_LAST_CALL[message.from_user.id] = now
+
+    await bot.send_chat_action(message.chat.id, ChatAction.TYPING)
+
+    try:
+        idea = await generate_idea(prompt)
+    except Exception as e:
+        logger.error(f"LLM error: {e}")
+        idea = None
+
+    if not idea:
+        await message.answer(
+            "ИИ сейчас недоступен. Напиши идею обычным текстом через «Предложить мод».",
+            reply_markup=main_keyboard,
+        )
+        return
+
+    IDEA_CACHE[message.from_user.id] = {"prompt": prompt, "last_idea": idea}
+
+    await message.answer(
+        f"<b>Твой концепт:</b>\n\n{idea}",
+        parse_mode="HTML",
+        reply_markup=idea_result_keyboard,
+    )
+
+
+@dp.callback_query(F.data == "idea_more")
+async def cb_idea_more(callback: CallbackQuery):
+    data = IDEA_CACHE.get(callback.from_user.id)
+    if not data:
+        await callback.answer("Сначала опиши идею через /idea", show_alert=True)
+        return
+
+    now = time.time()
+    last = IDEA_LAST_CALL.get(callback.from_user.id, 0)
+    if now - last < IDEA_COOLDOWN:
+        wait = int(IDEA_COOLDOWN - (now - last))
+        await callback.answer(f"Подожди {wait} сек", show_alert=True)
+        return
+    IDEA_LAST_CALL[callback.from_user.id] = now
+
+    await callback.answer("Генерирую ещё вариант...")
+    await bot.send_chat_action(callback.message.chat.id, ChatAction.TYPING)
+
+    try:
+        idea = await generate_idea(
+            data["prompt"] + " (сделай другой вариант, не похожий на предыдущий)"
+        )
+    except Exception as e:
+        logger.error(f"LLM error: {e}")
+        await callback.message.answer("ИИ задумался. Попробуй чуть позже.")
+        return
+
+    data["last_idea"] = idea
+    await callback.message.answer(
+        f"<b>Ещё вариант:</b>\n\n{idea}",
+        parse_mode="HTML",
+        reply_markup=idea_result_keyboard,
+    )
+
+
+@dp.callback_query(F.data == "idea_send")
+async def cb_idea_send(callback: CallbackQuery):
+    data = IDEA_CACHE.get(callback.from_user.id)
+    if not data:
+        await callback.answer("Нет идеи для отправки", show_alert=True)
+        return
+
+    user = callback.from_user
+    username = f"@{user.username}" if user.username else "нет username"
+    header = (
+        "<b>💡 Идея от ИИ-генератора</b>\n"
+        f"👤 {user.full_name} ({username})\n"
+        f"🆔 <code>{user.id}</code>\n\n"
+        f"<b>Запрос:</b> {data['prompt']}\n\n"
+        f"<b>Концепт:</b>\n{data['last_idea']}"
+    )
+
+    if not TARGET_CHAT_IDS:
+        await callback.answer("Группа не настроена", show_alert=True)
+        return
+
+    for chat_id in TARGET_CHAT_IDS:
+        try:
+            await bot.send_message(chat_id, header, parse_mode="HTML")
+        except Exception as exc:
+            logger.error(f"Не удалось отправить идею в {chat_id}: {exc}")
+
+    await callback.message.answer(
+        "Идея отправлена админам! Спасибо.",
+        reply_markup=main_keyboard,
+    )
+    await callback.answer()
+
+
+# ---------- Остальные разделы ----------
 @dp.message(F.text == "В разработке")
 async def btn_in_dev(message: Message, state: FSMContext):
     await state.clear()
@@ -927,11 +1151,44 @@ async def handle_group_reply(message: Message):
         await message.reply(f"Не удалось отправить ответ (возможно, пользователь заблокировал бота). Ошибка: {e}")
 
 
+# ---------- Пасхалки (регистрируются ВЫШЕ fallback'а) ----------
 @dp.message(F.text)
-async def unknown_message(message: Message, state: FSMContext):
+async def easter_egg_handler(message: Message, state: FSMContext):
     if await state.get_state() is not None:
         return
 
+    text_lower = message.text.strip().lower()
+
+    # точное совпадение
+    if text_lower in EASTER_EGGS:
+        await message.answer(EASTER_EGGS[text_lower], reply_markup=main_keyboard)
+        return
+
+    # подстрока (триггеры длиной >= 3 символов)
+    for trigger, reply in EASTER_EGGS.items():
+        if len(trigger) >= 3 and trigger in text_lower:
+            await message.answer(reply, reply_markup=main_keyboard)
+            return
+
+    # «сломай бота» — счётчик
+    if "сломай" in text_lower or "взломай" in text_lower:
+        hits = EASTER_EGG_HITS.get(message.from_user.id, 0) + 1
+        EASTER_EGG_HITS[message.from_user.id] = hits
+        if hits >= 3:
+            await message.answer(
+                "Хватит меня ломать. Я и так еле держусь 🤖",
+                reply_markup=main_keyboard,
+            )
+        else:
+            await message.answer("Не сломаешь. Я крепкий", reply_markup=main_keyboard)
+        return
+
+    # если не пасхалка — отдаём в общий fallback
+    await fallback_reply(message)
+
+
+# ---------- Fallback ----------
+async def fallback_reply(message: Message):
     text = message.text.strip()
     is_gibberish = False
 
