@@ -110,7 +110,6 @@ RANKS = {
     15: ("Владелец", 0, 0, "staff"),
 }
 
-# Достижения (значки)
 ACHIEVEMENTS = {
     "first_download": "Первый мод",
     "mods_10": "10 модов скачано",
@@ -143,7 +142,6 @@ def get_rank_info(rank_id: int):
 
 
 def get_next_rank(current_id: int, xp: int, ideas: int):
-    """Возвращает следующий ранг, если условия выполнены."""
     next_id = current_id + 1
     if next_id not in RANKS:
         return None
@@ -161,7 +159,6 @@ def add_xp(user_id: str, amount: int):
 
 
 def check_rank_up(user_id: str):
-    """Проверяет и повышает звание, возвращает новое название или None."""
     data = USERS.get(user_id)
     if not data:
         return None
@@ -201,14 +198,12 @@ def load_data():
     try:
         with open(USERS_PATH) as f:
             raw = json.load(f)
-            # Миграция старых данных (где был только lang)
             for uid, val in raw.items():
                 if isinstance(val, str):
                     new_data = default_user_data()
                     new_data["lang"] = val
                     USERS[uid] = new_data
                 else:
-                    # Дозаполняем отсутствующие поля
                     base = default_user_data()
                     base.update(val)
                     USERS[uid] = base
@@ -253,6 +248,7 @@ LOCALES = {
         "cancel": "Отменено, возвращаюсь в главное меню",
         "nothing_cancel": "Нечего отменять",
         "profile_title": "<b>Профиль</b>",
+        "profile_id": "Твой ID: <code>{uid}</code>",
         "profile_rank": "Звание: <b>{rank}</b>",
         "profile_xp": "Опыт: {xp} XP",
         "profile_next": "До следующего звания: {xp_left} XP (и {ideas_left} идей)",
@@ -299,7 +295,6 @@ LOCALES = {
         "break_soft_text": "Не сломаешь, я крепкий",
         "banned_text": "Ты был забанен {count} раз",
     },
-    # ... (be и en можно оставить как в прошлом коде, добавив только btn_profile, profile_* и rank_up/ach_unlocked)
     "be": {
         "start": "Прывітанне, {name}!\n\nСардэчна запрашаем! Абяры патрэбны раздзел:",
         "choose_lang": "Выбяры мову / Choose language:",
@@ -310,12 +305,43 @@ LOCALES = {
         "mods_menu": "<b>Моды</b>\n\nАбяры мод:", "subscribe_needed": "Каб спампаваць гэты мод, калі ласка, падпішыся на наш канал!",
         "btn_subscribe": "Падпісацца на канал", "version": "Версія мода: {ver}", "btn_info": "Апісанне мода",
         "cancel": "Адменена, вяртаюся ў галоўнае меню", "nothing_cancel": "Няма чаго адмяняць",
-        "profile_title": "<b>Профіль</b>", "profile_rank": "Званне: <b>{rank}</b>", "profile_xp": "Вопыт: {xp} XP",
+        "profile_title": "<b>Профіль</b>", "profile_id": "Твой ID: <code>{uid}</code>", "profile_rank": "Званне: <b>{rank}</b>", "profile_xp": "Вопыт: {xp} XP",
         "profile_next": "Да наступнага звання: {xp_left} XP (і {ideas_left} ідэй)",
         "profile_stats": "<b>Статыстыка</b>\nСпампавана модаў: {downloads}\nПрапанавана ідэй: {ideas}\nЗададзена пытанняў: {questions}\nАтрымана банаў: {bans}",
         "profile_achievements": "<b>Дасягненні</b>\n{list}", "profile_no_achievements": "Пакуль няма дасягненняў",
         "rank_up": "Віншую! Ты атрымаў новае званне: <b>{rank}</b>", "ach_unlocked": "Атрымана дасягненне: <b>{ach}</b>",
-        # ... остальные тексты be можно скопировать из предыдущего полного кода
+        "fun_prompt": "Кідай свой гульнявы прыкол сюды!\n\nГэта можа быць:\n• Забаўны момант з бою\n• Незвычайная сітуацыя з фізікай гульні\n• Смешны баг ці супадзенне\n\nДля адмены напішы /cancel",
+        "fun_thanks": "Дзякуй! Твой гульнявы прыкол прыняты",
+        "suggest_prompt": "<b>Прапанаваць ідэю для мода</b>\n\nНапішы апісанне мода і як што працуе\nДля адмены напішы /cancel",
+        "suggest_thanks": "Твая ідэя адпраўлена на разгляд! Дзякуй!",
+        "bug_prompt": "Апішы памылку ў модзе\nДля адмены напішы /cancel",
+        "bug_voice": "Напішы падрабязнасці тэкстам, галасавыя паведамленні не прымаюцца",
+        "bug_thanks": "Дзякуй, паведамленне пра памылку перададзена распрацоўшчыкам",
+        "question_prompt": "Задай сваё пытанне, і мы адкажам табе прама тут!\nДля адмены напішы /cancel",
+        "question_thanks": "Тваё пытанне адпраўлена! Чакай адказу тут",
+        "question_no_group": "Памылка: група для заявак не наладжана",
+        "dev_text": "Зараз у распрацоўцы:\n\n• Мод на старое акно шанцаў\n• Старое акно выбару рэжыму\n• Старое акно ТТХ танка \n\nІ ўсё з гэтага можа і не выйсці",
+        "donate_text": "Падтрымаць распрацоўку модаў\n\n• Раскажы пра наш канал і бота сябрам\n• Прапануй ідэю для новага мода\n",
+        "misc_menu": "<b>Рознае</b>\n\nАбяры пытанне:",
+        "misc_team_btn": "Пра каманду MOD_rak.rar",
+        "misc_join_btn": "Ці можна далучыцца да вас",
+        "misc_share_btn": "Падзяліцца ботам",
+        "misc_team_text": "<b>Пра каманду</b>\n\nМы хлопцы-модадзелы\nМы тыя, хто могуць адстаяць пункт гледжання\nА наш пункт гледжання гэта стары выгляд гульні",
+        "misc_join_text": "На жаль, набор у каманду зараз закрыты Але ты заўсёды можаш прапанаваць ідэю для мода праз галоўнае меню!",
+        "help_menu": "<b>Дапамога</b>\n\nАбяры пытанне:",
+        "help_install_btn": "Як усталяваць мод", "help_remove_btn": "Як выдаліць мод", "help_why_btn": "Навошта патрэбныя гэтыя мадыфікацыі",
+        "help_time_btn": "Колькі распрацоўваюцца моды", "help_why_old_btn": "Чаму моды толькі на вяртанне старога", "help_sleep_btn": "Бот не адказвае",
+        "help_install_text": "Як усталяваць мод:\n\nКрок 1: Спампаваць мод\nКрок 2: Распакаваць архіў\nКрок 3: Скапіяваць папку Data\nКрок 4: Зайсці ў папку гульні: C:\\Games\\Tanks Blitz\nКрок 5: Уставіць з заменай",
+        "help_remove_text": "Як выдаліць мод:\n\nСамы просты спосаб, націснуць у праграме LGC аднаўленне гульні",
+        "help_why_text": "Навошта патрэбныя гэтыя мадыфікацыі:\n\nМоды вяртаюць выдаленыя функцыі і інтэрфейс, да якіх звыкліся гульцы",
+        "help_time_text": "Колькі распрацоўваюцца моды:\n\nЧас распрацоўкі залежыць ад памеру мода, складанасці і вольнага часу",
+        "help_why_old_text": "Чаму мадыфікацыі толькі на вяртанне старога:\n\nНастальгія ўсёй каманды па старой гульні",
+        "help_sleep_text": "Бот не адказвае?\n\nНе палохайся! У нашага бота ёсць свой графік працы Паспрабуй напісаць крыху пазней!",
+        "old_ui_info_text": "Гэты мод вяртае:\n• Старую кнопку выбару рэжыму\n• Стары UI сховішча\n• Старую кнопку крамы\n• Старую левую панэль\n• Старую кнопку «Трэніравацца»\n• Старую кнопку «У Бой»\n• Прыбраныя новыя чорныя кропкі на фоне кнопак бою/выбару рэжыму/узвода\n• Старыя іконкі для рэжымаў\n• Старыя іконкі перамогі/паражэння/нічыі ў закладцы апавяшчэнняў\n• Старыя гукі пры націску кнопак/іконак у ангары\n• Старыя кнопкі (зялёныя, чырвоныя)\n• Стары UI дрэва даследавання\n• Стары UI акна апавяшчэнняў\n• Розныя дробязі",
+        "unknown_media_text": "Гэта што? Я разумею толькі тэкст і кнопкі Абяры патрэбны раздзел на клавіятуры ніжэй",
+        "unavailable_text": "Часова недаступна",
+        "break_hard_text": "Хопіць мяне ламаць, я і так ледзь трымаюся 🤖",
+        "break_soft_text": "Не зламаеш, я моцны",
     },
     "en": {
         "start": "Hello, {name}!\n\nWelcome! Choose a section:",
@@ -327,16 +353,45 @@ LOCALES = {
         "mods_menu": "<b>Mods</b>\n\nChoose a mod:", "subscribe_needed": "To download this mod, please subscribe to our channel!",
         "btn_subscribe": "Subscribe to channel", "version": "Mod version: {ver}", "btn_info": "Mod description",
         "cancel": "Cancelled, returning to main menu", "nothing_cancel": "Nothing to cancel",
-        "profile_title": "<b>Profile</b>", "profile_rank": "Rank: <b>{rank}</b>", "profile_xp": "XP: {xp}",
+        "profile_title": "<b>Profile</b>", "profile_id": "Your ID: <code>{uid}</code>", "profile_rank": "Rank: <b>{rank}</b>", "profile_xp": "XP: {xp}",
         "profile_next": "To next rank: {xp_left} XP (and {ideas_left} ideas)",
         "profile_stats": "<b>Stats</b>\nMods downloaded: {downloads}\nIdeas suggested: {ideas}\nQuestions asked: {questions}\nBans received: {bans}",
         "profile_achievements": "<b>Achievements</b>\n{list}", "profile_no_achievements": "No achievements yet",
         "rank_up": "Congratulations! You reached a new rank: <b>{rank}</b>", "ach_unlocked": "Achievement unlocked: <b>{ach}</b>",
-        # ... остальные тексты en можно скопировать из предыдущего полного кода
+        "fun_prompt": "Send your funny gaming moment here!\n\nIt could be:\n• A funny moment from battle\n• An unusual physics situation\n• A funny bug or coincidence\n\nTo cancel, type /cancel",
+        "fun_thanks": "Thanks! Your funny moment is accepted",
+        "suggest_prompt": "<b>Suggest a mod idea</b>\n\nWrite a description of the mod and how it works\nTo cancel, type /cancel",
+        "suggest_thanks": "Your idea has been sent for review! Thanks!",
+        "bug_prompt": "Describe the bug in the mod\nTo cancel, type /cancel",
+        "bug_voice": "Write details in text, voice messages are not accepted",
+        "bug_thanks": "Thanks, the bug report has been sent to the developers",
+        "question_prompt": "Ask your question, and we will answer you right here!\nTo cancel, type /cancel",
+        "question_thanks": "Your question has been sent! Wait for an answer here",
+        "question_no_group": "Error: support group is not configured",
+        "dev_text": "Currently in development:\n\n• Old chances window mod\n• Old mode selection window\n• Old tank characteristics window\n\nAnd all of this might not even be released",
+        "donate_text": "Support mod development\n\n• Tell your friends about our channel and bot\n• Suggest an idea for a new mod\n",
+        "misc_menu": "<b>Misc</b>\n\nChoose a question:",
+        "misc_team_btn": "About MOD_rak.rar team", "misc_join_btn": "Can I join you?", "misc_share_btn": "Share the bot",
+        "misc_team_text": "<b>About the team</b>\n\nWe are modders\nWe are the ones who can defend a point of view\nAnd our point of view is the old look of the game",
+        "misc_join_text": "Unfortunately, recruitment is currently closed But you can always suggest a mod idea through the main menu!",
+        "help_menu": "<b>Help</b>\n\nChoose a question:",
+        "help_install_btn": "How to install a mod", "help_remove_btn": "How to remove a mod", "help_why_btn": "Why are modifications needed",
+        "help_time_btn": "How long mods take to develop", "help_why_old_btn": "Why mods only bring back old features", "help_sleep_btn": "Bot is not responding",
+        "help_install_text": "How to install a mod:\n\nStep 1: Download the mod\nStep 2: Unzip the archive\nStep 3: Copy the Data folder\nStep 4: Go to the game folder: C:\\Games\\Tanks Blitz\nStep 5: Paste and replace",
+        "help_remove_text": "How to remove a mod:\n\nEasiest way is to press restore game in the LGC app",
+        "help_why_text": "Why are modifications needed:\n\nMods bring back deleted features and interfaces that players are used to",
+        "help_time_text": "How long mods take to develop:\n\nDevelopment time depends on the mod size, complexity, and free time",
+        "help_why_old_text": "Why mods only bring back old features:\n\nNostalgia of the whole team for the old game",
+        "help_sleep_text": "Bot is not responding?\n\nDon't panic! Our bot has its own work schedule Try again a bit later!",
+        "old_ui_info_text": "This mod brings back:\n• Old mode selection button\n• Old storage UI\n• Old shop button\n• Old left panel\n• Old 'Train' button\n• Old 'To Battle' button\n• Removed new black dots on the background of battle/mode selection/platoon buttons\n• Old icons for modes\n• Old victory/defeat/draw icons in the notifications tab\n• Old sounds when pressing buttons/icons in the hangar\n• Old buttons (green, red)\n• Old research tree UI\n• Old notifications window UI\n• Various small things",
+        "unknown_media_text": "What is this? I only understand text and buttons Choose a section on the keyboard below",
+        "unavailable_text": "Temporarily unavailable",
+        "break_hard_text": "Stop breaking me, I'm barely holding on as it is 🤖",
+        "break_soft_text": "You won't break me, I'm tough",
     }
 }
 
-def _(user_id: str, key: str, **kwargs) -> str:
+def tr(user_id: str, key: str, **kwargs) -> str:
     data = USERS.get(user_id)
     lang = data["lang"] if data else "ru"
     text = LOCALES.get(lang, LOCALES["ru"]).get(key, f"[{key}]")
@@ -347,12 +402,12 @@ def _(user_id: str, key: str, **kwargs) -> str:
 def get_main_keyboard(user_id: str) -> ReplyKeyboardMarkup:
     return ReplyKeyboardMarkup(
         keyboard=[
-            [KeyboardButton(text=_(user_id, "btn_mods")), KeyboardButton(text=_(user_id, "btn_fun"))],
-            [KeyboardButton(text=_(user_id, "btn_help")), KeyboardButton(text=_(user_id, "btn_suggest"))],
-            [KeyboardButton(text=_(user_id, "btn_dev")), KeyboardButton(text=_(user_id, "btn_donate"))],
-            [KeyboardButton(text=_(user_id, "btn_bug")), KeyboardButton(text=_(user_id, "btn_question"))],
-            [KeyboardButton(text=_(user_id, "btn_misc")), KeyboardButton(text=_(user_id, "btn_lang"))],
-            [KeyboardButton(text=_(user_id, "btn_profile"))],
+            [KeyboardButton(text=tr(user_id, "btn_mods")), KeyboardButton(text=tr(user_id, "btn_fun"))],
+            [KeyboardButton(text=tr(user_id, "btn_help")), KeyboardButton(text=tr(user_id, "btn_suggest"))],
+            [KeyboardButton(text=tr(user_id, "btn_dev")), KeyboardButton(text=tr(user_id, "btn_donate"))],
+            [KeyboardButton(text=tr(user_id, "btn_bug")), KeyboardButton(text=tr(user_id, "btn_question"))],
+            [KeyboardButton(text=tr(user_id, "btn_misc")), KeyboardButton(text=tr(user_id, "btn_lang"))],
+            [KeyboardButton(text=tr(user_id, "btn_profile"))],
         ],
         resize_keyboard=True,
     )
@@ -367,7 +422,7 @@ def get_mods_keyboard(user_id: str) -> InlineKeyboardMarkup:
 
 def get_mod_info_keyboard(user_id: str) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text=_(user_id, "btn_info"), callback_data="mod_old_ui_info")]
+        [InlineKeyboardButton(text=tr(user_id, "btn_info"), callback_data="mod_old_ui_info")]
     ])
 
 
@@ -428,7 +483,7 @@ async def check_subscription(user_id: int) -> bool:
 async def send_mod_file(chat_id: int, base_name: str, reply_markup=None):
     result = find_file_id(base_name)
     if not result:
-        await bot.send_message(chat_id, _(str(chat_id), "unavailable_text"))
+        await bot.send_message(chat_id, tr(str(chat_id), "unavailable_text"))
         return
     _, file_id = result
     await bot.send_document(chat_id, file_id, reply_markup=reply_markup)
@@ -457,29 +512,28 @@ async def cmd_profile(message: Message, state: FSMContext):
     data = USERS[uid]
     rank_name, req_xp, req_ideas, _ = get_rank_info(data["rank_id"])
 
-    # Прогресс до следующего
     next_id = data["rank_id"] + 1
     if next_id in RANKS:
         next_name, next_xp, next_ideas, _ = RANKS[next_id]
         xp_left = max(0, next_xp - data["xp"])
         ideas_left = max(0, next_ideas - data["ideas"])
-        progress_text = _(uid, "profile_next", xp_left=xp_left, ideas_left=ideas_left)
+        progress_text = tr(uid, "profile_next", xp_left=xp_left, ideas_left=ideas_left)
     else:
         progress_text = "Максимальное звание"
 
-    # Достижения
     if data["achievements"]:
         ach_list = "\n".join([f"• {ACHIEVEMENTS.get(a, a)}" for a in data["achievements"]])
-        ach_text = _(uid, "profile_achievements", list=ach_list)
+        ach_text = tr(uid, "profile_achievements", list=ach_list)
     else:
-        ach_text = _(uid, "profile_no_achievements")
+        ach_text = tr(uid, "profile_no_achievements")
 
     text = (
-        f"{_(uid, 'profile_title')}\n\n"
-        f"{_(uid, 'profile_rank', rank=rank_name)}\n"
-        f"{_(uid, 'profile_xp', xp=data['xp'])}\n"
+        f"{tr(uid, 'profile_title')}\n"
+        f"{tr(uid, 'profile_id', uid=uid)}\n\n"
+        f"{tr(uid, 'profile_rank', rank=rank_name)}\n"
+        f"{tr(uid, 'profile_xp', xp=data['xp'])}\n"
         f"{progress_text}\n\n"
-        f"{_(uid, 'profile_stats', downloads=data['downloads'], ideas=data['ideas'], questions=data['questions'], bans=data['bans'])}\n\n"
+        f"{tr(uid, 'profile_stats', downloads=data['downloads'], ideas=data['ideas'], questions=data['questions'], bans=data['bans'])}\n\n"
         f"{ach_text}"
     )
 
@@ -535,10 +589,16 @@ async def group_document_handler(message: Message):
 async def cmd_start(message: Message, state: FSMContext):
     await state.clear()
     uid = str(message.from_user.id)
+    is_new = uid not in USERS
 
-    if uid not in USERS:
+    if is_new:
         USERS[uid] = default_user_data()
+        # Автоматическая выдача 13-го звания админам
+        if message.from_user.id in ADMIN_IDS:
+            USERS[uid]["rank_id"] = 13  # Модератор
         save_users()
+
+    if is_new:
         await message.answer(
             "Выбери язык / Абяры мову / Choose language:",
             reply_markup=InlineKeyboardMarkup(inline_keyboard=[
@@ -550,7 +610,7 @@ async def cmd_start(message: Message, state: FSMContext):
         return
 
     await message.answer(
-        _(uid, "start", name=message.from_user.first_name),
+        tr(uid, "start", name=message.from_user.first_name),
         reply_markup=get_main_keyboard(uid),
     )
 
@@ -559,7 +619,7 @@ async def cmd_start(message: Message, state: FSMContext):
 async def cmd_lang(message: Message, state: FSMContext):
     await state.clear()
     await message.answer(
-        _(str(message.from_user.id), "choose_lang"),
+        tr(str(message.from_user.id), "choose_lang"),
         reply_markup=InlineKeyboardMarkup(inline_keyboard=[
             [InlineKeyboardButton(text="🇷🇺 Русский", callback_data="set_lang_ru")],
             [InlineKeyboardButton(text="🇧🇾 Беларуская", callback_data="set_lang_be")],
@@ -579,7 +639,7 @@ async def cb_set_lang(callback: CallbackQuery, state: FSMContext):
 
     await callback.message.delete()
     await callback.message.answer(
-        _(uid, "lang_changed"),
+        tr(uid, "lang_changed"),
         reply_markup=get_main_keyboard(uid)
     )
     await callback.answer()
@@ -590,9 +650,9 @@ async def cmd_cancel(message: Message, state: FSMContext):
     uid = str(message.from_user.id)
     if await state.get_state():
         await state.clear()
-        await message.answer(_(uid, "cancel"), reply_markup=get_main_keyboard(uid))
+        await message.answer(tr(uid, "cancel"), reply_markup=get_main_keyboard(uid))
     else:
-        await message.answer(_(uid, "nothing_cancel"), reply_markup=get_main_keyboard(uid))
+        await message.answer(tr(uid, "nothing_cancel"), reply_markup=get_main_keyboard(uid))
 
 
 @dp.message(Command("testgroup"))
@@ -617,7 +677,7 @@ async def cmd_test_group(message: Message, state: FSMContext):
 async def btn_mods(message: Message, state: FSMContext):
     await state.clear()
     uid = str(message.from_user.id)
-    await message.answer(_(uid, "mods_menu"), parse_mode="HTML", reply_markup=get_mods_keyboard(uid))
+    await message.answer(tr(uid, "mods_menu"), parse_mode="HTML", reply_markup=get_mods_keyboard(uid))
 
 
 @dp.callback_query(F.data.startswith("mod_old_"))
@@ -625,7 +685,7 @@ async def cb_mod_any(callback: CallbackQuery):
     uid = str(callback.from_user.id)
     if callback.data == "mod_old_ui_info":
         await callback.answer()
-        await callback.message.answer(_(uid, "old_ui_info_text"))
+        await callback.message.answer(tr(uid, "old_ui_info_text"))
         return
 
     await callback.answer()
@@ -634,19 +694,18 @@ async def cb_mod_any(callback: CallbackQuery):
 
     if not await check_subscription(callback.from_user.id):
         await callback.message.answer(
-            _(uid, "subscribe_needed"),
+            tr(uid, "subscribe_needed"),
             reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-                [InlineKeyboardButton(text=_(uid, "btn_subscribe"), url=CHANNEL_LINK)]
+                [InlineKeyboardButton(text=tr(uid, "btn_subscribe"), url=CHANNEL_LINK)]
             ])
         )
         return
 
-    await callback.message.answer(_(uid, "version", ver=version))
+    await callback.message.answer(tr(uid, "version", ver=version))
     ext = "zip" if mod_key == "old_medals" else "rar"
     kb = get_mod_info_keyboard(uid) if mod_key == "old_ui" else None
     await send_mod_file(callback.from_user.id, f"{mod_key}.{ext}", reply_markup=kb)
 
-    # --- Начисление XP и статистика за скачивание ---
     if uid not in USERS:
         USERS[uid] = default_user_data()
     USERS[uid]["downloads"] += 1
@@ -655,27 +714,27 @@ async def cb_mod_any(callback: CallbackQuery):
 
     new_rank = check_rank_up(uid)
     if new_rank:
-        await callback.message.answer(_(uid, "rank_up", rank=new_rank))
+        await callback.message.answer(tr(uid, "rank_up", rank=new_rank))
 
     if USERS[uid]["downloads"] == 1:
         ach = unlock_achievement(uid, "first_download")
         if ach:
-            await callback.message.answer(_(uid, "ach_unlocked", ach=ach))
+            await callback.message.answer(tr(uid, "ach_unlocked", ach=ach))
     elif USERS[uid]["downloads"] == 10:
         ach = unlock_achievement(uid, "mods_10")
         if ach:
-            await callback.message.answer(_(uid, "ach_unlocked", ach=ach))
+            await callback.message.answer(tr(uid, "ach_unlocked", ach=ach))
     elif USERS[uid]["downloads"] == 50:
         ach = unlock_achievement(uid, "mods_50")
         if ach:
-            await callback.message.answer(_(uid, "ach_unlocked", ach=ach))
+            await callback.message.answer(tr(uid, "ach_unlocked", ach=ach))
 
 
 @dp.message(F.text.in_([LOCALES["ru"]["btn_fun"], LOCALES["be"]["btn_fun"], LOCALES["en"]["btn_fun"]]))
 async def btn_fun(message: Message, state: FSMContext):
     await state.set_state(UserState.awaiting_fun)
     uid = str(message.from_user.id)
-    await message.answer(_(uid, "fun_prompt"), reply_markup=get_main_keyboard(uid))
+    await message.answer(tr(uid, "fun_prompt"), reply_markup=get_main_keyboard(uid))
 
 
 @dp.message(UserState.awaiting_fun, ~F.text.in_(ALL_MENU_BUTTONS))
@@ -686,14 +745,14 @@ async def receive_fun(message: Message, state: FSMContext):
     header = f"<b>Прикол от пользователя!</b>\n👤 {user.full_name} (@{user.username})\n🆔 <code>{user.id}</code>\n\n"
     await forward_to_admins(message, header)
     add_xp(uid, 5)
-    await message.answer(_(uid, "fun_thanks"), reply_markup=get_main_keyboard(uid))
+    await message.answer(tr(uid, "fun_thanks"), reply_markup=get_main_keyboard(uid))
 
 
 @dp.message(F.text.in_([LOCALES["ru"]["btn_suggest"], LOCALES["be"]["btn_suggest"], LOCALES["en"]["btn_suggest"]]))
 async def btn_suggest_mod(message: Message, state: FSMContext):
     await state.set_state(UserState.awaiting_mod_suggestion)
     uid = str(message.from_user.id)
-    await message.answer(_(uid, "suggest_prompt"), parse_mode="HTML", reply_markup=get_main_keyboard(uid))
+    await message.answer(tr(uid, "suggest_prompt"), parse_mode="HTML", reply_markup=get_main_keyboard(uid))
 
 
 @dp.message(UserState.awaiting_mod_suggestion, ~F.text.in_(ALL_MENU_BUTTONS))
@@ -712,46 +771,46 @@ async def receive_mod_suggestion(message: Message, state: FSMContext):
 
     new_rank = check_rank_up(uid)
     if new_rank:
-        await message.answer(_(uid, "rank_up", rank=new_rank))
+        await message.answer(tr(uid, "rank_up", rank=new_rank))
 
     if USERS[uid]["ideas"] == 1:
         ach = unlock_achievement(uid, "first_idea")
         if ach:
-            await message.answer(_(uid, "ach_unlocked", ach=ach))
+            await message.answer(tr(uid, "ach_unlocked", ach=ach))
     elif USERS[uid]["ideas"] == 10:
         ach = unlock_achievement(uid, "ideas_10")
         if ach:
-            await message.answer(_(uid, "ach_unlocked", ach=ach))
+            await message.answer(tr(uid, "ach_unlocked", ach=ach))
 
-    await message.answer(_(uid, "suggest_thanks"), reply_markup=get_main_keyboard(uid))
+    await message.answer(tr(uid, "suggest_thanks"), reply_markup=get_main_keyboard(uid))
 
 
 @dp.message(F.text.in_([LOCALES["ru"]["btn_bug"], LOCALES["be"]["btn_bug"], LOCALES["en"]["btn_bug"]]))
 async def btn_bug_report(message: Message, state: FSMContext):
     await state.set_state(UserState.awaiting_bug_report)
     uid = str(message.from_user.id)
-    await message.answer(_(uid, "bug_prompt"), reply_markup=get_main_keyboard(uid))
+    await message.answer(tr(uid, "bug_prompt"), reply_markup=get_main_keyboard(uid))
 
 
 @dp.message(UserState.awaiting_bug_report, ~F.text.in_(ALL_MENU_BUTTONS))
 async def receive_bug_report(message: Message, state: FSMContext):
     uid = str(message.from_user.id)
     if message.voice or (not message.text and not message.photo and not message.video and not message.document):
-        await message.answer(_(uid, "bug_voice"))
+        await message.answer(tr(uid, "bug_voice"))
         return
     await state.clear()
     user = message.from_user
     header = f"<b>[ОШИБКА] Сообщение об ошибке</b>\n👤 {user.full_name} (@{user.username})\n🆔 <code>{user.id}</code>\n\n"
     await forward_to_admins(message, header)
     add_xp(uid, 15)
-    await message.answer(_(uid, "bug_thanks"), reply_markup=get_main_keyboard(uid))
+    await message.answer(tr(uid, "bug_thanks"), reply_markup=get_main_keyboard(uid))
 
 
 @dp.message(F.text.in_([LOCALES["ru"]["btn_question"], LOCALES["be"]["btn_question"], LOCALES["en"]["btn_question"]]))
 async def btn_question(message: Message, state: FSMContext):
     await state.set_state(UserState.awaiting_question)
     uid = str(message.from_user.id)
-    await message.answer(_(uid, "question_prompt"), reply_markup=get_main_keyboard(uid))
+    await message.answer(tr(uid, "question_prompt"), reply_markup=get_main_keyboard(uid))
 
 
 @dp.message(UserState.awaiting_question, ~F.text.in_(ALL_MENU_BUTTONS))
@@ -762,7 +821,7 @@ async def receive_question(message: Message, state: FSMContext):
     header = f"<b>Вопрос от пользователя!</b>\n👤 {user.full_name} (@{user.username})\n🆔 <code>{user.id}</code>\n\nОтветьте на это сообщение (Reply), чтобы отправить ответ пользователю"
 
     if not TARGET_CHAT_IDS:
-        await message.answer(_(uid, "question_no_group"))
+        await message.answer(tr(uid, "question_no_group"))
         return
 
     for chat_id in TARGET_CHAT_IDS:
@@ -781,40 +840,37 @@ async def receive_question(message: Message, state: FSMContext):
     if USERS[uid]["questions"] == 1:
         ach = unlock_achievement(uid, "first_question")
         if ach:
-            await message.answer(_(uid, "ach_unlocked", ach=ach))
+            await message.answer(tr(uid, "ach_unlocked", ach=ach))
 
-    await message.answer(_(uid, "question_thanks"), reply_markup=get_main_keyboard(uid))
+    await message.answer(tr(uid, "question_thanks"), reply_markup=get_main_keyboard(uid))
 
-
-# ... (Остальные хендлеры: dev, donate, help, misc, lang, reply, easter_egg, unknown_media остаются без изменений, только передавай uid как str)
-# Для краткости я не дублирую их полностью, они идентичны предыдущему коду, но с использованием _(uid, ...)
 
 @dp.message(F.text.in_([LOCALES["ru"]["btn_dev"], LOCALES["be"]["btn_dev"], LOCALES["en"]["btn_dev"]]))
 async def btn_in_dev(message: Message, state: FSMContext):
     await state.clear()
     uid = str(message.from_user.id)
-    await message.answer(_(uid, "dev_text"), reply_markup=get_main_keyboard(uid))
+    await message.answer(tr(uid, "dev_text"), reply_markup=get_main_keyboard(uid))
 
 @dp.message(F.text.in_([LOCALES["ru"]["btn_donate"], LOCALES["be"]["btn_donate"], LOCALES["en"]["btn_donate"]]))
 async def btn_donate(message: Message, state: FSMContext):
     await state.clear()
     uid = str(message.from_user.id)
-    await message.answer(_(uid, "donate_text"), reply_markup=get_main_keyboard(uid))
+    await message.answer(tr(uid, "donate_text"), reply_markup=get_main_keyboard(uid))
 
 @dp.message(F.text.in_([LOCALES["ru"]["btn_help"], LOCALES["be"]["btn_help"], LOCALES["en"]["btn_help"]]))
 async def btn_help(message: Message, state: FSMContext):
     await state.clear()
     uid = str(message.from_user.id)
     await message.answer(
-        _(uid, "help_menu"),
+        tr(uid, "help_menu"),
         parse_mode="HTML",
         reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-            [InlineKeyboardButton(text=_(uid, "help_install_btn"), callback_data="help_install")],
-            [InlineKeyboardButton(text=_(uid, "help_remove_btn"), callback_data="help_remove")],
-            [InlineKeyboardButton(text=_(uid, "help_why_btn"), callback_data="help_why")],
-            [InlineKeyboardButton(text=_(uid, "help_time_btn"), callback_data="help_time")],
-            [InlineKeyboardButton(text=_(uid, "help_why_old_btn"), callback_data="help_why_old")],
-            [InlineKeyboardButton(text=_(uid, "help_sleep_btn"), callback_data="help_sleep")],
+            [InlineKeyboardButton(text=tr(uid, "help_install_btn"), callback_data="help_install")],
+            [InlineKeyboardButton(text=tr(uid, "help_remove_btn"), callback_data="help_remove")],
+            [InlineKeyboardButton(text=tr(uid, "help_why_btn"), callback_data="help_why")],
+            [InlineKeyboardButton(text=tr(uid, "help_time_btn"), callback_data="help_time")],
+            [InlineKeyboardButton(text=tr(uid, "help_why_old_btn"), callback_data="help_why_old")],
+            [InlineKeyboardButton(text=tr(uid, "help_sleep_btn"), callback_data="help_sleep")],
         ])
     )
 
@@ -823,19 +879,19 @@ async def cb_help_any(callback: CallbackQuery):
     await callback.answer()
     uid = str(callback.from_user.id)
     key = f"{callback.data}_text"
-    await callback.message.answer(_(uid, key))
+    await callback.message.answer(tr(uid, key))
 
 @dp.message(F.text.in_([LOCALES["ru"]["btn_misc"], LOCALES["be"]["btn_misc"], LOCALES["en"]["btn_misc"]]))
 async def btn_misc(message: Message, state: FSMContext):
     await state.clear()
     uid = str(message.from_user.id)
     await message.answer(
-        _(uid, "misc_menu"),
+        tr(uid, "misc_menu"),
         parse_mode="HTML",
         reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-            [InlineKeyboardButton(text=_(uid, "misc_team_btn"), callback_data="misc_team")],
-            [InlineKeyboardButton(text=_(uid, "misc_join_btn"), callback_data="misc_join")],
-            [InlineKeyboardButton(text=_(uid, "misc_share_btn"), url="https://t.me/share/url?url=https://t.me/ModRak1_bot&text=Смотри, какой крутой бот для модов!")],
+            [InlineKeyboardButton(text=tr(uid, "misc_team_btn"), callback_data="misc_team")],
+            [InlineKeyboardButton(text=tr(uid, "misc_join_btn"), callback_data="misc_join")],
+            [InlineKeyboardButton(text=tr(uid, "misc_share_btn"), url="https://t.me/share/url?url=https://t.me/ModRak1_bot&text=Смотри, какой крутой бот для модов!")],
         ])
     )
 
@@ -845,9 +901,9 @@ async def cb_misc_any(callback: CallbackQuery):
     uid = str(callback.from_user.id)
     key = f"{callback.data}_text"
     if callback.data == "misc_team":
-        await callback.message.answer(_(uid, key), parse_mode="HTML")
+        await callback.message.answer(tr(uid, key), parse_mode="HTML")
     else:
-        await callback.message.answer(_(uid, key))
+        await callback.message.answer(tr(uid, key))
 
 @dp.message(F.text.in_([LOCALES["ru"]["btn_lang"], LOCALES["be"]["btn_lang"], LOCALES["en"]["btn_lang"]]))
 async def btn_lang_click(message: Message, state: FSMContext):
@@ -890,9 +946,9 @@ async def easter_egg_handler(message: Message, state: FSMContext):
         hits = EASTER_EGG_HITS.get(uid, 0) + 1
         EASTER_EGG_HITS[uid] = hits
         if hits >= 3:
-            await message.answer(_(uid, "break_hard_text"), reply_markup=get_main_keyboard(uid))
+            await message.answer(tr(uid, "break_hard_text"), reply_markup=get_main_keyboard(uid))
         else:
-            await message.answer(_(uid, "break_soft_text"), reply_markup=get_main_keyboard(uid))
+            await message.answer(tr(uid, "break_soft_text"), reply_markup=get_main_keyboard(uid))
         return
 
     is_gibberish = False
@@ -913,7 +969,7 @@ async def unknown_media(message: Message, state: FSMContext):
         return
     uid = str(message.from_user.id)
     await message.answer(
-        _(uid, "unknown_media_text"),
+        tr(uid, "unknown_media_text"),
         reply_markup=get_main_keyboard(uid)
     )
 
