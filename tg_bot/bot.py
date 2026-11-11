@@ -365,7 +365,7 @@ for lang_data in LOCALES.values():
         if k.startswith("btn_") or k.startswith("misc_") and k.endswith("_btn") or k.startswith("help_") and k.endswith("_btn"):
             ALL_MENU_BUTTONS.add(v)
 
-# ---------- Пасхалки ----------
+# ---------- Пасхалки (без матов) ----------
 EASTER_EGGS = {
     "рак": "Сам такой 🦀",
     "рак?": "Сам такой 🦀",
@@ -381,8 +381,6 @@ EASTER_EGGS = {
     "лол": "Лол принят. Возвращайся с идеями",
     "lol": "Lol accepted. Come back with ideas",
     "ааа": "Тише-тише, я тут",
-    "бля": "Спокойно, без нервов. Кнопки внизу",
-    "блять": "Спокойно, без нервов. Кнопки внизу",
     "мод": "Мод? Тогда тебе в «Моды» 👇",
     "mod": "Mod? Then go to 'Mods' 👇",
     "привет": "Привет-привет. Выбирай раздел ниже",
@@ -580,6 +578,26 @@ async def cmd_cancel(message: Message, state: FSMContext):
     else:
         await message.answer(_(message.from_user.id, "nothing_cancel"), reply_markup=get_main_keyboard(message.from_user.id))
 
+# ---------- Админ-команда теста группы ----------
+@dp.message(Command("testgroup"))
+async def cmd_test_group(message: Message, state: FSMContext):
+    if message.from_user.id not in ADMIN_IDS:
+        # Если не админ — ведем себя как с обычным текстом (пасхалки или fallback)
+        await easter_egg_handler(message, state)
+        return
+
+    if not TARGET_CHAT_IDS:
+        await message.answer("❌ TARGET_CHAT_IDS пуст. GROUP_ID не задан в секретах.")
+        return
+    
+    await message.answer(f"Пробую отправить в группу `{TARGET_CHAT_IDS[0]}`...")
+    try:
+        await bot.send_message(TARGET_CHAT_IDS[0], "✅ Тестовое сообщение из бота! Связь есть.")
+        await message.answer("✅ Успешно отправлено в группу!")
+    except Exception as e:
+        await message.answer(f"❌ Ошибка: {e}")
+
+# ---------- Меню ----------
 @dp.message(F.text.in_([LOCALES["ru"]["btn_mods"], LOCALES["be"]["btn_mods"], LOCALES["en"]["btn_mods"]]))
 async def btn_mods(message: Message, state: FSMContext):
     await state.clear()
@@ -589,7 +607,7 @@ async def btn_mods(message: Message, state: FSMContext):
 async def cb_mod_any(callback: CallbackQuery):
     if callback.data == "mod_old_ui_info":
         await callback.answer()
-        await callback.message.answer(_(callback.from_user.id, "help_why_text")) # Используем текст описания
+        await callback.message.answer(_(callback.from_user.id, "help_why_text"))
         return
         
     await callback.answer()
@@ -776,7 +794,7 @@ async def easter_egg_handler(message: Message, state: FSMContext):
             await message.answer(reply, reply_markup=get_main_keyboard(uid))
             return
 
-    if "сломай" in text_lower or "взломай" in text_lower:
+    if "сломай" in text_lower or "взломай" in text_lower or "hack" in text_lower or "break" in text_lower:
         hits = EASTER_EGG_HITS.get(uid, 0) + 1
         EASTER_EGG_HITS[uid] = hits
         if hits >= 3:
