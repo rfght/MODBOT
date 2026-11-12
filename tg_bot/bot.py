@@ -258,6 +258,8 @@ LOCALES = {
         "rank_up": "Поздравляю! Ты получил новое звание: <b>{rank}</b>",
         "rank_given": "Тебе выдано новое звание: <b>{rank}</b>",
         "ach_unlocked": "Получено достижение: <b>{ach}</b>",
+        "gibberish": ["Братан, может скорую", "Это что за набор символов", "Ты с клавиатурой поссорился", "Кот по клавишам прошёлся", "Я такое не читаю", "Эт что за шифр", "Может, тебе помочь набрать", "Клавиатуру протри", "Тут буквы потерялись", "Я в этом не разбираюсь"],
+        "fallback": ["Тут я бессилен, кнопки внизу выручат", "Не догнал тебя, жми кнопку из меню", "Такое мне не по зубам, выбери раздел на клавиатуре", "Я в замешательстве, кнопки ниже помогут", "Ты говоришь загадками, а я понимаю только кнопки", "Не уловил мысль, попробуй через меню", "Моя голова не варит, тыкай кнопку ниже", "Что-то я подвис, клавиатура внизу спасёт", "Не понял ни слова, меню в помощь", "Я всего лишь бот, нажми кнопку из списка"],
         "fun_prompt": "Кидай свой игровой прикол сюда!\n\nЭто может быть:\n• Забавный момент из боя\n• Необычная ситуация с физикой игры\n• Смешной баг или совпадение\n• Любой другой забавный случай из игры\n\nОтправляй хоть видео, хоть фото, хоть текст\nДля отмены напиши /cancel",
         "fun_thanks": "Спасибо! Твой прикол принят, когда его проверят модераторы, он попадёт в наш канал",
         "suggest_prompt": "<b>Предложить идею для мода</b>\n\nНапиши описание мода и как что работает, фото/видео/голосовые/видеосообщения не принимаются\nОно будет переслано администратору\n\nДля отмены напиши /cancel",
@@ -282,13 +284,11 @@ LOCALES = {
         "help_why_btn": "Зачем нужны данные модификации",
         "help_time_btn": "Сколько разрабатываются моды",
         "help_why_old_btn": "Почему моды только на возвращение старого в игру",
-        "help_sleep_btn": "Бот не отвечает",
         "help_install_text": "Как установить мод:\n\nШаг 1: Скачать мод с официального сайта For Blitz или в нашем боте\nШаг 1.1: Установки модов на телефон нету, если нужно, то используйте инструкцию/приложения от For Blitz\nОбрати внимание, моды в этом боте только на ПК\nШаг 2: Распаковать архив или просто зайти в него\nШаг 3: Скопировать папку Data\nШаг 4: Зайти в папку игры: C:\\Games\\Tanks Blitz\nШаг 5: Нажать вставить скопированную папку Data с заменой",
         "help_remove_text": "Как удалить мод:\n\nСамый простой способ, нажать в приложении LGC восстановление игры",
         "help_why_text": "Зачем нужны данные модификации:\n\nМоды возвращают удалённые функции и интерфейс, к которым привыкли игроки Это делает игру комфортнее и привычнее для тех, кто играл раньше",
         "help_time_text": "Сколько разрабатываются моды:\n\nВремя разработки зависит от размера мода, сложности, свободного времени у мододелов, а также от того, насколько часто бывают бухие сервера у картошки",
         "help_why_old_text": "Почему модификации только на возвращение старого в игру:\n\nНостальгия у всей команды по старой игре",
-        "help_sleep_text": "Бот не отвечает?\n\nНе пугайся! У нашего бота есть свой график работы (техобслуживание серверов) Обычно перерыв длится не больше часа Пожалуйста, попробуй написать чуть позже!",
         "old_ui_info_text": "Данный мод возвращает:\n• Старую кнопку выбора режима\n• Старый UI хранилища\n• Старую кнопку магазина\n• Старую левую панель\n• Старую кнопку «Тренироваться»\n• Старую кнопку «В Бой»\n• Убраны новые чёрные точки на фоне кнопок боя/выбора режима/взвода\n• Старые иконки для режимов\n• Старые иконки победы/поражения/ничьи во вкладке уведомлений\n• Старые звуки при нажатии кнопок/иконок в ангаре\n• Старые кнопки (зелёные, красные)\n• Старый UI дерева исследования\n• Старый UI окна уведомлений\n• Всякие мелочи",
         "unknown_media_text": "Эт что? Я понимаю только текст и кнопки Выбери нужный раздел на клавиатуре ниже",
         "unavailable_text": "Временно недоступно",
@@ -296,12 +296,13 @@ LOCALES = {
         "break_soft_text": "Не сломаешь, я крепкий",
         "banned_text": "Ты был забанен {count} раз",
         "no_rights": "У тебя нет прав для этого действия",
-        "ban_usage": "Использование: /ban <user_id> <дд.мм.гггг> <чч:мм:сс> [причина]\nИли: /ban <user_id> never [причина]",
-        "unban_usage": "Использование: /unban <user_id>",
+        "ban_usage": "Использование: /ban <user_id> <дд.мм.гггг> <чч:мм:сс> [причина]\nИли: /ban <user_id> never [причина]\nИли ответьте на сообщение пользователя: /ban [причина]",
+        "unban_usage": "Использование: /unban <user_id> или ответьте на сообщение пользователя",
         "ban_cant_admin": "Нельзя забанить администратора",
         "ban_done": "Пользователь {uid} забанен до {until}. Причина: {reason}",
         "ban_done_forever": "Пользователь {uid} забанен навсегда. Причина: {reason}",
         "unban_done": "Пользователь {uid} разбанен",
+        "unban_reply_success": "Пользователь {uid} успешно разбанен",
         "unban_not_found": "Этот пользователь не в бане",
         "banlist_empty": "Список банов пуст",
         "banlist_title": "Забаненные:",
@@ -337,6 +338,8 @@ LOCALES = {
         "profile_stats": "<b>Статыстыка</b>\nСпампавана модаў: {downloads}\nПрапанавана ідэй: {ideas}\nЗададзена пытанняў: {questions}\nАтрымана банаў: {bans}",
         "profile_achievements": "<b>Дасягненні</b>\n{list}", "profile_no_achievements": "Пакуль няма дасягненняў",
         "rank_up": "Віншую! Ты атрымаў новае званне: <b>{rank}</b>", "rank_given": "Табе выдадзена новае званне: <b>{rank}</b>", "ach_unlocked": "Атрымана дасягненне: <b>{ach}</b>",
+        "gibberish": ["Браток, можа хуткую", "Гэта што за набор сімвалаў", "Ты з клавіятурай пасварыўся", "Кот па клавішах прайшоўся", "Я такое не чытаю", "Гэта што за шыфр"],
+        "fallback": ["Тут я бяссільны, кнопкі ўнізе выручаць", "Не зразумеў цябе, цісні кнопку з меню", "Гэта мне не пад сілу, абяры раздзел на клавіятуры", "Я ў замяшанні, кнопкі ніжэй дапамогуць", "Ты гаворыш загадкамі, а я разумею толькі кнопкі"],
         "fun_prompt": "Кідай свой гульнявы прыкол сюды!\n\nГэта можа быць:\n• Забаўны момант з бою\n• Незвычайная сітуацыя з фізікай гульні\n• Смешны баг ці супадзенне\n\nДля адмены напішы /cancel",
         "fun_thanks": "Дзякуй! Твой гульнявы прыкол прыняты",
         "suggest_prompt": "<b>Прапанаваць ідэю для мода</b>\n\nНапішы апісанне мода і як што працуе\nДля адмены напішы /cancel",
@@ -357,25 +360,25 @@ LOCALES = {
         "misc_join_text": "На жаль, набор у каманду зараз закрыты Але ты заўсёды можаш прапанаваць ідэю для мода праз галоўнае меню!",
         "help_menu": "<b>Дапамога</b>\n\nАбяры пытанне:",
         "help_install_btn": "Як усталяваць мод", "help_remove_btn": "Як выдаліць мод", "help_why_btn": "Навошта патрэбныя гэтыя мадыфікацыі",
-        "help_time_btn": "Колькі распрацоўваюцца моды", "help_why_old_btn": "Чаму моды толькі на вяртанне старога", "help_sleep_btn": "Бот не адказвае",
+        "help_time_btn": "Колькі распрацоўваюцца моды", "help_why_old_btn": "Чаму моды толькі на вяртанне старога",
         "help_install_text": "Як усталяваць мод:\n\nКрок 1: Спампаваць мод\nКрок 2: Распакаваць архіў\nКрок 3: Скапіяваць папку Data\nКрок 4: Зайсці ў папку гульні: C:\\Games\\Tanks Blitz\nКрок 5: Уставіць з заменай",
         "help_remove_text": "Як выдаліць мод:\n\nСамы просты спосаб, націснуць у праграме LGC аднаўленне гульні",
         "help_why_text": "Навошта патрэбныя гэтыя мадыфікацыі:\n\nМоды вяртаюць выдаленыя функцыі і інтэрфейс, да якіх звыкліся гульцы",
         "help_time_text": "Колькі распрацоўваюцца моды:\n\nЧас распрацоўкі залежыць ад памеру мода, складанасці і вольнага часу",
         "help_why_old_text": "Чаму мадыфікацыі толькі на вяртанне старога:\n\nНастальгія ўсёй каманды па старой гульні",
-        "help_sleep_text": "Бот не адказвае?\n\nНе палохайся! У нашага бота ёсць свой графік працы Паспрабуй напісаць крыху пазней!",
         "old_ui_info_text": "Гэты мод вяртае:\n• Старую кнопку выбару рэжыму\n• Стары UI сховішча\n• Старую кнопку крамы\n• Старую левую панэль\n• Старую кнопку «Трэніравацца»\n• Старую кнопку «У Бой»\n• Прыбраныя новыя чорныя кропкі на фоне кнопак бою/выбару рэжыму/узвода\n• Старыя іконкі для рэжымаў\n• Старыя іконкі перамогі/паражэння/нічыі ў закладцы апавяшчэнняў\n• Старыя гукі пры націску кнопак/іконак у ангары\n• Старыя кнопкі (зялёныя, чырвоныя)\n• Стары UI дрэва даследавання\n• Стары UI акна апавяшчэнняў\n• Розныя дробязі",
         "unknown_media_text": "Гэта што? Я разумею толькі тэкст і кнопкі Абяры патрэбны раздзел на клавіятуры ніжэй",
         "unavailable_text": "Часова недаступна",
         "break_hard_text": "Хопіць мяне ламаць, я і так ледзь трымаюся 🤖",
         "break_soft_text": "Не зламаеш, я моцны",
         "no_rights": "У цябе няма правоў для гэтага дзеяння",
-        "ban_usage": "Выкарыстанне: /ban <user_id> <дд.мм.гггг> <чч:мм:сс> [прычына]\nАбо: /ban <user_id> never [прычына]",
-        "unban_usage": "Выкарыстанне: /unban <user_id>",
+        "ban_usage": "Выкарыстанне: /ban <user_id> <дд.мм.гггг> <чч:мм:сс> [прычына]\nАбо: /ban <user_id> never [прычына]\nАбо адкажыце на паведамленне: /ban [прычына]",
+        "unban_usage": "Выкарыстанне: /unban <user_id> або адкажыце на паведамленне карыстальніка",
         "ban_cant_admin": "Нельга забаніць адміністратара",
         "ban_done": "Карыстальнік {uid} забанены да {until}. Прычына: {reason}",
         "ban_done_forever": "Карыстальнік {uid} забанены назаўжды. Прычына: {reason}",
         "unban_done": "Карыстальнік {uid} разбанены",
+        "unban_reply_success": "Карыстальнік {uid} паспяхова разбанены",
         "unban_not_found": "Гэты карыстальнік не ў бане",
         "banlist_empty": "Спіс банаў пусты",
         "banlist_title": "Забаненыя:",
@@ -411,6 +414,8 @@ LOCALES = {
         "profile_stats": "<b>Stats</b>\nMods downloaded: {downloads}\nIdeas suggested: {ideas}\nQuestions asked: {questions}\nBans received: {bans}",
         "profile_achievements": "<b>Achievements</b>\n{list}", "profile_no_achievements": "No achievements yet",
         "rank_up": "Congratulations! You reached a new rank: <b>{rank}</b>", "rank_given": "You were given a new rank: <b>{rank}</b>", "ach_unlocked": "Achievement unlocked: <b>{ach}</b>",
+        "gibberish": ["Bro, do you need an ambulance?", "What kind of characters are these?", "Did you fight with your keyboard?", "A cat walked on the keys", "I don't read this", "What kind of cipher is this?"],
+        "fallback": ["I'm powerless here, the buttons below will help", "Didn't catch that, press a button from the menu", "That's beyond me, choose a section on the keyboard", "I'm confused, the buttons below will help", "You speak in riddles, I only understand buttons"],
         "fun_prompt": "Send your funny gaming moment here!\n\nIt could be:\n• A funny moment from battle\n• An unusual physics situation\n• A funny bug or coincidence\n\nTo cancel, type /cancel",
         "fun_thanks": "Thanks! Your funny moment is accepted",
         "suggest_prompt": "<b>Suggest a mod idea</b>\n\nWrite a description of the mod and how it works\nTo cancel, type /cancel",
@@ -429,25 +434,25 @@ LOCALES = {
         "misc_join_text": "Unfortunately, recruitment is currently closed But you can always suggest a mod idea through the main menu!",
         "help_menu": "<b>Help</b>\n\nChoose a question:",
         "help_install_btn": "How to install a mod", "help_remove_btn": "How to remove a mod", "help_why_btn": "Why are modifications needed",
-        "help_time_btn": "How long mods take to develop", "help_why_old_btn": "Why mods only bring back old features", "help_sleep_btn": "Bot is not responding",
+        "help_time_btn": "How long mods take to develop", "help_why_old_btn": "Why mods only bring back old features",
         "help_install_text": "How to install a mod:\n\nStep 1: Download the mod\nStep 2: Unzip the archive\nStep 3: Copy the Data folder\nStep 4: Go to the game folder: C:\\Games\\Tanks Blitz\nStep 5: Paste and replace",
         "help_remove_text": "How to remove a mod:\n\nEasiest way is to press restore game in the LGC app",
         "help_why_text": "Why are modifications needed:\n\nMods bring back deleted features and interfaces that players are used to",
         "help_time_text": "How long mods take to develop:\n\nDevelopment time depends on the mod size, complexity, and free time",
         "help_why_old_text": "Why mods only bring back old features:\n\nNostalgia of the whole team for the old game",
-        "help_sleep_text": "Bot is not responding?\n\nDon't panic! Our bot has its own work schedule Try again a bit later!",
         "old_ui_info_text": "This mod brings back:\n• Old mode selection button\n• Old storage UI\n• Old shop button\n• Old left panel\n• Old 'Train' button\n• Old 'To Battle' button\n• Removed new black dots on the background of battle/mode selection/platoon buttons\n• Old icons for modes\n• Old victory/defeat/draw icons in the notifications tab\n• Old sounds when pressing buttons/icons in the hangar\n• Old buttons (green, red)\n• Old research tree UI\n• Old notifications window UI\n• Various small things",
         "unknown_media_text": "What is this? I only understand text and buttons Choose a section on the keyboard below",
         "unavailable_text": "Temporarily unavailable",
         "break_hard_text": "Stop breaking me, I'm barely holding on as it is 🤖",
         "break_soft_text": "You won't break me, I'm tough",
         "no_rights": "You have no rights for this action",
-        "ban_usage": "Usage: /ban <user_id> <dd.mm.yyyy> <hh:mm:ss> [reason]\nOr: /ban <user_id> never [reason]",
-        "unban_usage": "Usage: /unban <user_id>",
+        "ban_usage": "Usage: /ban <user_id> <dd.mm.yyyy> <hh:mm:ss> [reason]\nOr: /ban <user_id> never [reason]\nOr reply to user's message: /ban [reason]",
+        "unban_usage": "Usage: /unban <user_id> or reply to user's message",
         "ban_cant_admin": "Cannot ban an administrator",
         "ban_done": "User {uid} banned until {until}. Reason: {reason}",
         "ban_done_forever": "User {uid} banned forever. Reason: {reason}",
         "unban_done": "User {uid} unbanned",
+        "unban_reply_success": "User {uid} successfully unbanned",
         "unban_not_found": "This user is not banned",
         "banlist_empty": "Ban list is empty",
         "banlist_title": "Banned users:",
@@ -706,16 +711,24 @@ async def cmd_ban(message: Message):
         await message.answer(tr(uid_admin, "no_rights"))
         return
 
+    target_id = None
     args = message.text.split()
-    if len(args) < 3:
-        await message.answer(tr(uid_admin, "ban_usage"))
-        return
-    
-    try:
-        target_id = int(args[1])
-    except ValueError:
-        await message.answer(tr(uid_admin, "setrank_bad_id"))
-        return
+
+    # Если это ответ (Reply) на сообщение в группе
+    if message.reply_to_message and message.reply_to_message.from_user:
+        target_id = message.reply_to_message.from_user.id
+        reason_args = args[1:]
+    else:
+        # Если ввели вручную: /ban <id> <время>
+        if len(args) < 3:
+            await message.answer(tr(uid_admin, "ban_usage"))
+            return
+        try:
+            target_id = int(args[1])
+            reason_args = args[2:]
+        except ValueError:
+            await message.answer(tr(uid_admin, "setrank_bad_id"))
+            return
 
     if target_id in ADMIN_IDS:
         await message.answer(tr(uid_admin, "ban_cant_admin"))
@@ -725,26 +738,32 @@ async def cmd_ban(message: Message):
     forever = False
     until_dt = None
     
-    if args[2].lower() in ("never", "навсегда", "назаўжды"):
+    if reason_args and reason_args[0].lower() in ("never", "навсегда", "назаўжды"):
         forever = True
-        reason = " ".join(args[3:]) if len(args) > 3 else "Без причины"
+        reason = " ".join(reason_args[1:]) if len(reason_args) > 1 else "Без причины"
     else:
-        if len(args) < 4:
+        if len(reason_args) < 2 and not message.reply_to_message:
             await message.answer(tr(uid_admin, "ban_usage"))
             return
-        try:
-            date_str = args[2]
-            time_str = args[3]
-            until_dt = datetime.strptime(f"{date_str} {time_str}", "%d.%m.%Y %H:%M:%S")
-        except ValueError:
-            await message.answer(tr(uid_admin, "ban_invalid_date"))
-            return
-
-        if until_dt <= datetime.now():
-            await message.answer(tr(uid_admin, "ban_past"))
-            return
         
-        reason = " ".join(args[4:]) if len(args) > 4 else "Без причины"
+        if message.reply_to_message:
+            # Если банят по реплаю, по умолчанию бан навсегда
+            forever = True 
+            reason = " ".join(reason_args) if reason_args else "Без причины"
+        else:
+            try:
+                date_str = reason_args[0]
+                time_str = reason_args[1]
+                until_dt = datetime.strptime(f"{date_str} {time_str}", "%d.%m.%Y %H:%M:%S")
+            except ValueError:
+                await message.answer(tr(uid_admin, "ban_invalid_date"))
+                return
+
+            if until_dt <= datetime.now():
+                await message.answer(tr(uid_admin, "ban_past"))
+                return
+            
+            reason = " ".join(reason_args[2:]) if len(reason_args) > 2 else "Без причины"
 
     target_str = str(target_id)
     
@@ -819,15 +838,20 @@ async def cmd_unban(message: Message):
         await message.answer(tr(uid_admin, "no_rights"))
         return
 
-    args = message.text.split()
-    if len(args) < 2:
-        await message.answer(tr(uid_admin, "unban_usage"))
-        return
-    try:
-        target_id = int(args[1])
-    except ValueError:
-        await message.answer(tr(uid_admin, "setrank_bad_id"))
-        return
+    target_id = None
+    # Если это ответ на сообщение
+    if message.reply_to_message and message.reply_to_message.from_user:
+        target_id = message.reply_to_message.from_user.id
+    else:
+        args = message.text.split()
+        if len(args) < 2:
+            await message.answer(tr(uid_admin, "unban_usage"))
+            return
+        try:
+            target_id = int(args[1])
+        except ValueError:
+            await message.answer(tr(uid_admin, "setrank_bad_id"))
+            return
 
     target_str = str(target_id)
     if target_str in BANNED:
@@ -838,7 +862,7 @@ async def cmd_unban(message: Message):
                 await bot.unban_chat_member(TARGET_CHAT_IDS[0], target_id)
             except Exception as e:
                 logger.error(f"Не удалось разбанить в группе: {e}")
-        await message.answer(tr(uid_admin, "unban_done", uid=target_id))
+        await message.answer(tr(uid_admin, "unban_reply_success", uid=target_id))
     else:
         await message.answer(tr(uid_admin, "unban_not_found"))
 
@@ -1226,7 +1250,6 @@ async def btn_help(message: Message, state: FSMContext):
             [InlineKeyboardButton(text=tr(uid, "help_why_btn"), callback_data="help_why")],
             [InlineKeyboardButton(text=tr(uid, "help_time_btn"), callback_data="help_time")],
             [InlineKeyboardButton(text=tr(uid, "help_why_old_btn"), callback_data="help_why_old")],
-            [InlineKeyboardButton(text=tr(uid, "help_sleep_btn"), callback_data="help_sleep")],
         ])
     )
 
