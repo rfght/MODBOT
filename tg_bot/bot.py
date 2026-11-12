@@ -5,10 +5,8 @@ import os
 import random
 import re
 from datetime import datetime
-from threading import Thread
 
 from dotenv import load_dotenv
-from flask import Flask
 
 from aiogram import Bot, Dispatcher, F
 from aiogram.filters import Command, CommandStart
@@ -64,19 +62,6 @@ logger = logging.getLogger(__name__)
 
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher(storage=MemoryStorage())
-
-keep_alive_app = Flask(__name__)
-
-@keep_alive_app.route("/")
-def index():
-    return "Bot is running!"
-
-def run_keep_alive():
-    port = int(os.getenv("PORT", "8080"))
-    keep_alive_app.run(host="0.0.0.0", port=port)
-
-if not os.getenv("REPLIT_DEV_DOMAIN"):
-    Thread(target=run_keep_alive, daemon=True).start()
 
 # --- Файлы данных ---
 FILE_IDS_PATH = "file_ids.json"
