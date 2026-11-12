@@ -17,6 +17,7 @@ from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.storage.memory import MemoryStorage
 from aiogram.types import (
     CallbackQuery,
+    ChatMemberUpdated,
     InlineKeyboardButton,
     InlineKeyboardMarkup,
     KeyboardButton,
@@ -84,30 +85,37 @@ FILE_IDS = {}
 USERS_PATH = "users.json"
 USERS = {}
 
+BANNED_PATH = "banned.json"
+BANNED = {}
+
 MOD_NAMES = {
     "old_font": {"ru": "Старый шрифт", "be": "Стары шрыфт", "en": "Old Font"},
     "old_medals": {"ru": "Старые медали", "be": "Старыя медалі", "en": "Old Medals"},
     "old_ui": {"ru": "Старый UI ангара", "be": "Стары UI ангара", "en": "Old Hangar UI"},
 }
 
-# --- СИСТЕМА ЗВАНИЙ И ОПЫТА ---
-# rank_id: (название, требуемый_xp, требуемые_идеи, тип)
+# --- СИСТЕМА ЗВАНИЙ И ОПЫТА (20 званий) ---
 RANKS = {
     1:  ("Новичок", 0, 0, "user"),
     2:  ("Гость", 100, 0, "user"),
     3:  ("Освоившийся", 300, 0, "user"),
     4:  ("Постоянный", 700, 0, "user"),
     5:  ("Ветеран", 1500, 0, "user"),
-    6:  ("Идейный", 2500, 1, "modder"),
-    7:  ("Юный мододел", 4000, 3, "modder"),
-    8:  ("Мододел", 6000, 5, "modder"),
-    9:  ("Старший мододел", 9000, 10, "modder"),
-    10: ("Мастер модов", 13000, 20, "modder"),
-    11: ("Тестер", 0, 0, "staff"),
-    12: ("Младший модератор", 0, 0, "staff"),
-    13: ("Модератор", 0, 0, "staff"),
-    14: ("Администратор", 0, 0, "staff"),
-    15: ("Владелец", 0, 0, "staff"),
+    6:  ("Активный", 3000, 0, "user"),
+    7:  ("Знаток", 6000, 0, "user"),
+    8:  ("Эксперт", 12000, 0, "user"),
+    9:  ("Гуру", 24000, 0, "user"),
+    10: ("Легенда", 48000, 0, "user"),
+    11: ("Идейный", 0, 1, "modder"),
+    12: ("Юный мододел", 0, 3, "modder"),
+    13: ("Мододел", 0, 5, "modder"),
+    14: ("Старший мододел", 0, 10, "modder"),
+    15: ("Мастер модов", 0, 20, "modder"),
+    16: ("Тестер", 0, 0, "staff"),
+    17: ("Младший модератор", 0, 0, "staff"),
+    18: ("Модератор", 0, 0, "staff"),
+    19: ("Администратор", 0, 0, "staff"),
+    20: ("Владелец", 0, 0, "staff"),
 }
 
 ACHIEVEMENTS = {
@@ -141,13 +149,21 @@ def get_rank_info(rank_id: int):
     return RANKS.get(rank_id, RANKS[1])
 
 
-def get_next_rank(current_id: int, xp: int, ideas: int):
+def check_rank_up(user_id: str):
+    data = USERS.get(user_id)
+    if not data:
+        return None
+    current_id = data["rank_id"]
     next_id = current_id + 1
     if next_id not in RANKS:
         return None
-    _, req_xp, req_ideas, _ = RANKS[next_id]
-    if xp >= req_xp and ideas >= req_ideas:
-        return next_id
+    _, req_xp, req_ideas, rank_type = RANKS[next_id]
+    if rank_type != "user":
+        return None
+    if data["xp"] >= req_xp and data["ideas"] >= req_ideas:
+        data["rank_id"] = next_id
+        save_users()
+        return RANKS[next_id][0]
     return None
 
 
@@ -156,19 +172,6 @@ def add_xp(user_id: str, amount: int):
         USERS[user_id] = default_user_data()
     USERS[user_id]["xp"] += amount
     save_users()
-
-
-def check_rank_up(user_id: str):
-    data = USERS.get(user_id)
-    if not data:
-        return None
-    current_id = data["rank_id"]
-    next_id = get_next_rank(current_id, data["xp"], data["ideas"])
-    if next_id:
-        data["rank_id"] = next_id
-        save_users()
-        return RANKS[next_id][0]
-    return None
 
 
 def unlock_achievement(user_id: str, ach_key: str):
@@ -182,7 +185,7 @@ def unlock_achievement(user_id: str, ach_key: str):
 
 # --- Загрузка/Сохранение ---
 def load_data():
-    global FILE_IDS, USERS
+    global FILE_IDS, USERS, BANNED
 
     FILE_IDS = {
         "old_font.rar": "BQACAgIAAyEFAASo0DuCAAPRaudEoy_WaUJytv6Ax-5vHj49Zk8AAqqZAAJuI4FJZH-8dxswqq09BA",
@@ -210,6 +213,12 @@ def load_data():
     except (OSError, json.JSONDecodeError):
         pass
 
+    try:
+        with open(BANNED_PATH) as f:
+            BANNED.update(json.load(f))
+    except (OSError, json.JSONDecodeError):
+        pass
+
 
 def save_file_ids():
     with open(FILE_IDS_PATH, "w") as f:
@@ -219,6 +228,11 @@ def save_file_ids():
 def save_users():
     with open(USERS_PATH, "w") as f:
         json.dump(USERS, f)
+
+
+def save_banned():
+    with open(BANNED_PATH, "w") as f:
+        json.dump(BANNED, f)
 
 
 load_data()
@@ -252,10 +266,12 @@ LOCALES = {
         "profile_rank": "Звание: <b>{rank}</b>",
         "profile_xp": "Опыт: {xp} XP",
         "profile_next": "До следующего звания: {xp_left} XP (и {ideas_left} идей)",
+        "profile_next_manual": "Следующее звание выдаётся вручную",
         "profile_stats": "<b>Статистика</b>\nСкачано модов: {downloads}\nПредложено идей: {ideas}\nЗадано вопросов: {questions}\nПолучено банов: {bans}",
         "profile_achievements": "<b>Достижения</b>\n{list}",
         "profile_no_achievements": "Пока нет достижений",
         "rank_up": "Поздравляю! Ты получил новое звание: <b>{rank}</b>",
+        "rank_given": "Тебе выдано новое звание: <b>{rank}</b>",
         "ach_unlocked": "Получено достижение: <b>{ach}</b>",
         "fun_prompt": "Кидай свой игровой прикол сюда!\n\nЭто может быть:\n• Забавный момент из боя\n• Необычная ситуация с физикой игры\n• Смешной баг или совпадение\n• Любой другой забавный случай из игры\n\nОтправляй хоть видео, хоть фото, хоть текст\nДля отмены напиши /cancel",
         "fun_thanks": "Спасибо! Твой прикол принят, когда его проверят модераторы, он попадёт в наш канал",
@@ -294,6 +310,31 @@ LOCALES = {
         "break_hard_text": "Хватит меня ломать, я и так еле держусь 🤖",
         "break_soft_text": "Не сломаешь, я крепкий",
         "banned_text": "Ты был забанен {count} раз",
+        "no_rights": "У тебя нет прав для этого действия",
+        "ban_usage": "Использование: /ban <user_id> <дд.мм.гггг> <чч:мм:сс> [причина]\nИли: /ban <user_id> never [причина]",
+        "unban_usage": "Использование: /unban <user_id>",
+        "ban_cant_admin": "Нельзя забанить администратора",
+        "ban_done": "Пользователь {uid} забанен до {until}. Причина: {reason}",
+        "ban_done_forever": "Пользователь {uid} забанен навсегда. Причина: {reason}",
+        "unban_done": "Пользователь {uid} разбанен",
+        "unban_not_found": "Этот пользователь не в бане",
+        "banlist_empty": "Список банов пуст",
+        "banlist_title": "Забаненные:",
+        "ban_notify": "Ты был забанен\nПричина: {reason}\nСрок: до {until}",
+        "ban_notify_forever": "Ты был забанен\nПричина: {reason}\nСрок: навсегда",
+        "setrank_usage": "Использование: /setrank <user_id> <rank_id>",
+        "setrank_bad_id": "Неверный формат ID",
+        "setrank_no_rank": "Такого звания нет",
+        "setrank_done": "Пользователю {uid} выдано звание: {rank}",
+        "setrank_notify_fail": "Не удалось отправить уведомление: {err}",
+        "banned_bot_text": "Вы забанены в этом боте\nВы будете разбанены либо при решении администратора, либо когда истекет срок бана\nПосмотреть свой срок бана: /mystatus",
+        "ban_invalid_date": "Неверный формат даты. Используй: <дд.мм.гггг> <чч:мм:сс> или никогда (never)",
+        "ban_past": "Указанное время уже прошло",
+        "mystatus_no_ban": "Вы не забанены",
+        "mystatus_title": "Ваш бан:",
+        "mystatus_until": "Срок бана: до {until}",
+        "mystatus_until_forever": "Срок бана: навсегда",
+        "mystatus_reason": "Причина: {reason}",
     },
     "be": {
         "start": "Прывітанне, {name}!\n\nСардэчна запрашаем! Абяры патрэбны раздзел:",
@@ -307,9 +348,10 @@ LOCALES = {
         "cancel": "Адменена, вяртаюся ў галоўнае меню", "nothing_cancel": "Няма чаго адмяняць",
         "profile_title": "<b>Профіль</b>", "profile_id": "Твой ID: <code>{uid}</code>", "profile_rank": "Званне: <b>{rank}</b>", "profile_xp": "Вопыт: {xp} XP",
         "profile_next": "Да наступнага звання: {xp_left} XP (і {ideas_left} ідэй)",
+        "profile_next_manual": "Наступнае званне выдаецца ўручную",
         "profile_stats": "<b>Статыстыка</b>\nСпампавана модаў: {downloads}\nПрапанавана ідэй: {ideas}\nЗададзена пытанняў: {questions}\nАтрымана банаў: {bans}",
         "profile_achievements": "<b>Дасягненні</b>\n{list}", "profile_no_achievements": "Пакуль няма дасягненняў",
-        "rank_up": "Віншую! Ты атрымаў новае званне: <b>{rank}</b>", "ach_unlocked": "Атрымана дасягненне: <b>{ach}</b>",
+        "rank_up": "Віншую! Ты атрымаў новае званне: <b>{rank}</b>", "rank_given": "Табе выдадзена новае званне: <b>{rank}</b>", "ach_unlocked": "Атрымана дасягненне: <b>{ach}</b>",
         "fun_prompt": "Кідай свой гульнявы прыкол сюды!\n\nГэта можа быць:\n• Забаўны момант з бою\n• Незвычайная сітуацыя з фізікай гульні\n• Смешны баг ці супадзенне\n\nДля адмены напішы /cancel",
         "fun_thanks": "Дзякуй! Твой гульнявы прыкол прыняты",
         "suggest_prompt": "<b>Прапанаваць ідэю для мода</b>\n\nНапішы апісанне мода і як што працуе\nДля адмены напішы /cancel",
@@ -342,6 +384,31 @@ LOCALES = {
         "unavailable_text": "Часова недаступна",
         "break_hard_text": "Хопіць мяне ламаць, я і так ледзь трымаюся 🤖",
         "break_soft_text": "Не зламаеш, я моцны",
+        "no_rights": "У цябе няма правоў для гэтага дзеяння",
+        "ban_usage": "Выкарыстанне: /ban <user_id> <дд.мм.гггг> <чч:мм:сс> [прычына]\nАбо: /ban <user_id> never [прычына]",
+        "unban_usage": "Выкарыстанне: /unban <user_id>",
+        "ban_cant_admin": "Нельга забаніць адміністратара",
+        "ban_done": "Карыстальнік {uid} забанены да {until}. Прычына: {reason}",
+        "ban_done_forever": "Карыстальнік {uid} забанены назаўжды. Прычына: {reason}",
+        "unban_done": "Карыстальнік {uid} разбанены",
+        "unban_not_found": "Гэты карыстальнік не ў бане",
+        "banlist_empty": "Спіс банаў пусты",
+        "banlist_title": "Забаненыя:",
+        "ban_notify": "Ты быў забанены\nПрычына: {reason}\nТэрмін: да {until}",
+        "ban_notify_forever": "Ты быў забанены\nПрычына: {reason}\nТэрмін: назаўжды",
+        "setrank_usage": "Выкарыстанне: /setrank <user_id> <rank_id>",
+        "setrank_bad_id": "Няверны фармат ID",
+        "setrank_no_rank": "Такога звання няма",
+        "setrank_done": "Карыстальніку {uid} выдадзена званне: {rank}",
+        "setrank_notify_fail": "Не ўдалося адправіць апавяшчэнне: {err}",
+        "banned_bot_text": "Вы забанены ў гэтым боце\nВы будзеце разбаненыя альбо па рашэнні адміністратара, альбо калі скончыцца тэрмін бану\nПаглядзець свой тэрмін бану: /mystatus",
+        "ban_invalid_date": "Няверны фармат даты. Выкарыстоўвай: <дд.мм.гггг> <чч:мм:сс> або never",
+        "ban_past": "Паказаны час ужо прайшоў",
+        "mystatus_no_ban": "Вы не забанены",
+        "mystatus_title": "Ваш бан:",
+        "mystatus_until": "Тэрмін бану: да {until}",
+        "mystatus_until_forever": "Тэрмін бану: назаўжды",
+        "mystatus_reason": "Прычына: {reason}",
     },
     "en": {
         "start": "Hello, {name}!\n\nWelcome! Choose a section:",
@@ -355,9 +422,10 @@ LOCALES = {
         "cancel": "Cancelled, returning to main menu", "nothing_cancel": "Nothing to cancel",
         "profile_title": "<b>Profile</b>", "profile_id": "Your ID: <code>{uid}</code>", "profile_rank": "Rank: <b>{rank}</b>", "profile_xp": "XP: {xp}",
         "profile_next": "To next rank: {xp_left} XP (and {ideas_left} ideas)",
+        "profile_next_manual": "Next rank is given manually",
         "profile_stats": "<b>Stats</b>\nMods downloaded: {downloads}\nIdeas suggested: {ideas}\nQuestions asked: {questions}\nBans received: {bans}",
         "profile_achievements": "<b>Achievements</b>\n{list}", "profile_no_achievements": "No achievements yet",
-        "rank_up": "Congratulations! You reached a new rank: <b>{rank}</b>", "ach_unlocked": "Achievement unlocked: <b>{ach}</b>",
+        "rank_up": "Congratulations! You reached a new rank: <b>{rank}</b>", "rank_given": "You were given a new rank: <b>{rank}</b>", "ach_unlocked": "Achievement unlocked: <b>{ach}</b>",
         "fun_prompt": "Send your funny gaming moment here!\n\nIt could be:\n• A funny moment from battle\n• An unusual physics situation\n• A funny bug or coincidence\n\nTo cancel, type /cancel",
         "fun_thanks": "Thanks! Your funny moment is accepted",
         "suggest_prompt": "<b>Suggest a mod idea</b>\n\nWrite a description of the mod and how it works\nTo cancel, type /cancel",
@@ -388,6 +456,31 @@ LOCALES = {
         "unavailable_text": "Temporarily unavailable",
         "break_hard_text": "Stop breaking me, I'm barely holding on as it is 🤖",
         "break_soft_text": "You won't break me, I'm tough",
+        "no_rights": "You have no rights for this action",
+        "ban_usage": "Usage: /ban <user_id> <dd.mm.yyyy> <hh:mm:ss> [reason]\nOr: /ban <user_id> never [reason]",
+        "unban_usage": "Usage: /unban <user_id>",
+        "ban_cant_admin": "Cannot ban an administrator",
+        "ban_done": "User {uid} banned until {until}. Reason: {reason}",
+        "ban_done_forever": "User {uid} banned forever. Reason: {reason}",
+        "unban_done": "User {uid} unbanned",
+        "unban_not_found": "This user is not banned",
+        "banlist_empty": "Ban list is empty",
+        "banlist_title": "Banned users:",
+        "ban_notify": "You were banned\nReason: {reason}\nTerm: until {until}",
+        "ban_notify_forever": "You were banned\nReason: {reason}\nTerm: forever",
+        "setrank_usage": "Usage: /setrank <user_id> <rank_id>",
+        "setrank_bad_id": "Invalid ID format",
+        "setrank_no_rank": "No such rank",
+        "setrank_done": "User {uid} given rank: {rank}",
+        "setrank_notify_fail": "Failed to send notification: {err}",
+        "banned_bot_text": "You are banned in this bot\nYou will be unbanned either by administrator decision or when the ban expires\nCheck your ban term: /mystatus",
+        "ban_invalid_date": "Invalid date format. Use: <dd.mm.yyyy> <hh:mm:ss> or never",
+        "ban_past": "The specified time has already passed",
+        "mystatus_no_ban": "You are not banned",
+        "mystatus_title": "Your ban:",
+        "mystatus_until": "Ban term: until {until}",
+        "mystatus_until_forever": "Ban term: forever",
+        "mystatus_reason": "Reason: {reason}",
     }
 }
 
@@ -396,6 +489,37 @@ def tr(user_id: str, key: str, **kwargs) -> str:
     lang = data["lang"] if data else "ru"
     text = LOCALES.get(lang, LOCALES["ru"]).get(key, f"[{key}]")
     return text.format(**kwargs) if kwargs else text
+
+
+# --- Проверка бана ---
+def is_banned(user_id: str) -> tuple[bool, dict]:
+    if user_id not in BANNED:
+        return False, {}
+    info = BANNED[user_id]
+    until_str = info.get("until", "")
+    if until_str == "never":
+        return True, info
+    try:
+        until = datetime.strptime(until_str, "%Y-%m-%d %H:%M:%S")
+    except (KeyError, ValueError):
+        return False, {}
+    if datetime.now() >= until:
+        del BANNED[user_id]
+        save_banned()
+        return False, {}
+    return True, info
+
+
+async def check_ban_and_block(message: Message) -> bool:
+    uid = str(message.from_user.id)
+    banned, info = is_banned(uid)
+    if banned:
+        await message.answer(
+            tr(uid, "banned_bot_text"),
+            reply_markup=None
+        )
+        return True
+    return False
 
 
 # --- Клавиатуры ---
@@ -503,6 +627,8 @@ async def forward_to_admins(message: Message, header: str):
 # --- ПРОФИЛЬ ---
 @dp.message(Command("profile"))
 async def cmd_profile(message: Message, state: FSMContext):
+    if await check_ban_and_block(message):
+        return
     await state.clear()
     uid = str(message.from_user.id)
     if uid not in USERS:
@@ -514,10 +640,13 @@ async def cmd_profile(message: Message, state: FSMContext):
 
     next_id = data["rank_id"] + 1
     if next_id in RANKS:
-        next_name, next_xp, next_ideas, _ = RANKS[next_id]
-        xp_left = max(0, next_xp - data["xp"])
-        ideas_left = max(0, next_ideas - data["ideas"])
-        progress_text = tr(uid, "profile_next", xp_left=xp_left, ideas_left=ideas_left)
+        next_name, next_xp, next_ideas, next_type = RANKS[next_id]
+        if next_type == "user":
+            xp_left = max(0, next_xp - data["xp"])
+            ideas_left = max(0, next_ideas - data["ideas"])
+            progress_text = tr(uid, "profile_next", xp_left=xp_left, ideas_left=ideas_left)
+        else:
+            progress_text = tr(uid, "profile_next_manual")
     else:
         progress_text = "Максимальное звание"
 
@@ -552,17 +681,17 @@ async def cmd_setrank(message: Message):
         return
     args = message.text.split()
     if len(args) < 3:
-        await message.answer("Использование: /setrank <user_id> <rank_id>\nДоступные ID: 11-15 для персонала")
+        await message.answer(tr(str(message.from_user.id), "setrank_usage"))
         return
     try:
         target_id = str(args[1])
         rank_id = int(args[2])
     except ValueError:
-        await message.answer("Неверный формат ID")
+        await message.answer(tr(str(message.from_user.id), "setrank_bad_id"))
         return
 
     if rank_id not in RANKS:
-        await message.answer("Такого звания нет")
+        await message.answer(tr(str(message.from_user.id), "setrank_no_rank"))
         return
 
     if target_id not in USERS:
@@ -570,7 +699,206 @@ async def cmd_setrank(message: Message):
 
     USERS[target_id]["rank_id"] = rank_id
     save_users()
-    await message.answer(f"Пользователю {target_id} выдано звание: {RANKS[rank_id][0]}")
+    admin_uid = str(message.from_user.id)
+    await message.answer(tr(admin_uid, "setrank_done", uid=target_id, rank=RANKS[rank_id][0]))
+
+    try:
+        await bot.send_message(
+            int(target_id),
+            tr(target_id, "rank_given", rank=RANKS[rank_id][0]),
+            parse_mode="HTML"
+        )
+    except Exception as e:
+        await message.answer(tr(admin_uid, "setrank_notify_fail", err=e))
+
+
+# --- СИСТЕМА БАНОВ ---
+@dp.message(Command("ban"))
+async def cmd_ban(message: Message):
+    uid_admin = str(message.from_user.id)
+    rank = USERS.get(uid_admin, {}).get("rank_id", 0)
+    if message.from_user.id not in ADMIN_IDS and rank < 18:
+        await message.answer(tr(uid_admin, "no_rights"))
+        return
+
+    args = message.text.split()
+    if len(args) < 3:
+        await message.answer(tr(uid_admin, "ban_usage"))
+        return
+    
+    try:
+        target_id = int(args[1])
+    except ValueError:
+        await message.answer(tr(uid_admin, "setrank_bad_id"))
+        return
+
+    if target_id in ADMIN_IDS:
+        await message.answer(tr(uid_admin, "ban_cant_admin"))
+        return
+
+    # Проверка на вечный бан
+    forever = False
+    until_dt = None
+    
+    if args[2].lower() in ("never", "навсегда", "назаўжды"):
+        forever = True
+        reason = " ".join(args[3:]) if len(args) > 3 else "Без причины"
+    else:
+        if len(args) < 4:
+            await message.answer(tr(uid_admin, "ban_usage"))
+            return
+        try:
+            date_str = args[2]
+            time_str = args[3]
+            until_dt = datetime.strptime(f"{date_str} {time_str}", "%d.%m.%Y %H:%M:%S")
+        except ValueError:
+            await message.answer(tr(uid_admin, "ban_invalid_date"))
+            return
+
+        if until_dt <= datetime.now():
+            await message.answer(tr(uid_admin, "ban_past"))
+            return
+        
+        reason = " ".join(args[4:]) if len(args) > 4 else "Без причины"
+
+    target_str = str(target_id)
+    
+    BANNED[target_str] = {
+        "reason": reason,
+        "until": "never" if forever else until_dt.strftime("%Y-%m-%d %H:%M:%S"),
+        "date_banned": datetime.now().strftime("%Y-%m-%d %H:%M"),
+        "banned_by": message.from_user.id
+    }
+    save_banned()
+
+    if target_str not in USERS:
+        USERS[target_str] = default_user_data()
+    USERS[target_str]["bans"] += 1
+    save_users()
+
+    if USERS[target_str]["bans"] == 1:
+        ach = unlock_achievement(target_str, "banned_1")
+        if ach:
+            try:
+                await bot.send_message(target_id, tr(target_str, "ach_unlocked", ach=ach), parse_mode="HTML")
+            except:
+                pass
+    elif USERS[target_str]["bans"] == 10:
+        ach = unlock_achievement(target_str, "banned_10")
+        if ach:
+            try:
+                await bot.send_message(target_id, tr(target_str, "ach_unlocked", ach=ach), parse_mode="HTML")
+            except:
+                pass
+
+    if TARGET_CHAT_IDS:
+        try:
+            await bot.ban_chat_member(TARGET_CHAT_IDS[0], target_id)
+        except Exception as e:
+            logger.error(f"Не удалось забанить в группе: {e}")
+
+    try:
+        if forever:
+            await bot.send_message(target_id, tr(target_str, "ban_notify_forever", reason=reason))
+        else:
+            await bot.send_message(target_id, tr(target_str, "ban_notify", reason=reason, until=until_dt.strftime("%d.%m.%Y %H:%M:%S")))
+    except:
+        pass
+
+    if TARGET_CHAT_IDS:
+        try:
+            if forever:
+                await bot.send_message(
+                    TARGET_CHAT_IDS[0],
+                    f"Пользователь {target_id} забанен навсегда\nПричина: {reason}\nЗабанил: {message.from_user.id}"
+                )
+            else:
+                await bot.send_message(
+                    TARGET_CHAT_IDS[0],
+                    f"Пользователь {target_id} забанен до {until_dt.strftime('%d.%m.%Y %H:%M:%S')}\nПричина: {reason}\nЗабанил: {message.from_user.id}"
+                )
+        except:
+            pass
+
+    if forever:
+        await message.answer(tr(uid_admin, "ban_done_forever", uid=target_id, reason=reason))
+    else:
+        await message.answer(tr(uid_admin, "ban_done", uid=target_id, until=until_dt.strftime("%d.%m.%Y %H:%M:%S"), reason=reason))
+
+
+@dp.message(Command("unban"))
+async def cmd_unban(message: Message):
+    uid_admin = str(message.from_user.id)
+    rank = USERS.get(uid_admin, {}).get("rank_id", 0)
+    if message.from_user.id not in ADMIN_IDS and rank < 18:
+        await message.answer(tr(uid_admin, "no_rights"))
+        return
+
+    args = message.text.split()
+    if len(args) < 2:
+        await message.answer(tr(uid_admin, "unban_usage"))
+        return
+    try:
+        target_id = int(args[1])
+    except ValueError:
+        await message.answer(tr(uid_admin, "setrank_bad_id"))
+        return
+
+    target_str = str(target_id)
+    if target_str in BANNED:
+        del BANNED[target_str]
+        save_banned()
+        if TARGET_CHAT_IDS:
+            try:
+                await bot.unban_chat_member(TARGET_CHAT_IDS[0], target_id)
+            except Exception as e:
+                logger.error(f"Не удалось разбанить в группе: {e}")
+        await message.answer(tr(uid_admin, "unban_done", uid=target_id))
+    else:
+        await message.answer(tr(uid_admin, "unban_not_found"))
+
+
+@dp.message(Command("banlist"))
+async def cmd_banlist(message: Message):
+    uid_admin = str(message.from_user.id)
+    rank = USERS.get(uid_admin, {}).get("rank_id", 0)
+    if message.from_user.id not in ADMIN_IDS and rank < 18:
+        await message.answer(tr(uid_admin, "no_rights"))
+        return
+
+    if not BANNED:
+        await message.answer(tr(uid_admin, "banlist_empty"))
+        return
+
+    lines = []
+    for uid, info in BANNED.items():
+        until = info.get("until", "?")
+        if until == "never":
+            until = "навсегда"
+        lines.append(f"• {uid} | до {until} | {info.get('reason', '')}")
+    await message.answer(tr(uid_admin, "banlist_title") + "\n" + "\n".join(lines))
+
+
+@dp.message(Command("mystatus"))
+async def cmd_mystatus(message: Message):
+    uid = str(message.from_user.id)
+    banned, info = is_banned(uid)
+    if not banned:
+        await message.answer(tr(uid, "mystatus_no_ban"))
+        return
+
+    until = info.get("until", "")
+    if until == "never":
+        until_text = tr(uid, "mystatus_until_forever")
+    else:
+        until_text = tr(uid, "mystatus_until", until=datetime.strptime(until, "%Y-%m-%d %H:%M:%S").strftime("%d.%m.%Y %H:%M:%S"))
+
+    text = (
+        f"{tr(uid, 'mystatus_title')}\n"
+        f"{until_text}\n"
+        f"{tr(uid, 'mystatus_reason', reason=info.get('reason', '?'))}"
+    )
+    await message.answer(text, reply_markup=None)
 
 
 # --- Обработчики ---
@@ -585,17 +913,31 @@ async def group_document_handler(message: Message):
             await message.answer(f"Файл {doc.file_name} сохранен")
 
 
+@dp.chat_member(F.chat.id == GROUP_ID_VALUE)
+async def on_chat_member(event: ChatMemberUpdated):
+    if event.new_chat_member.status in ("member", "restricted"):
+        uid = str(event.new_chat_member.user.id)
+        banned, _ = is_banned(uid)
+        if banned:
+            try:
+                await bot.ban_chat_member(event.chat.id, event.new_chat_member.user.id)
+                await bot.send_message(event.chat.id, f"Пользователь {uid} в чёрном списке и был удалён")
+            except Exception as e:
+                logger.error(f"Не удалось забанить при входе: {e}")
+
+
 @dp.message(CommandStart())
 async def cmd_start(message: Message, state: FSMContext):
+    if await check_ban_and_block(message):
+        return
     await state.clear()
     uid = str(message.from_user.id)
     is_new = uid not in USERS
 
     if is_new:
         USERS[uid] = default_user_data()
-        # Автоматическая выдача 13-го звания админам
         if message.from_user.id in ADMIN_IDS:
-            USERS[uid]["rank_id"] = 13  # Модератор
+            USERS[uid]["rank_id"] = 13
         save_users()
 
     if is_new:
@@ -617,6 +959,8 @@ async def cmd_start(message: Message, state: FSMContext):
 
 @dp.message(Command("lang"))
 async def cmd_lang(message: Message, state: FSMContext):
+    if await check_ban_and_block(message):
+        return
     await state.clear()
     await message.answer(
         tr(str(message.from_user.id), "choose_lang"),
@@ -631,6 +975,10 @@ async def cmd_lang(message: Message, state: FSMContext):
 @dp.callback_query(F.data.startswith("set_lang_"))
 async def cb_set_lang(callback: CallbackQuery, state: FSMContext):
     uid = str(callback.from_user.id)
+    banned, _ = is_banned(uid)
+    if banned:
+        await callback.answer("Вы забанены", show_alert=True)
+        return
     lang = callback.data.split("_")[-1]
     if uid not in USERS:
         USERS[uid] = default_user_data()
@@ -647,6 +995,8 @@ async def cb_set_lang(callback: CallbackQuery, state: FSMContext):
 
 @dp.message(Command("cancel"))
 async def cmd_cancel(message: Message, state: FSMContext):
+    if await check_ban_and_block(message):
+        return
     uid = str(message.from_user.id)
     if await state.get_state():
         await state.clear()
@@ -675,6 +1025,8 @@ async def cmd_test_group(message: Message, state: FSMContext):
 
 @dp.message(F.text.in_([LOCALES["ru"]["btn_mods"], LOCALES["be"]["btn_mods"], LOCALES["en"]["btn_mods"]]))
 async def btn_mods(message: Message, state: FSMContext):
+    if await check_ban_and_block(message):
+        return
     await state.clear()
     uid = str(message.from_user.id)
     await message.answer(tr(uid, "mods_menu"), parse_mode="HTML", reply_markup=get_mods_keyboard(uid))
@@ -683,6 +1035,11 @@ async def btn_mods(message: Message, state: FSMContext):
 @dp.callback_query(F.data.startswith("mod_old_"))
 async def cb_mod_any(callback: CallbackQuery):
     uid = str(callback.from_user.id)
+    banned, _ = is_banned(uid)
+    if banned:
+        await callback.answer("Вы забанены", show_alert=True)
+        return
+
     if callback.data == "mod_old_ui_info":
         await callback.answer()
         await callback.message.answer(tr(uid, "old_ui_info_text"))
@@ -732,6 +1089,8 @@ async def cb_mod_any(callback: CallbackQuery):
 
 @dp.message(F.text.in_([LOCALES["ru"]["btn_fun"], LOCALES["be"]["btn_fun"], LOCALES["en"]["btn_fun"]]))
 async def btn_fun(message: Message, state: FSMContext):
+    if await check_ban_and_block(message):
+        return
     await state.set_state(UserState.awaiting_fun)
     uid = str(message.from_user.id)
     await message.answer(tr(uid, "fun_prompt"), reply_markup=get_main_keyboard(uid))
@@ -750,6 +1109,8 @@ async def receive_fun(message: Message, state: FSMContext):
 
 @dp.message(F.text.in_([LOCALES["ru"]["btn_suggest"], LOCALES["be"]["btn_suggest"], LOCALES["en"]["btn_suggest"]]))
 async def btn_suggest_mod(message: Message, state: FSMContext):
+    if await check_ban_and_block(message):
+        return
     await state.set_state(UserState.awaiting_mod_suggestion)
     uid = str(message.from_user.id)
     await message.answer(tr(uid, "suggest_prompt"), parse_mode="HTML", reply_markup=get_main_keyboard(uid))
@@ -787,6 +1148,8 @@ async def receive_mod_suggestion(message: Message, state: FSMContext):
 
 @dp.message(F.text.in_([LOCALES["ru"]["btn_bug"], LOCALES["be"]["btn_bug"], LOCALES["en"]["btn_bug"]]))
 async def btn_bug_report(message: Message, state: FSMContext):
+    if await check_ban_and_block(message):
+        return
     await state.set_state(UserState.awaiting_bug_report)
     uid = str(message.from_user.id)
     await message.answer(tr(uid, "bug_prompt"), reply_markup=get_main_keyboard(uid))
@@ -808,6 +1171,8 @@ async def receive_bug_report(message: Message, state: FSMContext):
 
 @dp.message(F.text.in_([LOCALES["ru"]["btn_question"], LOCALES["be"]["btn_question"], LOCALES["en"]["btn_question"]]))
 async def btn_question(message: Message, state: FSMContext):
+    if await check_ban_and_block(message):
+        return
     await state.set_state(UserState.awaiting_question)
     uid = str(message.from_user.id)
     await message.answer(tr(uid, "question_prompt"), reply_markup=get_main_keyboard(uid))
@@ -847,18 +1212,24 @@ async def receive_question(message: Message, state: FSMContext):
 
 @dp.message(F.text.in_([LOCALES["ru"]["btn_dev"], LOCALES["be"]["btn_dev"], LOCALES["en"]["btn_dev"]]))
 async def btn_in_dev(message: Message, state: FSMContext):
+    if await check_ban_and_block(message):
+        return
     await state.clear()
     uid = str(message.from_user.id)
     await message.answer(tr(uid, "dev_text"), reply_markup=get_main_keyboard(uid))
 
 @dp.message(F.text.in_([LOCALES["ru"]["btn_donate"], LOCALES["be"]["btn_donate"], LOCALES["en"]["btn_donate"]]))
 async def btn_donate(message: Message, state: FSMContext):
+    if await check_ban_and_block(message):
+        return
     await state.clear()
     uid = str(message.from_user.id)
     await message.answer(tr(uid, "donate_text"), reply_markup=get_main_keyboard(uid))
 
 @dp.message(F.text.in_([LOCALES["ru"]["btn_help"], LOCALES["be"]["btn_help"], LOCALES["en"]["btn_help"]]))
 async def btn_help(message: Message, state: FSMContext):
+    if await check_ban_and_block(message):
+        return
     await state.clear()
     uid = str(message.from_user.id)
     await message.answer(
@@ -876,13 +1247,19 @@ async def btn_help(message: Message, state: FSMContext):
 
 @dp.callback_query(F.data.startswith("help_"))
 async def cb_help_any(callback: CallbackQuery):
-    await callback.answer()
     uid = str(callback.from_user.id)
+    banned, _ = is_banned(uid)
+    if banned:
+        await callback.answer("Вы забанены", show_alert=True)
+        return
+    await callback.answer()
     key = f"{callback.data}_text"
     await callback.message.answer(tr(uid, key))
 
 @dp.message(F.text.in_([LOCALES["ru"]["btn_misc"], LOCALES["be"]["btn_misc"], LOCALES["en"]["btn_misc"]]))
 async def btn_misc(message: Message, state: FSMContext):
+    if await check_ban_and_block(message):
+        return
     await state.clear()
     uid = str(message.from_user.id)
     await message.answer(
@@ -897,8 +1274,12 @@ async def btn_misc(message: Message, state: FSMContext):
 
 @dp.callback_query(F.data.startswith("misc_"))
 async def cb_misc_any(callback: CallbackQuery):
-    await callback.answer()
     uid = str(callback.from_user.id)
+    banned, _ = is_banned(uid)
+    if banned:
+        await callback.answer("Вы забанены", show_alert=True)
+        return
+    await callback.answer()
     key = f"{callback.data}_text"
     if callback.data == "misc_team":
         await callback.message.answer(tr(uid, key), parse_mode="HTML")
@@ -930,7 +1311,13 @@ async def handle_group_reply(message: Message):
 async def easter_egg_handler(message: Message, state: FSMContext):
     if await state.get_state() is not None:
         return
+    
     uid = str(message.from_user.id)
+    banned, _ = is_banned(uid)
+    if banned:
+        await message.answer(tr(uid, "banned_bot_text"), reply_markup=None)
+        return
+
     text_lower = message.text.strip().lower()
 
     if text_lower in EASTER_EGGS:
@@ -968,6 +1355,10 @@ async def unknown_media(message: Message, state: FSMContext):
     if GROUP_ID_VALUE and str(message.chat.id) == str(GROUP_ID_VALUE):
         return
     uid = str(message.from_user.id)
+    banned, _ = is_banned(uid)
+    if banned:
+        await message.answer(tr(uid, "banned_bot_text"), reply_markup=None)
+        return
     await message.answer(
         tr(uid, "unknown_media_text"),
         reply_markup=get_main_keyboard(uid)
