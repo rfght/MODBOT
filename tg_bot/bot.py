@@ -79,7 +79,7 @@ MOD_NAMES = {
     "old_ui": {"ru": "Старый UI ангара", "be": "Стары UI ангара", "en": "Old Hangar UI"},
 }
 
-# --- СИСТЕМА ЗВАНИЙ И ОПЫТА (20 званий) ---
+# --- СИСТЕМА ЗВАНИЙ И ОПЫТА (21 звание) ---
 RANKS = {
     1:  ("Новичок", 0, 0, "user"),
     2:  ("Гость", 100, 0, "user"),
@@ -100,7 +100,8 @@ RANKS = {
     17: ("Младший модератор", 0, 0, "staff"),
     18: ("Модератор", 0, 0, "staff"),
     19: ("Администратор", 0, 0, "staff"),
-    20: ("Владелец", 0, 0, "staff"),
+    20: ("Вице-владелец", 0, 0, "staff"),
+    21: ("Владелец", 0, 0, "staff"),
 }
 
 ACHIEVEMENTS = {
@@ -231,6 +232,7 @@ LOCALES = {
         "btn_mods": "Моды",
         "btn_fun": "Приколы",
         "btn_help": "Помощь",
+        "btn_feedback": "Обратная связь",
         "btn_suggest": "Предложить мод",
         "btn_dev": "В разработке",
         "btn_donate": "Поддержать",
@@ -239,6 +241,8 @@ LOCALES = {
         "btn_misc": "Разное",
         "btn_lang": "Язык",
         "btn_profile": "Профиль",
+        "btn_back": "Назад",
+        "feedback_menu": "<b>Обратная связь</b>\n\nВыбери действие:",
         "mods_menu": "<b>Моды</b>\n\nВыбери мод:",
         "subscribe_needed": "Чтобы скачать этот мод, пожалуйста, подпишись на наш канал!",
         "btn_subscribe": "Подписаться на канал",
@@ -321,14 +325,17 @@ LOCALES = {
         "mystatus_until": "Срок бана: до {until}",
         "mystatus_until_forever": "Срок бана: навсегда",
         "mystatus_reason": "Причина: {reason}",
+        "staff_empty": "Команда пока пуста",
+        "staff_title": "<b>Состав команды:</b>",
     },
     "be": {
         "start": "Прывітанне, {name}!\n\nСардэчна запрашаем! Абяры патрэбны раздзел:",
         "choose_lang": "Выбяры мову / Choose language:",
         "lang_changed": "Мова зменена на Беларускую",
         "btn_mods": "Моды", "btn_fun": "Прыколы", "btn_help": "Дапамога", "btn_suggest": "Прапанаваць мод",
-        "btn_dev": "У распрацоўцы", "btn_donate": "Падтрымаць", "btn_bug": "Паведаміць пра памылку",
-        "btn_question": "Задаць пытанне", "btn_misc": "Рознае", "btn_lang": "Мова", "btn_profile": "Профіль",
+        "btn_feedback": "Зваротная сувязь", "btn_dev": "У распрацоўцы", "btn_donate": "Падтрымаць", "btn_bug": "Паведаміць пра памылку",
+        "btn_question": "Задаць пытанне", "btn_misc": "Рознае", "btn_lang": "Мова", "btn_profile": "Профіль", "btn_back": "Назад",
+        "feedback_menu": "<b>Зваротная сувязь</b>\n\nАбяры дзеянне:",
         "mods_menu": "<b>Моды</b>\n\nАбяры мод:", "subscribe_needed": "Каб спампаваць гэты мод, калі ласка, падпішыся на наш канал!",
         "btn_subscribe": "Падпісацца на канал", "version": "Версія мода: {ver}", "btn_info": "Апісанне мода",
         "cancel": "Адменена, вяртаюся ў галоўнае меню", "nothing_cancel": "Няма чаго адмяняць",
@@ -397,14 +404,17 @@ LOCALES = {
         "mystatus_until": "Тэрмін бану: да {until}",
         "mystatus_until_forever": "Тэрмін бану: назаўжды",
         "mystatus_reason": "Прычына: {reason}",
+        "staff_empty": "Каманда пакуль пустая",
+        "staff_title": "<b>Склад каманды:</b>",
     },
     "en": {
         "start": "Hello, {name}!\n\nWelcome! Choose a section:",
         "choose_lang": "Choose language:",
         "lang_changed": "Language changed to English",
         "btn_mods": "Mods", "btn_fun": "Fun", "btn_help": "Help", "btn_suggest": "Suggest a mod",
-        "btn_dev": "In development", "btn_donate": "Support", "btn_bug": "Report a bug",
-        "btn_question": "Ask a question", "btn_misc": "Misc", "btn_lang": "Language", "btn_profile": "Profile",
+        "btn_feedback": "Feedback", "btn_dev": "In development", "btn_donate": "Support", "btn_bug": "Report a bug",
+        "btn_question": "Ask a question", "btn_misc": "Misc", "btn_lang": "Language", "btn_profile": "Profile", "btn_back": "Back",
+        "feedback_menu": "<b>Feedback</b>\n\nChoose an action:",
         "mods_menu": "<b>Mods</b>\n\nChoose a mod:", "subscribe_needed": "To download this mod, please subscribe to our channel!",
         "btn_subscribe": "Subscribe to channel", "version": "Mod version: {ver}", "btn_info": "Mod description",
         "cancel": "Cancelled, returning to main menu", "nothing_cancel": "Nothing to cancel",
@@ -471,6 +481,8 @@ LOCALES = {
         "mystatus_until": "Ban term: until {until}",
         "mystatus_until_forever": "Ban term: forever",
         "mystatus_reason": "Reason: {reason}",
+        "staff_empty": "Team is empty",
+        "staff_title": "<b>Team list:</b>",
     }
 }
 
@@ -517,11 +529,18 @@ def get_main_keyboard(user_id: str) -> ReplyKeyboardMarkup:
     return ReplyKeyboardMarkup(
         keyboard=[
             [KeyboardButton(text=tr(user_id, "btn_mods")), KeyboardButton(text=tr(user_id, "btn_fun"))],
-            [KeyboardButton(text=tr(user_id, "btn_help")), KeyboardButton(text=tr(user_id, "btn_suggest"))],
-            [KeyboardButton(text=tr(user_id, "btn_dev")), KeyboardButton(text=tr(user_id, "btn_donate"))],
+            [KeyboardButton(text=tr(user_id, "btn_profile")), KeyboardButton(text=tr(user_id, "btn_help"))],
+            [KeyboardButton(text=tr(user_id, "btn_feedback")), KeyboardButton(text=tr(user_id, "btn_misc"))],
+        ],
+        resize_keyboard=True,
+    )
+
+def get_feedback_keyboard(user_id: str) -> ReplyKeyboardMarkup:
+    return ReplyKeyboardMarkup(
+        keyboard=[
+            [KeyboardButton(text=tr(user_id, "btn_suggest"))],
             [KeyboardButton(text=tr(user_id, "btn_bug")), KeyboardButton(text=tr(user_id, "btn_question"))],
-            [KeyboardButton(text=tr(user_id, "btn_misc")), KeyboardButton(text=tr(user_id, "btn_lang"))],
-            [KeyboardButton(text=tr(user_id, "btn_profile"))],
+            [KeyboardButton(text=tr(user_id, "btn_back"))],
         ],
         resize_keyboard=True,
     )
@@ -664,7 +683,7 @@ async def btn_profile_click(message: Message, state: FSMContext):
     await cmd_profile(message, state)
 
 
-# --- АДМИН: ВЫДАЧА ЗВАНИЙ ---
+# --- АДМИН: ВЫДАЧА ЗВАНИЙ И СПИСОК КОМАНДЫ ---
 @dp.message(Command("setrank"))
 async def cmd_setrank(message: Message):
     if message.from_user.id not in ADMIN_IDS:
@@ -702,6 +721,57 @@ async def cmd_setrank(message: Message):
         await message.answer(tr(admin_uid, "setrank_notify_fail", err=e))
 
 
+@dp.message(Command("staff"))
+async def cmd_staff(message: Message):
+    uid_admin = str(message.from_user.id)
+    rank_admin = USERS.get(uid_admin, {}).get("rank_id", 0)
+    
+    if message.from_user.id not in ADMIN_IDS and rank_admin < 19:
+        await message.answer(tr(uid_admin, "no_rights"))
+        return
+
+    staff_list = []
+    for uid, data in USERS.items():
+        rank_id = data.get("rank_id", 1)
+        if rank_id in RANKS:
+            _, _, _, rank_type = RANKS[rank_id]
+            if rank_type in ("modder", "staff"):
+                staff_list.append((rank_id, uid, data))
+    
+    if not staff_list:
+        await message.answer(tr(uid_admin, "staff_empty"))
+        return
+
+    staff_list.sort(key=lambda x: x[0], reverse=True)
+    
+    text_lines = [tr(uid_admin, "staff_title") + "\n"]
+    for rank_id, uid, data in staff_list:
+        rank_name = RANKS[rank_id][0]
+        xp = data.get("xp", 0)
+        ideas = data.get("ideas", 0)
+        bans = data.get("bans", 0)
+        text_lines.append(f"<b>{rank_name}</b> | ID: <code>{uid}</code>\n└ XP: {xp} | Идей: {ideas} | Банов: {bans}\n")
+    
+    full_text = "\n".join(text_lines)
+    
+    if len(full_text) > 4000:
+        parts = []
+        current_part = ""
+        for line in text_lines:
+            if len(current_part) + len(line) > 4000:
+                parts.append(current_part)
+                current_part = line + "\n"
+            else:
+                current_part += line + "\n"
+        if current_part:
+            parts.append(current_part)
+            
+        for part in parts:
+            await message.answer(part, parse_mode="HTML")
+    else:
+        await message.answer(full_text, parse_mode="HTML")
+
+
 # --- СИСТЕМА БАНОВ ---
 @dp.message(Command("ban"))
 async def cmd_ban(message: Message):
@@ -714,12 +784,10 @@ async def cmd_ban(message: Message):
     target_id = None
     args = message.text.split()
 
-    # Если это ответ (Reply) на сообщение в группе
     if message.reply_to_message and message.reply_to_message.from_user:
         target_id = message.reply_to_message.from_user.id
         reason_args = args[1:]
     else:
-        # Если ввели вручную: /ban <id> <время>
         if len(args) < 3:
             await message.answer(tr(uid_admin, "ban_usage"))
             return
@@ -734,7 +802,6 @@ async def cmd_ban(message: Message):
         await message.answer(tr(uid_admin, "ban_cant_admin"))
         return
 
-    # Проверка на вечный бан
     forever = False
     until_dt = None
     
@@ -747,7 +814,6 @@ async def cmd_ban(message: Message):
             return
         
         if message.reply_to_message:
-            # Если банят по реплаю, по умолчанию бан навсегда
             forever = True 
             reason = " ".join(reason_args) if reason_args else "Без причины"
         else:
@@ -839,7 +905,6 @@ async def cmd_unban(message: Message):
         return
 
     target_id = None
-    # Если это ответ на сообщение
     if message.reply_to_message and message.reply_to_message.from_user:
         target_id = message.reply_to_message.from_user.id
     else:
@@ -1116,13 +1181,29 @@ async def receive_fun(message: Message, state: FSMContext):
     await message.answer(tr(uid, "fun_thanks"), reply_markup=get_main_keyboard(uid))
 
 
+# --- ОБРАТНАЯ СВЯЗЬ ---
+@dp.message(F.text.in_([LOCALES["ru"]["btn_feedback"], LOCALES["be"]["btn_feedback"], LOCALES["en"]["btn_feedback"]]))
+async def btn_feedback(message: Message, state: FSMContext):
+    if await check_ban_and_block(message):
+        return
+    await state.clear()
+    uid = str(message.from_user.id)
+    await message.answer(tr(uid, "feedback_menu"), parse_mode="HTML", reply_markup=get_feedback_keyboard(uid))
+
+@dp.message(F.text.in_([LOCALES["ru"]["btn_back"], LOCALES["be"]["btn_back"], LOCALES["en"]["btn_back"]]))
+async def btn_back(message: Message, state: FSMContext):
+    await state.clear()
+    uid = str(message.from_user.id)
+    await message.answer(tr(uid, "start", name=message.from_user.first_name), reply_markup=get_main_keyboard(uid))
+
+
 @dp.message(F.text.in_([LOCALES["ru"]["btn_suggest"], LOCALES["be"]["btn_suggest"], LOCALES["en"]["btn_suggest"]]))
 async def btn_suggest_mod(message: Message, state: FSMContext):
     if await check_ban_and_block(message):
         return
     await state.set_state(UserState.awaiting_mod_suggestion)
     uid = str(message.from_user.id)
-    await message.answer(tr(uid, "suggest_prompt"), parse_mode="HTML", reply_markup=get_main_keyboard(uid))
+    await message.answer(tr(uid, "suggest_prompt"), parse_mode="HTML", reply_markup=get_feedback_keyboard(uid))
 
 
 @dp.message(UserState.awaiting_mod_suggestion, ~F.text.in_(ALL_MENU_BUTTONS))
@@ -1161,7 +1242,7 @@ async def btn_bug_report(message: Message, state: FSMContext):
         return
     await state.set_state(UserState.awaiting_bug_report)
     uid = str(message.from_user.id)
-    await message.answer(tr(uid, "bug_prompt"), reply_markup=get_main_keyboard(uid))
+    await message.answer(tr(uid, "bug_prompt"), reply_markup=get_feedback_keyboard(uid))
 
 
 @dp.message(UserState.awaiting_bug_report, ~F.text.in_(ALL_MENU_BUTTONS))
@@ -1184,7 +1265,7 @@ async def btn_question(message: Message, state: FSMContext):
         return
     await state.set_state(UserState.awaiting_question)
     uid = str(message.from_user.id)
-    await message.answer(tr(uid, "question_prompt"), reply_markup=get_main_keyboard(uid))
+    await message.answer(tr(uid, "question_prompt"), reply_markup=get_feedback_keyboard(uid))
 
 
 @dp.message(UserState.awaiting_question, ~F.text.in_(ALL_MENU_BUTTONS))
@@ -1219,22 +1300,7 @@ async def receive_question(message: Message, state: FSMContext):
     await message.answer(tr(uid, "question_thanks"), reply_markup=get_main_keyboard(uid))
 
 
-@dp.message(F.text.in_([LOCALES["ru"]["btn_dev"], LOCALES["be"]["btn_dev"], LOCALES["en"]["btn_dev"]]))
-async def btn_in_dev(message: Message, state: FSMContext):
-    if await check_ban_and_block(message):
-        return
-    await state.clear()
-    uid = str(message.from_user.id)
-    await message.answer(tr(uid, "dev_text"), reply_markup=get_main_keyboard(uid))
-
-@dp.message(F.text.in_([LOCALES["ru"]["btn_donate"], LOCALES["be"]["btn_donate"], LOCALES["en"]["btn_donate"]]))
-async def btn_donate(message: Message, state: FSMContext):
-    if await check_ban_and_block(message):
-        return
-    await state.clear()
-    uid = str(message.from_user.id)
-    await message.answer(tr(uid, "donate_text"), reply_markup=get_main_keyboard(uid))
-
+# --- ПОМОЩЬ ---
 @dp.message(F.text.in_([LOCALES["ru"]["btn_help"], LOCALES["be"]["btn_help"], LOCALES["en"]["btn_help"]]))
 async def btn_help(message: Message, state: FSMContext):
     if await check_ban_and_block(message):
@@ -1264,6 +1330,8 @@ async def cb_help_any(callback: CallbackQuery):
     key = f"{callback.data}_text"
     await callback.message.answer(tr(uid, key))
 
+
+# --- РАЗНОЕ (ТЕПЕРЬ ВСЁ ЧЕРЕЗ ИНЛАЙН) ---
 @dp.message(F.text.in_([LOCALES["ru"]["btn_misc"], LOCALES["be"]["btn_misc"], LOCALES["en"]["btn_misc"]]))
 async def btn_misc(message: Message, state: FSMContext):
     if await check_ban_and_block(message):
@@ -1274,6 +1342,9 @@ async def btn_misc(message: Message, state: FSMContext):
         tr(uid, "misc_menu"),
         parse_mode="HTML",
         reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text=tr(uid, "btn_dev"), callback_data="misc_dev")],
+            [InlineKeyboardButton(text=tr(uid, "btn_donate"), callback_data="misc_donate")],
+            [InlineKeyboardButton(text=tr(uid, "btn_lang"), callback_data="misc_lang")],
             [InlineKeyboardButton(text=tr(uid, "misc_team_btn"), callback_data="misc_team")],
             [InlineKeyboardButton(text=tr(uid, "misc_join_btn"), callback_data="misc_join")],
             [InlineKeyboardButton(text=tr(uid, "misc_share_btn"), url="https://t.me/share/url?url=https://t.me/ModRak1_bot&text=Смотри, какой крутой бот для модов!")],
@@ -1288,15 +1359,27 @@ async def cb_misc_any(callback: CallbackQuery):
         await callback.answer("Вы забанены", show_alert=True)
         return
     await callback.answer()
-    key = f"{callback.data}_text"
-    if callback.data == "misc_team":
-        await callback.message.answer(tr(uid, key), parse_mode="HTML")
+    
+    if callback.data == "misc_dev":
+        await callback.message.answer(tr(uid, "dev_text"))
+    elif callback.data == "misc_donate":
+        await callback.message.answer(tr(uid, "donate_text"))
+    elif callback.data == "misc_lang":
+        await callback.message.answer(
+            tr(uid, "choose_lang"),
+            reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+                [InlineKeyboardButton(text="🇷🇺 Русский", callback_data="set_lang_ru")],
+                [InlineKeyboardButton(text="🇧🇾 Беларуская", callback_data="set_lang_be")],
+                [InlineKeyboardButton(text="🇬🇧 English", callback_data="set_lang_en")],
+            ])
+        )
     else:
-        await callback.message.answer(tr(uid, key))
+        key = f"{callback.data}_text"
+        if callback.data == "misc_team":
+            await callback.message.answer(tr(uid, key), parse_mode="HTML")
+        else:
+            await callback.message.answer(tr(uid, key))
 
-@dp.message(F.text.in_([LOCALES["ru"]["btn_lang"], LOCALES["be"]["btn_lang"], LOCALES["en"]["btn_lang"]]))
-async def btn_lang_click(message: Message, state: FSMContext):
-    await cmd_lang(message, state)
 
 USER_ID_RE = re.compile(r"🆔 <code>(\d+)</code>")
 
