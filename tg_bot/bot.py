@@ -73,6 +73,9 @@ USERS = {}
 BANNED_PATH = "banned.json"
 BANNED = {}
 
+FALLBACKS_PATH = "fallbacks.json"
+FALLBACKS = {}
+
 MOD_NAMES = {
     "old_font": {"ru": "Старый шрифт", "be": "Стары шрыфт", "en": "Old Font"},
     "old_medals": {"ru": "Старые медали", "be": "Старыя медалі", "en": "Old Medals"},
@@ -119,7 +122,7 @@ ACHIEVEMENTS = {
 
 def default_user_data():
     return {
-        "lang": "ru",
+        "lang": None,  # Изначально языка нет
         "xp": 0,
         "rank_id": 1,
         "downloads": 0,
@@ -171,7 +174,7 @@ def unlock_achievement(user_id: str, ach_key: str):
 
 # --- Загрузка/Сохранение ---
 def load_data():
-    global FILE_IDS, USERS, BANNED
+    global FILE_IDS, USERS, BANNED, FALLBACKS
 
     FILE_IDS = {
         "old_font.rar": "BQACAgIAAyEFAASo0DuCAAPRaudEoy_WaUJytv6Ax-5vHj49Zk8AAqqZAAJuI4FJZH-8dxswqq09BA",
@@ -195,6 +198,9 @@ def load_data():
                 else:
                     base = default_user_data()
                     base.update(val)
+                    # Если языка нет в базе, ставим None, чтобы бот спросил заново
+                    if "lang" not in val or val["lang"] not in ["ru", "be", "en"]:
+                        base["lang"] = None
                     USERS[uid] = base
     except (OSError, json.JSONDecodeError):
         pass
@@ -204,6 +210,12 @@ def load_data():
             BANNED.update(json.load(f))
     except (OSError, json.JSONDecodeError):
         pass
+        
+    try:
+        with open(FALLBACKS_PATH) as f:
+            FALLBACKS.update(json.load(f))
+    except (OSError, json.JSONDecodeError):
+        logger.error("Не удалось загрузить fallbacks.json!")
 
 
 def save_file_ids():
@@ -223,7 +235,7 @@ def save_banned():
 
 load_data()
 
-# --- Локализация ---
+# --- Локализация (основные тексты) ---
 LOCALES = {
     "ru": {
         "start": "Привет, {name}!\n\nДобро пожаловать! Выбери нужный раздел:",
@@ -242,6 +254,7 @@ LOCALES = {
         "btn_lang": "Язык",
         "btn_profile": "Профиль",
         "btn_back": "Назад",
+        "main_menu": "Главное меню",
         "feedback_menu": "<b>Обратная связь</b>\n\nВыбери действие:",
         "mods_menu": "<b>Моды</b>\n\nВыбери мод:",
         "subscribe_needed": "Чтобы скачать этот мод, пожалуйста, подпишись на наш канал!",
@@ -262,8 +275,6 @@ LOCALES = {
         "rank_up": "Поздравляю! Ты получил новое звание: <b>{rank}</b>",
         "rank_given": "Тебе выдано новое звание: <b>{rank}</b>",
         "ach_unlocked": "Получено достижение: <b>{ach}</b>",
-        "gibberish": ["Братан, может скорую", "Это что за набор символов", "Ты с клавиатурой поссорился", "Кот по клавишам прошёлся", "Я такое не читаю", "Эт что за шифр", "Может, тебе помочь набрать", "Клавиатуру протри", "Тут буквы потерялись", "Я в этом не разбираюсь"],
-        "fallback": ["Тут я бессилен, кнопки внизу выручат", "Не догнал тебя, жми кнопку из меню", "Такое мне не по зубам, выбери раздел на клавиатуре", "Я в замешательстве, кнопки ниже помогут", "Ты говоришь загадками, а я понимаю только кнопки", "Не уловил мысль, попробуй через меню", "Моя голова не варит, тыкай кнопку ниже", "Что-то я подвис, клавиатура внизу спасёт", "Не понял ни слова, меню в помощь", "Я всего лишь бот, нажми кнопку из списка"],
         "fun_prompt": "Кидай свой игровой прикол сюда!\n\nЭто может быть:\n• Забавный момент из боя\n• Необычная ситуация с физикой игры\n• Смешной баг или совпадение\n• Любой другой забавный случай из игры\n\nОтправляй хоть видео, хоть фото, хоть текст\nДля отмены напиши /cancel",
         "fun_thanks": "Спасибо! Твой прикол принят, когда его проверят модераторы, он попадёт в наш канал",
         "suggest_prompt": "<b>Предложить идею для мода</b>\n\nНапиши описание мода и как что работает, фото/видео/голосовые/видеосообщения не принимаются\nОно будет переслано администратору\n\nДля отмены напиши /cancel",
@@ -335,6 +346,7 @@ LOCALES = {
         "btn_mods": "Моды", "btn_fun": "Прыколы", "btn_help": "Дапамога", "btn_suggest": "Прапанаваць мод",
         "btn_feedback": "Зваротная сувязь", "btn_dev": "У распрацоўцы", "btn_donate": "Падтрымаць", "btn_bug": "Паведаміць пра памылку",
         "btn_question": "Задаць пытанне", "btn_misc": "Рознае", "btn_lang": "Мова", "btn_profile": "Профіль", "btn_back": "Назад",
+        "main_menu": "Галоўнае меню",
         "feedback_menu": "<b>Зваротная сувязь</b>\n\nАбяры дзеянне:",
         "mods_menu": "<b>Моды</b>\n\nАбяры мод:", "subscribe_needed": "Каб спампаваць гэты мод, калі ласка, падпішыся на наш канал!",
         "btn_subscribe": "Падпісацца на канал", "version": "Версія мода: {ver}", "btn_info": "Апісанне мода",
@@ -345,8 +357,6 @@ LOCALES = {
         "profile_stats": "<b>Статыстыка</b>\nСпампавана модаў: {downloads}\nПрапанавана ідэй: {ideas}\nЗададзена пытанняў: {questions}\nАтрымана банаў: {bans}",
         "profile_achievements": "<b>Дасягненні</b>\n{list}", "profile_no_achievements": "Пакуль няма дасягненняў",
         "rank_up": "Віншую! Ты атрымаў новае званне: <b>{rank}</b>", "rank_given": "Табе выдадзена новае званне: <b>{rank}</b>", "ach_unlocked": "Атрымана дасягненне: <b>{ach}</b>",
-        "gibberish": ["Браток, можа хуткую", "Гэта што за набор сімвалаў", "Ты з клавіятурай пасварыўся", "Кот па клавішах прайшоўся", "Я такое не чытаю", "Гэта што за шыфр"],
-        "fallback": ["Тут я бяссільны, кнопкі ўнізе выручаць", "Не зразумеў цябе, цісні кнопку з меню", "Гэта мне не пад сілу, абяры раздзел на клавіятуры", "Я ў замяшанні, кнопкі ніжэй дапамогуць", "Ты гаворыш загадкамі, а я разумею толькі кнопкі"],
         "fun_prompt": "Кідай свой гульнявы прыкол сюды!\n\nГэта можа быць:\n• Забаўны момант з бою\n• Незвычайная сітуацыя з фізікай гульні\n• Смешны баг ці супадзенне\n\nДля адмены напішы /cancel",
         "fun_thanks": "Дзякуй! Твой гульнявы прыкол прыняты",
         "suggest_prompt": "<b>Прапанаваць ідэю для мода</b>\n\nНапішы апісанне мода і як што працуе\nДля адмены напішы /cancel",
@@ -414,6 +424,7 @@ LOCALES = {
         "btn_mods": "Mods", "btn_fun": "Fun", "btn_help": "Help", "btn_suggest": "Suggest a mod",
         "btn_feedback": "Feedback", "btn_dev": "In development", "btn_donate": "Support", "btn_bug": "Report a bug",
         "btn_question": "Ask a question", "btn_misc": "Misc", "btn_lang": "Language", "btn_profile": "Profile", "btn_back": "Back",
+        "main_menu": "Main menu",
         "feedback_menu": "<b>Feedback</b>\n\nChoose an action:",
         "mods_menu": "<b>Mods</b>\n\nChoose a mod:", "subscribe_needed": "To download this mod, please subscribe to our channel!",
         "btn_subscribe": "Subscribe to channel", "version": "Mod version: {ver}", "btn_info": "Mod description",
@@ -424,8 +435,6 @@ LOCALES = {
         "profile_stats": "<b>Stats</b>\nMods downloaded: {downloads}\nIdeas suggested: {ideas}\nQuestions asked: {questions}\nBans received: {bans}",
         "profile_achievements": "<b>Achievements</b>\n{list}", "profile_no_achievements": "No achievements yet",
         "rank_up": "Congratulations! You reached a new rank: <b>{rank}</b>", "rank_given": "You were given a new rank: <b>{rank}</b>", "ach_unlocked": "Achievement unlocked: <b>{ach}</b>",
-        "gibberish": ["Bro, do you need an ambulance?", "What kind of characters are these?", "Did you fight with your keyboard?", "A cat walked on the keys", "I don't read this", "What kind of cipher is this?"],
-        "fallback": ["I'm powerless here, the buttons below will help", "Didn't catch that, press a button from the menu", "That's beyond me, choose a section on the keyboard", "I'm confused, the buttons below will help", "You speak in riddles, I only understand buttons"],
         "fun_prompt": "Send your funny gaming moment here!\n\nIt could be:\n• A funny moment from battle\n• An unusual physics situation\n• A funny bug or coincidence\n\nTo cancel, type /cancel",
         "fun_thanks": "Thanks! Your funny moment is accepted",
         "suggest_prompt": "<b>Suggest a mod idea</b>\n\nWrite a description of the mod and how it works\nTo cancel, type /cancel",
@@ -488,7 +497,7 @@ LOCALES = {
 
 def tr(user_id: str, key: str, **kwargs) -> str:
     data = USERS.get(user_id)
-    lang = data["lang"] if data else "ru"
+    lang = data["lang"] if data and data.get("lang") else "ru"
     text = LOCALES.get(lang, LOCALES["ru"]).get(key, f"[{key}]")
     return text.format(**kwargs) if kwargs else text
 
@@ -640,9 +649,10 @@ async def cmd_profile(message: Message, state: FSMContext):
         return
     await state.clear()
     uid = str(message.from_user.id)
-    if uid not in USERS:
-        USERS[uid] = default_user_data()
-        save_users()
+    
+    if uid not in USERS or not USERS[uid].get("lang"):
+        await cmd_start(message, state)
+        return
 
     data = USERS[uid]
     rank_name, req_xp, req_ideas, _ = get_rank_info(data["rank_id"])
@@ -1014,7 +1024,8 @@ async def cmd_start(message: Message, state: FSMContext):
             USERS[uid]["rank_id"] = 13
         save_users()
 
-    if is_new:
+    # Если языка нет (новый юзер или база почистилась)
+    if not USERS[uid].get("lang"):
         await message.answer(
             "Выбери язык / Абяры мову / Choose language:",
             reply_markup=InlineKeyboardMarkup(inline_keyboard=[
@@ -1194,7 +1205,9 @@ async def btn_feedback(message: Message, state: FSMContext):
 async def btn_back(message: Message, state: FSMContext):
     await state.clear()
     uid = str(message.from_user.id)
-    await message.answer(tr(uid, "start", name=message.from_user.first_name), reply_markup=get_main_keyboard(uid))
+    
+    # Теперь не здороваемся заново, а просто показываем главное меню
+    await message.answer(tr(uid, "main_menu"), reply_markup=get_main_keyboard(uid))
 
 
 @dp.message(F.text.in_([LOCALES["ru"]["btn_suggest"], LOCALES["be"]["btn_suggest"], LOCALES["en"]["btn_suggest"]]))
@@ -1331,7 +1344,7 @@ async def cb_help_any(callback: CallbackQuery):
     await callback.message.answer(tr(uid, key))
 
 
-# --- РАЗНОЕ (ТЕПЕРЬ ВСЁ ЧЕРЕЗ ИНЛАЙН) ---
+# --- РАЗНОЕ ---
 @dp.message(F.text.in_([LOCALES["ru"]["btn_misc"], LOCALES["be"]["btn_misc"], LOCALES["en"]["btn_misc"]]))
 async def btn_misc(message: Message, state: FSMContext):
     if await check_ban_and_block(message):
@@ -1408,6 +1421,11 @@ async def easter_egg_handler(message: Message, state: FSMContext):
     if banned:
         await message.answer(tr(uid, "banned_bot_text"), reply_markup=None)
         return
+        
+    # Если пользователь не выбрал язык, кидаем его на старт
+    if uid not in USERS or not USERS[uid].get("lang"):
+        await cmd_start(message, state)
+        return
 
     text_lower = message.text.strip().lower()
 
@@ -1436,7 +1454,12 @@ async def easter_egg_handler(message: Message, state: FSMContext):
         is_gibberish = True
 
     replies_key = "gibberish" if is_gibberish else "fallback"
-    replies_list = LOCALES.get(USERS.get(uid, {}).get("lang", "ru"), LOCALES["ru"])[replies_key]
+    
+    # Берем язык пользователя, если нет - русский
+    user_lang = USERS.get(uid, {}).get("lang") or "ru"
+    lang_fallbacks = FALLBACKS.get(user_lang, FALLBACKS.get("ru", {}))
+    replies_list = lang_fallbacks.get(replies_key, ["Ошибка загрузки фраз"])
+    
     await message.answer(random.choice(replies_list), reply_markup=get_main_keyboard(uid))
 
 @dp.message()
@@ -1450,6 +1473,11 @@ async def unknown_media(message: Message, state: FSMContext):
     if banned:
         await message.answer(tr(uid, "banned_bot_text"), reply_markup=None)
         return
+        
+    if uid not in USERS or not USERS[uid].get("lang"):
+        await cmd_start(message, state)
+        return
+        
     await message.answer(
         tr(uid, "unknown_media_text"),
         reply_markup=get_main_keyboard(uid)
