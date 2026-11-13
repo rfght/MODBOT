@@ -4,6 +4,7 @@ import logging
 import os
 import random
 import re
+import string
 from datetime import datetime
 
 from dotenv import load_dotenv
@@ -75,6 +76,41 @@ BANNED = {}
 
 FALLBACKS_PATH = "fallbacks.json"
 FALLBACKS = {}
+
+# --- ЗАГРУЗКА ТАНКОВ ---
+try:
+    with open("tanks.json", encoding="utf-8") as f:
+        TANK_NAMES = json.load(f)
+except Exception:
+    # Базовый список, если файла нет
+    TANK_NAMES = [
+        "Т-62А", "Об. 907", "Об. 140", "Т-22 ср.", "Об. 430Б", "M48 Patton", "M60", "E 50 M", "Leopard 1", "Kpz 50 t",
+        "FV4202", "STB-1", "WZ-121", "121B", "AMX 30 B", "Progetto 65", "TVP T 50/51", "CS-63", "Carro 45t", "Lion",
+        "Т-54", "Об. 283", "M46 Patton", "T54E1", "E 50", "Leopard PT A", "Centurion 7/1", "Cobra", "Type 61", "WZ-120",
+        "Т-44", "СТГ", "Объект 274а", "Pershing", "T69", "T95E2", "T26E4", "T25 Pilot 1", "Panther II", "Indien-Pz.",
+        "Т-43", "Т-44-85", "Т-34-85 Рыжий", "КВ-13", "T20", "T23E3", "T26E3 Eagle 7", "T42", "VK 30.02 D", "Panther/M10",
+        "Т-34-85", "M4A3E8", "M4A3E2", "VK 30.01 P", "VK 30.01 D", "Pz. IV S.", "Cromwell", "Chi-To", "Type 58", "Bretagne Panther",
+        "ИС-7", "ИС-4", "ИС-3", "КВ-4", "КВ-2", "Т-150", "Maus", "E 100", "E 75", "VK 45.02 B",
+        "T110E5", "T57 Heavy", "T29", "T32", "T34", "AMX 50 B", "AMX M4 54", "Foch B", "Batchat 25t", "AMX 13 90",
+        "Grille 15", "WT auf E 100", "JgPz E 100", "Object 268", "Object 263", "T110E3", "T110E4", "FV215b (183)", "FV4005", "Conway",
+        "Об. 261", "M40/43", "G.W. E 100", "T92 HMC", "Conqueror GC", "Bat.-Châtillon 155 58", "AMX 13 F3 AM", "Lorraine 155 mle. 50", "FV3805", "СУ-14-2",
+        "Sheridan", "T-100 LT", "WZ-132-1", "AMX 13 105", "Rhm. Pzw.", "Spähpanzer SP I C", "M41 Walker Bulldog", "T49", "ЛТТБ", "ЛТ-432"
+    ]
+
+# --- ХРАНИЛИЩЕ ИГРОВЫХ КОМНАТ ---
+ROOMS = {}
+
+class BattleState(StatesGroup):
+    choosing_size = State()
+    entering_code = State()
+
+def generate_room_code():
+    return ''.join(random.choices(string.ascii_uppercase + string.digits, k=4))
+
+def get_random_tank():
+    name = random.choice(TANK_NAMES)
+    hp = random.randint(800, 1500)
+    return name, hp
 
 MOD_NAMES = {
     "old_font": {"ru": "Старый шрифт", "be": "Стары шрыфт", "en": "Old Font"},
@@ -212,10 +248,9 @@ def load_data():
         pass
         
     try:
-        # Загрузка фолбеков (с поддержкой UTF-8)
         fallback_file_path = os.path.join(os.path.dirname(__file__), "fallbacks.json")
         if not os.path.exists(fallback_file_path):
-            fallback_file_path = "fallbacks.json" # Фоллбек на корень
+            fallback_file_path = "fallbacks.json"
             
         with open(fallback_file_path, encoding="utf-8") as f:
             FALLBACKS.update(json.load(f))
@@ -357,6 +392,12 @@ LOCALES = {
         "appeal_already": "Ты уже подал заявку на разбан. Ожидай ответа.",
         "appeal_accept": "Твоя заявка на разбан одобрена! Ты разбанен.",
         "appeal_reject": "Твоя заявка на разбан отклонена.",
+        "battle_desc": "⚔️ <b>Танковые бои</b>\n\nЗдесь ты можешь сразиться с другими игроками!\n\n<b>Правила:</b>\n1. Выбираешь формат (1х1, 2х2, 3х3, 4х4).\n2. Создаешь комнату (или входишь по коду).\n3. Бот выдает каждому случайный танк и HP.\n4. Нажимаешь «Выстрел» и наносишь урон случайному врагу.\n5. Кто последний остался жив — забирает 25-50 XP.\n\n<b>Важно:</b> Ты не знаешь, какой танк у противника, пока не начнется бой!",
+        "battle_choose": "Выбери действие:",
+        "battle_create": "Создать комнату",
+        "battle_join": "Войти по коду",
+        "battle_list": "Список открытых комнат",
+        "battle_back": "Назад",
     },
     "be": {
         "start": "Прывітанне, {name}!\n\nСардэчна запрашаем! Абяры патрэбны раздзел:",
@@ -448,6 +489,12 @@ LOCALES = {
         "appeal_already": "Ты ўжо падаў заяўку на разбан. Чакай адказу.",
         "appeal_accept": "Твая заяўка на разбан ухвалена! Ты разбанены.",
         "appeal_reject": "Твая заяўка на разбан адхілена.",
+        "battle_desc": "⚔️ <b>Танкавыя баі</b>\n\nТут ты можаш змагацца з іншымі гульцамі!\n\n<b>Правілы:</b>\n1. Выбіраеш фармат.\n2. Ствараеш пакой (або ўваходзіш па кодзе).\n3. Бот выдае кожнаму выпадковы танк і HP.\n4. Націскаеш «Стрэл» і наносіш урон выпадковаму ворагу.\n5. Хто апошні застаўся жывы — забірае 25-50 XP.\n\n<b>Важна:</b> Ты не ведаеш, які танк у суперніка!",
+        "battle_choose": "Абяры дзеянне:",
+        "battle_create": "Стварыць пакой",
+        "battle_join": "Увайсці па кодзе",
+        "battle_list": "Спіс адкрытых пакояў",
+        "battle_back": "Назад",
     },
     "en": {
         "start": "Hello, {name}!\n\nWelcome! Choose a section:",
@@ -537,6 +584,12 @@ LOCALES = {
         "appeal_already": "You have already submitted an appeal. Wait for a response.",
         "appeal_accept": "Your appeal has been approved! You are unbanned.",
         "appeal_reject": "Your appeal has been rejected.",
+        "battle_desc": "⚔️ <b>Tank Battles</b>\n\nHere you can fight other players!\n\n<b>Rules:</b>\n1. Choose format.\n2. Create a room (or join by code).\n3. Bot gives each player a random tank and HP.\n4. Press 'Shoot' to deal damage to a random enemy.\n5. Last one standing gets 25-50 XP.\n\n<b>Important:</b> You don't know the enemy's tank until battle starts!",
+        "battle_choose": "Choose an action:",
+        "battle_create": "Create a room",
+        "battle_join": "Join by code",
+        "battle_list": "List of open rooms",
+        "battle_back": "Back",
     }
 }
 
@@ -648,6 +701,7 @@ class UserState(StatesGroup):
     awaiting_question = State()
     awaiting_team_apply = State()
     awaiting_appeal = State()
+    in_battle = State()
 
 def find_file_id(base_name: str):
     base_lower = base_name.lower()
@@ -733,6 +787,7 @@ async def cmd_profile(message: Message, state: FSMContext):
     )
 
     kb = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="⚔️ Бои", callback_data="battle_menu")],
         [InlineKeyboardButton(text=tr(uid, "btn_invite"), callback_data="invite_friend")]
     ])
     await message.answer(text, parse_mode="HTML", reply_markup=kb)
@@ -750,6 +805,250 @@ async def cb_invite(callback: CallbackQuery):
     
     await callback.message.answer(tr(uid, "invite_text", link=ref_link))
     await callback.answer()
+
+
+# --- ИГРА ---
+@dp.callback_query(F.data == "battle_menu")
+async def cb_battle_menu(callback: CallbackQuery):
+    uid = str(callback.from_user.id)
+    kb = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text=tr(uid, "battle_create"), callback_data="create_room")],
+        [InlineKeyboardButton(text=tr(uid, "battle_join"), callback_data="join_by_code")],
+        [InlineKeyboardButton(text=tr(uid, "battle_list"), callback_data="list_rooms")],
+        [InlineKeyboardButton(text=tr(uid, "battle_back"), callback_data="back_to_profile")]
+    ])
+    await callback.message.edit_text(tr(uid, "battle_desc") + "\n\n" + tr(uid, "battle_choose"), parse_mode="HTML", reply_markup=kb)
+    await callback.answer()
+
+@dp.callback_query(F.data == "back_to_profile")
+async def cb_back_to_profile(callback: CallbackQuery, state: FSMContext):
+    await callback.answer()
+    await cmd_profile(callback.message, state)
+
+@dp.callback_query(F.data == "create_room")
+async def cb_create_room(callback: CallbackQuery, state: FSMContext):
+    uid = str(callback.from_user.id)
+    kb = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="1 на 1", callback_data="create_2")],
+        [InlineKeyboardButton(text="2 на 2", callback_data="create_4")],
+        [InlineKeyboardButton(text="3 на 3", callback_data="create_6")],
+        [InlineKeyboardButton(text="4 на 4", callback_data="create_8")]
+    ])
+    await state.set_state(BattleState.choosing_size)
+    await callback.message.edit_text("Выбери формат боя:", reply_markup=kb)
+    await callback.answer()
+
+@dp.callback_query(BattleState.choosing_size, F.data.startswith("create_"))
+async def cb_create_size(callback: CallbackQuery, state: FSMContext):
+    max_players = int(callback.data.replace("create_", ""))
+    await state.clear()
+    
+    uid = str(callback.from_user.id)
+    code = generate_room_code()
+    
+    ROOMS[code] = {
+        "players": [uid],
+        "max_players": max_players,
+        "is_private": False,
+        "status": "waiting",
+        "hp": {},
+        "tank": {}
+    }
+    
+    kb = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="Скрыть комнату", callback_data=f"hide_{code}")],
+        [InlineKeyboardButton(text="Начать бой", callback_data=f"start_battle_{code}")],
+        [InlineKeyboardButton(text="Выйти", callback_data=f"leave_{code}")]
+    ])
+    
+    text = (
+        f"🏠 Комната создана!\n\n"
+        f"Код для входа: <code>{code}</code>\n"
+        f"Формат: {max_players // 2} на {max_players // 2}\n"
+        f"Игроков: 1/{max_players}\n\n"
+        f"<i>Отправь код друзьям или нажми 'Начать бой', если играешь 1 на 1.</i>"
+    )
+    await callback.message.edit_text(text, parse_mode="HTML", reply_markup=kb)
+    await callback.answer()
+
+@dp.callback_query(F.data.startswith("hide_"))
+async def cb_hide_room(callback: CallbackQuery):
+    code = callback.data.replace("hide_", "")
+    if code in ROOMS:
+        ROOMS[code]["is_private"] = True
+        await callback.message.edit_text(callback.message.text + "\n\n🔒 <i>Комната скрыта из общего списка.</i>", parse_mode="HTML")
+    await callback.answer()
+
+@dp.callback_query(F.data.startswith("leave_"))
+async def cb_leave_room(callback: CallbackQuery):
+    code = callback.data.replace("leave_", "")
+    if code in ROOMS:
+        del ROOMS[code]
+    await callback.answer("Ты вышел из комнаты")
+    await cmd_profile(callback.message, FSMContext(storage=dp.storage, key=None, chat_id=None, user_id=None))
+
+@dp.callback_query(F.data == "join_by_code")
+async def cb_join_by_code(callback: CallbackQuery, state: FSMContext):
+    await state.set_state(BattleState.entering_code)
+    await callback.message.edit_text("Введи код комнаты (4 символа):")
+    await callback.answer()
+
+@dp.message(BattleState.entering_code)
+async def process_code(message: Message, state: FSMContext):
+    code = message.text.strip().upper()
+    await state.clear()
+    uid = str(message.from_user.id)
+    
+    if code not in ROOMS:
+        await message.answer("❌ Комната с таким кодом не найдена.")
+        return
+        
+    room = ROOMS[code]
+    if room["status"] != "waiting":
+        await message.answer("❌ Бой уже начался.")
+        return
+        
+    if uid in room["players"]:
+        await message.answer("Ты уже в этой комнате.")
+        return
+        
+    if len(room["players"]) >= room["max_players"]:
+        await message.answer("❌ Комната заполнена.")
+        return
+        
+    room["players"].append(uid)
+    
+    if len(room["players"]) == room["max_players"]:
+        await start_room_battle(code, message.chat.id)
+    else:
+        await message.answer(f"✅ Ты зашел в комнату {code}. Ждем остальных ({len(room['players'])}/{room['max_players']}).")
+
+@dp.callback_query(F.data == "list_rooms")
+async def cb_list_rooms(callback: CallbackQuery):
+    open_rooms = {k: v for k, v in ROOMS.items() if v["status"] == "waiting" and not v["is_private"]}
+    
+    if not open_rooms:
+        await callback.answer("Нет открытых комнат. Создай свою!", show_alert=True)
+        return
+        
+    lines = ["<b>Открытые комнаты:</b>\n"]
+    for code, room in open_rooms.items():
+        lines.append(f"<code>{code}</code> | {len(room['players'])}/{room['max_players']}")
+    
+    lines.append("\n<i>Нажми на код в сообщении, чтобы скопировать, и введи его в 'Войти по коду'.</i>")
+    await callback.message.edit_text("\n".join(lines), parse_mode="HTML", reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="Назад", callback_data="battle_menu")]
+    ]))
+    await callback.answer()
+
+@dp.callback_query(F.data.startswith("start_battle_"))
+async def cb_start_battle_manual(callback: CallbackQuery):
+    code = callback.data.replace("start_battle_", "")
+    if code not in ROOMS:
+        await callback.answer("Комната не найдена")
+        return
+    
+    room = ROOMS[code]
+    # Если комната 1х1, разрешаем начать сразу
+    if room["max_players"] == 2 and len(room["players"]) >= 1:
+        await callback.message.edit_text("⚔️ Бой начинается...")
+        await start_room_battle(code, callback.message.chat.id)
+    else:
+        await callback.answer("Ждем остальных игроков!", show_alert=True)
+
+async def start_room_battle(code: str, chat_id: int):
+    room = ROOMS[code]
+    room["status"] = "battle"
+    
+    text = "⚔️ <b>Бой начался!</b>\n\n"
+    for uid in room["players"]:
+        tank, hp = get_random_tank()
+        room["hp"][uid] = hp
+        room["tank"][uid] = tank
+        text += f"👤 <code>{uid}</code> — {tank} (HP: {hp})\n"
+        
+    text += "\n<i>Каждый игрок может выстрелить раз в 5 секунд. Наноси урон врагам!</i>"
+    
+    kb = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="💥 Выстрел", callback_data=f"shoot_{code}")]
+    ])
+    
+    try:
+        await bot.send_message(chat_id, text, parse_mode="HTML", reply_markup=kb)
+    except:
+        pass
+
+@dp.callback_query(F.data.startswith("shoot_"))
+async def cb_shoot(callback: CallbackQuery):
+    code = callback.data.replace("shoot_", "")
+    uid = str(callback.from_user.id)
+    
+    if code not in ROOMS or ROOMS[code]["status"] != "battle":
+        await callback.answer("Бой не найден или уже закончен.", show_alert=True)
+        return
+        
+    room = ROOMS[code]
+    if uid not in room["players"]:
+        await callback.answer("Ты не участник этого боя.", show_alert=True)
+        return
+        
+    enemies = [p for p in room["players"] if p != uid]
+    if not enemies:
+        await callback.answer("Нет врагов.", show_alert=True)
+        return
+        
+    target = random.choice(enemies)
+    damage = random.randint(100, 300)
+    
+    room["hp"][target] -= damage
+    
+    text = f"💥 <b>{room['tank'][uid]}</b> попал в <b>{room['tank'][target]}</b> на {damage} урона!\n"
+    text += f"❤️ У {room['tank'][target]} осталось {max(0, room['hp'][target])} HP."
+    
+    if room["hp"][target] <= 0:
+        text += f"\n\n💀 <b>{room['tank'][target]}</b> уничтожен!"
+        room["players"].remove(target)
+        
+        if len(room["players"]) == 1:
+            winner = room["players"][0]
+            xp_reward = random.randint(25, 50)
+            add_xp(winner, xp_reward)
+            text += f"\n\n🏆 <b>Победитель: {room['tank'][winner]}!</b>\n💰 +{xp_reward} XP"
+            
+            # Кнопка узнать противника
+            kb = InlineKeyboardMarkup(inline_keyboard=[
+                [InlineKeyboardButton(text="👀 Узнать противника", callback_data=f"reveal_{code}")]
+            ])
+            
+            await callback.message.edit_text(text, parse_mode="HTML", reply_markup=kb)
+            room["status"] = "finished"
+            return
+            
+    await callback.message.edit_text(text, parse_mode="HTML")
+    await callback.answer("Выстрел!")
+
+@dp.callback_query(F.data.startswith("reveal_"))
+async def cb_reveal(callback: CallbackQuery):
+    code = callback.data.replace("reveal_", "")
+    uid = str(callback.from_user.id)
+    
+    if code not in ROOMS:
+        await callback.answer("Информация о бое утеряна.", show_alert=True)
+        return
+        
+    room = ROOMS[code]
+    text = "🔍 <b>Данные о бое:</b>\n\n"
+    for player_uid, tank in room["tank"].items():
+        hp = room["hp"].get(player_uid, 0)
+        status = "выжил" if hp > 0 else "уничтожен"
+        text += f"<code>{player_uid}</code> — {tank} (Осталось HP: {max(0, hp)}) — {status}\n"
+        
+    await callback.message.answer(text, parse_mode="HTML")
+    await callback.answer()
+    
+    # Удаляем комнату после раскрытия
+    if code in ROOMS:
+        del ROOMS[code]
 
 
 # --- АДМИН: ВЫДАЧА ЗВАНИЙ И СПИСОК КОМАНДЫ ---
@@ -788,7 +1087,6 @@ async def cmd_setrank(message: Message):
         )
     except Exception as e:
         await message.answer(tr(admin_uid, "setrank_notify_fail", err=e))
-
 
 @dp.message(Command("staff"))
 async def cmd_staff(message: Message):
@@ -839,6 +1137,51 @@ async def cmd_staff(message: Message):
             await message.answer(part, parse_mode="HTML")
     else:
         await message.answer(full_text, parse_mode="HTML")
+
+
+@dp.message(Command("reply"))
+async def cmd_reply(message: Message):
+    if message.from_user.id not in ADMIN_IDS:
+        return
+        
+    args = message.text.split(maxsplit=2)
+    
+    if message.reply_to_message and len(args) >= 2:
+        target_user_id = None
+        
+        if message.reply_to_message.text:
+            match = USER_ID_RE.search(message.reply_to_message.text)
+            if match:
+                target_user_id = int(match.group(1))
+            elif message.reply_to_message.forward_from:
+                target_user_id = message.reply_to_message.forward_from.id
+                
+        if not target_user_id:
+            await message.answer("❌ Не удалось найти ID пользователя в сообщении. Напиши вручную: `/reply <id> <текст>`")
+            return
+            
+        reply_text = args[1] if len(args) > 1 else ""
+        
+    elif len(args) >= 3:
+        try:
+            target_user_id = int(args[1])
+            reply_text = args[2]
+        except ValueError:
+            await message.answer("❌ Неверный формат ID. Используй: `/reply <user_id> <текст>`")
+            return
+    else:
+        await message.answer("❌ Использование:\n1. Ответь (Reply) на сообщение бота с ID и напиши `/reply <текст>`\n2. Или напиши `/reply <user_id> <текст>`")
+        return
+
+    try:
+        await bot.send_message(
+            target_user_id, 
+            f"<b>✉️ Сообщение от администрации:</b>\n\n{reply_text}", 
+            parse_mode="HTML"
+        )
+        await message.answer(f"✅ Сообщение успешно доставлено пользователю {target_user_id}")
+    except Exception as e:
+        await message.answer(f"❌ Не удалось отправить сообщение. Возможно, пользователь заблокировал бота.\nОшибка: {e}")
 
 
 # --- СИСТЕМА БАНОВ ---
@@ -1079,7 +1422,6 @@ async def cmd_start(message: Message, state: FSMContext):
     args = message.text.split()
     is_new = uid not in USERS
     
-    # --- РЕФЕРАЛЬНАЯ СИСТЕМА ---
     if len(args) > 1 and args[1].startswith("ref_"):
         referrer_id = args[1].replace("ref_", "")
         if referrer_id in USERS and referrer_id != uid and is_new:
