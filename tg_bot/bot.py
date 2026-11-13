@@ -122,7 +122,7 @@ ACHIEVEMENTS = {
 
 def default_user_data():
     return {
-        "lang": None,  # Изначально языка нет
+        "lang": None,
         "xp": 0,
         "rank_id": 1,
         "downloads": 0,
@@ -131,6 +131,7 @@ def default_user_data():
         "bans": 0,
         "achievements": [],
         "registered": datetime.now().strftime("%Y-%m-%d"),
+        "appeal_pending": False,
     }
 
 
@@ -198,7 +199,6 @@ def load_data():
                 else:
                     base = default_user_data()
                     base.update(val)
-                    # Если языка нет в базе, ставим None, чтобы бот спросил заново
                     if "lang" not in val or val["lang"] not in ["ru", "be", "en"]:
                         base["lang"] = None
                     USERS[uid] = base
@@ -212,10 +212,15 @@ def load_data():
         pass
         
     try:
-        with open(FALLBACKS_PATH) as f:
+        # Загрузка фолбеков (с поддержкой UTF-8)
+        fallback_file_path = os.path.join(os.path.dirname(__file__), "fallbacks.json")
+        if not os.path.exists(fallback_file_path):
+            fallback_file_path = "fallbacks.json" # Фоллбек на корень
+            
+        with open(fallback_file_path, encoding="utf-8") as f:
             FALLBACKS.update(json.load(f))
-    except (OSError, json.JSONDecodeError):
-        logger.error("Не удалось загрузить fallbacks.json!")
+    except Exception as e:
+        logger.error(f"Ошибка загрузки fallbacks.json: {e}")
 
 
 def save_file_ids():
@@ -235,7 +240,7 @@ def save_banned():
 
 load_data()
 
-# --- Локализация (основные тексты) ---
+# --- Локализация ---
 LOCALES = {
     "ru": {
         "start": "Привет, {name}!\n\nДобро пожаловать! Выбери нужный раздел:",
@@ -254,6 +259,7 @@ LOCALES = {
         "btn_lang": "Язык",
         "btn_profile": "Профиль",
         "btn_back": "Назад",
+        "btn_invite": "Пригласить друга",
         "main_menu": "Главное меню",
         "feedback_menu": "<b>Обратная связь</b>\n\nВыбери действие:",
         "mods_menu": "<b>Моды</b>\n\nВыбери мод:",
@@ -292,7 +298,6 @@ LOCALES = {
         "misc_join_btn": "Можно ли присоединиться к вам",
         "misc_share_btn": "Поделиться ботом",
         "misc_team_text": "<b>О команде</b>\n\nМы парни-мододелы\nМы те, кто могут отстоять точку зрения\nА наша точка зрения это старый вид игры\nИ мы не собираемся от неё отступать",
-        "misc_join_text": "К сожалению, набор в команду сейчас закрыт Чтобы делать эти моды, нужно именно то настроение/цель, что есть у наших ребят, а выяснять, есть ли это у вас, нет возможности, мы сейчас полностью укомплектованы и сфокусированы на текущих проектах\n\nНо ты всегда можешь предложить идею для мода через главное меню!",
         "help_menu": "<b>Помощь</b>\n\nВыбери вопрос:",
         "help_install_btn": "Как установить мод",
         "help_remove_btn": "Как удалить мод",
@@ -338,6 +343,20 @@ LOCALES = {
         "mystatus_reason": "Причина: {reason}",
         "staff_empty": "Команда пока пуста",
         "staff_title": "<b>Состав команды:</b>",
+        "invite_text": "Пригласи друга в нашего бота и получи +150 XP!\n\nТвоя ссылка:\n{link}\n\nЗа каждого друга, который зайдет, вы оба получите опыт",
+        "ref_bonus": "Твой друг зашел по твоей ссылке! Ты получил +150 XP",
+        "ref_welcome": "Добро пожаловать по приглашению! Ты и твой друг получили +150 XP",
+        "apply_team_btn": "Подать заявку в команду",
+        "apply_team_text": "<b>Анкета в команду MOD_rak.rar</b>\n\n⚠️ <b>Примечание:</b> Набор в команду закрыт. Мы не принимаем всех подряд. Нам нужны люди с нужным настроением, опытом и свободным временем. Заполнение анкеты не гарантирует вступление, но мы рассмотрим её, когда откроется набор.\n\nПожалуйста, ответь на все вопросы одним сообщением (или несколькими, но подряд):\n\n1. Твой возраст и часовой пояс?\n2. Есть ли опыт в создании модов (каких игр, какие моды)?\n3. Какие инструменты и софт ты знаешь (Python, Blender, редакторы текстур, 3D-редакторы)?\n4. Сколько времени в день/неделю ты готов уделять проекту?\n5. Почему ты хочешь в команду именно MOD_rak.rar?\n6. Твоя любимая фича старого Танкс Блитц?\n7. Ссылка на твои прошлые работы (если есть)?\n8. Что ты хочешь делать в команде (кодить, рисовать, тестировать, модерировать)?\n\nОтправь ответ одним сообщением. Для отмены напиши /cancel",
+        "apply_team_thanks": "Твоя анкета отправлена на рассмотрение! Мы свяжемся с тобой, если ты нам подойдешь.",
+        "bug_report_fixed": "Твой баг-репорт исправлен! Спасибо за помощь, ты получил +50 XP.",
+        "btn_report_fixed": "✅ Исправлено",
+        "appeal_btn": "Подать заявку на разбан",
+        "appeal_usage": "Отправь причину, по которой ты хочешь, чтобы тебя разбанили.",
+        "appeal_sent": "Твоя заявка на разбан отправлена администраторам.",
+        "appeal_already": "Ты уже подал заявку на разбан. Ожидай ответа.",
+        "appeal_accept": "Твоя заявка на разбан одобрена! Ты разбанен.",
+        "appeal_reject": "Твоя заявка на разбан отклонена.",
     },
     "be": {
         "start": "Прывітанне, {name}!\n\nСардэчна запрашаем! Абяры патрэбны раздзел:",
@@ -345,7 +364,7 @@ LOCALES = {
         "lang_changed": "Мова зменена на Беларускую",
         "btn_mods": "Моды", "btn_fun": "Прыколы", "btn_help": "Дапамога", "btn_suggest": "Прапанаваць мод",
         "btn_feedback": "Зваротная сувязь", "btn_dev": "У распрацоўцы", "btn_donate": "Падтрымаць", "btn_bug": "Паведаміць пра памылку",
-        "btn_question": "Задаць пытанне", "btn_misc": "Рознае", "btn_lang": "Мова", "btn_profile": "Профіль", "btn_back": "Назад",
+        "btn_question": "Задаць пытанне", "btn_misc": "Рознае", "btn_lang": "Мова", "btn_profile": "Профіль", "btn_back": "Назад", "btn_invite": "Запрасіць сябра",
         "main_menu": "Галоўнае меню",
         "feedback_menu": "<b>Зваротная сувязь</b>\n\nАбяры дзеянне:",
         "mods_menu": "<b>Моды</b>\n\nАбяры мод:", "subscribe_needed": "Каб спампаваць гэты мод, калі ласка, падпішыся на наш канал!",
@@ -374,7 +393,6 @@ LOCALES = {
         "misc_join_btn": "Ці можна далучыцца да вас",
         "misc_share_btn": "Падзяліцца ботам",
         "misc_team_text": "<b>Пра каманду</b>\n\nМы хлопцы-модадзелы\nМы тыя, хто могуць адстаяць пункт гледжання\nА наш пункт гледжання гэта стары выгляд гульні",
-        "misc_join_text": "На жаль, набор у каманду зараз закрыты Але ты заўсёды можаш прапанаваць ідэю для мода праз галоўнае меню!",
         "help_menu": "<b>Дапамога</b>\n\nАбяры пытанне:",
         "help_install_btn": "Як усталяваць мод", "help_remove_btn": "Як выдаліць мод", "help_why_btn": "Навошта патрэбныя гэтыя мадыфікацыі",
         "help_time_btn": "Колькі распрацоўваюцца моды", "help_why_old_btn": "Чаму моды толькі на вяртанне старога",
@@ -416,6 +434,20 @@ LOCALES = {
         "mystatus_reason": "Прычына: {reason}",
         "staff_empty": "Каманда пакуль пустая",
         "staff_title": "<b>Склад каманды:</b>",
+        "invite_text": "Запрасі сябра ў нашага бота і атрымай +150 XP!\n\nТвая спасылка:\n{link}\n\nЗа кожнага сябра, які зайдзе, вы абодва атрымаеце вопыт",
+        "ref_bonus": "Твой сябар зайшоў па тваёй спасылцы! Ты атрымаў +150 XP",
+        "ref_welcome": "Сардэчна запрашаем па запрашэнні! Ты і твой сябар атрымалі +150 XP",
+        "apply_team_btn": "Падаць заяўку ў каманду",
+        "apply_team_text": "<b>Анкета ў каманду MOD_rak.rar</b>\n\n⚠️ <b>Заўвага:</b> Набор у каманду закрыты. Мы не прымаем усіх запар. Нам патрэбныя людзі з патрэбным настроем, вопытам і вольным часам. Запаўненне анкеты не гарантуе ўступ, але мы разгледзім яе, калі адкрыецца набор.\n\nКалі ласка, адкажы на ўсе пытанні адным паведамленнем:\n\n1. Твой узрост і часавы пояс?\n2. Ці ёсць вопыт у стварэнні модаў?\n3. Якія інструменты ты ведаеш?\n4. Колькі часу ты гатовы ўдзяляць праекту?\n5. Чаму ты хочаш у MOD_rak.rar?\n6. Твая любімая фіча старога Танкс Бліц?\n7. Спасылка на твае мінулыя працы?\n8. Што ты хочаш рабіць у камандзе?\n\nАдпраў адказ адным паведамленнем. Для адмены напішы /cancel",
+        "apply_team_thanks": "Твая анкета адпраўлена на разгляд! Мы звяжамся з табой, калі ты нам падыдзеш.",
+        "bug_report_fixed": "Твой баг-рэпарт выпраўлены! Дзякуй за дапамогу, ты атрымаў +50 XP.",
+        "btn_report_fixed": "✅ Выпраўлена",
+        "appeal_btn": "Падаць заяўку на разбан",
+        "appeal_usage": "Адпраў прычыну, па якой ты хочаш, каб цябе разбанілі.",
+        "appeal_sent": "Твая заяўка на разбан адпраўлена адміністратарам.",
+        "appeal_already": "Ты ўжо падаў заяўку на разбан. Чакай адказу.",
+        "appeal_accept": "Твая заяўка на разбан ухвалена! Ты разбанены.",
+        "appeal_reject": "Твая заяўка на разбан адхілена.",
     },
     "en": {
         "start": "Hello, {name}!\n\nWelcome! Choose a section:",
@@ -423,7 +455,7 @@ LOCALES = {
         "lang_changed": "Language changed to English",
         "btn_mods": "Mods", "btn_fun": "Fun", "btn_help": "Help", "btn_suggest": "Suggest a mod",
         "btn_feedback": "Feedback", "btn_dev": "In development", "btn_donate": "Support", "btn_bug": "Report a bug",
-        "btn_question": "Ask a question", "btn_misc": "Misc", "btn_lang": "Language", "btn_profile": "Profile", "btn_back": "Back",
+        "btn_question": "Ask a question", "btn_misc": "Misc", "btn_lang": "Language", "btn_profile": "Profile", "btn_back": "Back", "btn_invite": "Invite a friend",
         "main_menu": "Main menu",
         "feedback_menu": "<b>Feedback</b>\n\nChoose an action:",
         "mods_menu": "<b>Mods</b>\n\nChoose a mod:", "subscribe_needed": "To download this mod, please subscribe to our channel!",
@@ -450,7 +482,6 @@ LOCALES = {
         "misc_menu": "<b>Misc</b>\n\nChoose a question:",
         "misc_team_btn": "About MOD_rak.rar team", "misc_join_btn": "Can I join you?", "misc_share_btn": "Share the bot",
         "misc_team_text": "<b>About the team</b>\n\nWe are modders\nWe are the ones who can defend a point of view\nAnd our point of view is the old look of the game",
-        "misc_join_text": "Unfortunately, recruitment is currently closed But you can always suggest a mod idea through the main menu!",
         "help_menu": "<b>Help</b>\n\nChoose a question:",
         "help_install_btn": "How to install a mod", "help_remove_btn": "How to remove a mod", "help_why_btn": "Why are modifications needed",
         "help_time_btn": "How long mods take to develop", "help_why_old_btn": "Why mods only bring back old features",
@@ -492,6 +523,20 @@ LOCALES = {
         "mystatus_reason": "Reason: {reason}",
         "staff_empty": "Team is empty",
         "staff_title": "<b>Team list:</b>",
+        "invite_text": "Invite a friend to our bot and get +150 XP!\n\nYour link:\n{link}\n\nFor each friend who joins, both of you get XP",
+        "ref_bonus": "Your friend joined using your link! You received +150 XP",
+        "ref_welcome": "Welcome by invitation! You and your friend received +150 XP",
+        "apply_team_btn": "Apply to the team",
+        "apply_team_text": "<b>Application to MOD_rak.rar team</b>\n\n⚠️ <b>Note:</b> Recruitment is closed. We don't accept just anyone. We need people with the right mindset, experience and free time. Filling out this form does not guarantee acceptance, but we will review it when recruitment opens.\n\nPlease answer all questions in one message:\n\n1. Your age and time zone?\n2. Do you have modding experience?\n3. What tools and software do you know?\n4. How much time can you dedicate?\n5. Why do you want to join MOD_rak.rar?\n6. Your favorite old Tanks Blitz feature?\n7. Link to your past works?\n8. What do you want to do in the team?\n\nSend your answer in one message. To cancel, type /cancel",
+        "apply_team_thanks": "Your application has been sent for review! We will contact you if you fit.",
+        "bug_report_fixed": "Your bug report has been fixed! Thanks for helping, you received +50 XP.",
+        "btn_report_fixed": "✅ Fixed",
+        "appeal_btn": "Submit an appeal",
+        "appeal_usage": "Send the reason why you want to be unbanned.",
+        "appeal_sent": "Your appeal has been sent to the administrators.",
+        "appeal_already": "You have already submitted an appeal. Wait for a response.",
+        "appeal_accept": "Your appeal has been approved! You are unbanned.",
+        "appeal_reject": "Your appeal has been rejected.",
     }
 }
 
@@ -525,10 +570,10 @@ async def check_ban_and_block(message: Message) -> bool:
     uid = str(message.from_user.id)
     banned, info = is_banned(uid)
     if banned:
-        await message.answer(
-            tr(uid, "banned_bot_text"),
-            reply_markup=None
-        )
+        kb = InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text=tr(uid, "appeal_btn"), callback_data="appeal_ban")]
+        ])
+        await message.answer(tr(uid, "banned_bot_text"), reply_markup=kb)
         return True
     return False
 
@@ -601,6 +646,8 @@ class UserState(StatesGroup):
     awaiting_fun = State()
     awaiting_bug_report = State()
     awaiting_question = State()
+    awaiting_team_apply = State()
+    awaiting_appeal = State()
 
 def find_file_id(base_name: str):
     base_lower = base_name.lower()
@@ -685,12 +732,24 @@ async def cmd_profile(message: Message, state: FSMContext):
         f"{ach_text}"
     )
 
-    await message.answer(text, parse_mode="HTML", reply_markup=get_main_keyboard(uid))
+    kb = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text=tr(uid, "btn_invite"), callback_data="invite_friend")]
+    ])
+    await message.answer(text, parse_mode="HTML", reply_markup=kb)
 
 
 @dp.message(F.text.in_([LOCALES["ru"]["btn_profile"], LOCALES["be"]["btn_profile"], LOCALES["en"]["btn_profile"]]))
 async def btn_profile_click(message: Message, state: FSMContext):
     await cmd_profile(message, state)
+
+@dp.callback_query(F.data == "invite_friend")
+async def cb_invite(callback: CallbackQuery):
+    uid = str(callback.from_user.id)
+    bot_username = (await bot.get_me()).username
+    ref_link = f"https://t.me/{bot_username}?start=ref_{uid}"
+    
+    await callback.message.answer(tr(uid, "invite_text", link=ref_link))
+    await callback.answer()
 
 
 # --- АДМИН: ВЫДАЧА ЗВАНИЙ И СПИСОК КОМАНДЫ ---
@@ -1016,15 +1075,28 @@ async def cmd_start(message: Message, state: FSMContext):
         return
     await state.clear()
     uid = str(message.from_user.id)
+    
+    args = message.text.split()
     is_new = uid not in USERS
-
+    
+    # --- РЕФЕРАЛЬНАЯ СИСТЕМА ---
+    if len(args) > 1 and args[1].startswith("ref_"):
+        referrer_id = args[1].replace("ref_", "")
+        if referrer_id in USERS and referrer_id != uid and is_new:
+            add_xp(referrer_id, 150)
+            add_xp(uid, 150)
+            try:
+                await bot.send_message(int(referrer_id), tr(referrer_id, "ref_bonus"))
+            except:
+                pass
+            await message.answer(tr(uid, "ref_welcome"))
+    
     if is_new:
         USERS[uid] = default_user_data()
         if message.from_user.id in ADMIN_IDS:
             USERS[uid]["rank_id"] = 13
         save_users()
 
-    # Если языка нет (новый юзер или база почистилась)
     if not USERS[uid].get("lang"):
         await message.answer(
             "Выбери язык / Абяры мову / Choose language:",
@@ -1205,8 +1277,6 @@ async def btn_feedback(message: Message, state: FSMContext):
 async def btn_back(message: Message, state: FSMContext):
     await state.clear()
     uid = str(message.from_user.id)
-    
-    # Теперь не здороваемся заново, а просто показываем главное меню
     await message.answer(tr(uid, "main_menu"), reply_markup=get_main_keyboard(uid))
 
 
@@ -1267,7 +1337,19 @@ async def receive_bug_report(message: Message, state: FSMContext):
     await state.clear()
     user = message.from_user
     header = f"<b>[ОШИБКА] Сообщение об ошибке</b>\n👤 {user.full_name} (@{user.username})\n🆔 <code>{user.id}</code>\n\n"
-    await forward_to_admins(message, header)
+    
+    kb = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text=tr(uid, "btn_report_fixed"), callback_data=f"bug_fixed_{uid}")]
+    ])
+    
+    if TARGET_CHAT_IDS:
+        for chat_id in TARGET_CHAT_IDS:
+            try:
+                await bot.send_message(chat_id, header, parse_mode="HTML", reply_markup=kb)
+                await message.forward(chat_id)
+            except Exception as exc:
+                logger.error(f"Не удалось отправить в {chat_id}. Ошибка: {exc}")
+                
     add_xp(uid, 15)
     await message.answer(tr(uid, "bug_thanks"), reply_markup=get_main_keyboard(uid))
 
@@ -1311,6 +1393,90 @@ async def receive_question(message: Message, state: FSMContext):
             await message.answer(tr(uid, "ach_unlocked", ach=ach))
 
     await message.answer(tr(uid, "question_thanks"), reply_markup=get_main_keyboard(uid))
+
+
+# --- АНКЕТА В КОМАНДУ ---
+@dp.callback_query(F.data == "apply_team")
+async def cb_apply_team(callback: CallbackQuery, state: FSMContext):
+    uid = str(callback.from_user.id)
+    await callback.answer()
+    await state.set_state(UserState.awaiting_team_apply)
+    await callback.message.answer(tr(uid, "apply_team_text"), parse_mode="HTML")
+
+@dp.message(UserState.awaiting_team_apply, ~F.text.in_(ALL_MENU_BUTTONS))
+async def receive_team_apply(message: Message, state: FSMContext):
+    await state.clear()
+    uid = str(message.from_user.id)
+    user = message.from_user
+    header = f"<b>📝 Анкета в команду!</b>\n👤 {user.full_name} (@{user.username})\n🆔 <code>{user.id}</code>\n\n"
+    
+    if TARGET_CHAT_IDS:
+        for chat_id in TARGET_CHAT_IDS:
+            try:
+                await bot.send_message(chat_id, header, parse_mode="HTML")
+                await message.forward(chat_id)
+            except Exception as exc:
+                logger.error(f"Ошибка отправки анкеты: {exc}")
+                
+    await message.answer(tr(uid, "apply_team_thanks"), reply_markup=get_main_keyboard(uid))
+
+# --- ОБРАБОТКА ИСПРАВЛЕННЫХ БАГОВ ---
+@dp.callback_query(F.data.startswith("bug_fixed_"))
+async def cb_bug_fixed(callback: CallbackQuery):
+    if callback.from_user.id not in ADMIN_IDS:
+        await callback.answer("Только админ может это делать", show_alert=True)
+        return
+    
+    target_id = callback.data.split("_")[-1]
+    add_xp(target_id, 50)
+    
+    try:
+        await bot.send_message(int(target_id), tr(target_id, "bug_report_fixed"))
+    except:
+        pass
+        
+    await callback.message.edit_text(callback.message.text + "\n\n✅ <b>Статус: Исправлено</b>", parse_mode="HTML")
+    await callback.answer("Пользователь уведомлен!")
+
+# --- ЗАЯВКА НА РАЗБАН ---
+@dp.callback_query(F.data == "appeal_ban")
+async def cb_appeal_ban(callback: CallbackQuery, state: FSMContext):
+    uid = str(callback.from_user.id)
+    await callback.answer()
+    await state.set_state(UserState.awaiting_appeal)
+    await callback.message.answer(tr(uid, "appeal_usage"), reply_markup=None)
+
+@dp.message(UserState.awaiting_appeal)
+async def receive_appeal(message: Message, state: FSMContext):
+    await state.clear()
+    uid = str(message.from_user.id)
+    
+    if USERS.get(uid, {}).get("appeal_pending"):
+        await message.answer(tr(uid, "appeal_already"))
+        return
+        
+    if uid not in USERS:
+        USERS[uid] = default_user_data()
+    USERS[uid]["appeal_pending"] = True
+    save_users()
+    
+    user = message.from_user
+    header = (
+        f"<b>🔓 Заявка на разбан!</b>\n"
+        f"👤 {user.full_name} (@{user.username})\n"
+        f"🆔 <code>{user.id}</code>\n"
+        f"Причина: {message.text}\n\n"
+        f"<i>Ответьте на это сообщение (Reply), чтобы разбанить пользователя.</i>"
+    )
+    
+    if TARGET_CHAT_IDS:
+        for chat_id in TARGET_CHAT_IDS:
+            try:
+                await bot.send_message(chat_id, header, parse_mode="HTML")
+            except Exception as exc:
+                logger.error(f"Ошибка отправки заявки: {exc}")
+                
+    await message.answer(tr(uid, "appeal_sent"))
 
 
 # --- ПОМОЩЬ ---
@@ -1386,6 +1552,13 @@ async def cb_misc_any(callback: CallbackQuery):
                 [InlineKeyboardButton(text="🇬🇧 English", callback_data="set_lang_en")],
             ])
         )
+    elif callback.data == "misc_join":
+        await callback.message.answer(
+            "Набор в команду сейчас закрыт. Но ты можешь заполнить анкету, и мы рассмотрим её, когда откроется набор!",
+            reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+                [InlineKeyboardButton(text=tr(uid, "apply_team_btn"), callback_data="apply_team")]
+            ])
+        )
     else:
         key = f"{callback.data}_text"
         if callback.data == "misc_team":
@@ -1419,10 +1592,12 @@ async def easter_egg_handler(message: Message, state: FSMContext):
     uid = str(message.from_user.id)
     banned, _ = is_banned(uid)
     if banned:
-        await message.answer(tr(uid, "banned_bot_text"), reply_markup=None)
+        kb = InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text=tr(uid, "appeal_btn"), callback_data="appeal_ban")]
+        ])
+        await message.answer(tr(uid, "banned_bot_text"), reply_markup=kb)
         return
         
-    # Если пользователь не выбрал язык, кидаем его на старт
     if uid not in USERS or not USERS[uid].get("lang"):
         await cmd_start(message, state)
         return
@@ -1455,7 +1630,6 @@ async def easter_egg_handler(message: Message, state: FSMContext):
 
     replies_key = "gibberish" if is_gibberish else "fallback"
     
-    # Берем язык пользователя, если нет - русский
     user_lang = USERS.get(uid, {}).get("lang") or "ru"
     lang_fallbacks = FALLBACKS.get(user_lang, FALLBACKS.get("ru", {}))
     replies_list = lang_fallbacks.get(replies_key, ["Ошибка загрузки фраз"])
@@ -1471,7 +1645,10 @@ async def unknown_media(message: Message, state: FSMContext):
     uid = str(message.from_user.id)
     banned, _ = is_banned(uid)
     if banned:
-        await message.answer(tr(uid, "banned_bot_text"), reply_markup=None)
+        kb = InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text=tr(uid, "appeal_btn"), callback_data="appeal_ban")]
+        ])
+        await message.answer(tr(uid, "banned_bot_text"), reply_markup=kb)
         return
         
     if uid not in USERS or not USERS[uid].get("lang"):
