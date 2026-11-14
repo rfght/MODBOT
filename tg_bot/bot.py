@@ -82,7 +82,6 @@ try:
     with open("tanks.json", encoding="utf-8") as f:
         TANK_NAMES = json.load(f)
 except Exception:
-    # Базовый список, если файла нет
     TANK_NAMES = [
         "Т-62А", "Об. 907", "Об. 140", "Т-22 ср.", "Об. 430Б", "M48 Patton", "M60", "E 50 M", "Leopard 1", "Kpz 50 t",
         "FV4202", "STB-1", "WZ-121", "121B", "AMX 30 B", "Progetto 65", "TVP T 50/51", "CS-63", "Carro 45t", "Lion",
@@ -392,8 +391,9 @@ LOCALES = {
         "appeal_already": "Ты уже подал заявку на разбан. Ожидай ответа.",
         "appeal_accept": "Твоя заявка на разбан одобрена! Ты разбанен.",
         "appeal_reject": "Твоя заявка на разбан отклонена.",
-        "battle_desc": "⚔️ <b>Танковые бои</b>\n\nЗдесь ты можешь сразиться с другими игроками!\n\n<b>Правила:</b>\n1. Выбираешь формат (1х1, 2х2, 3х3, 4х4).\n2. Создаешь комнату (или входишь по коду).\n3. Бот выдает каждому случайный танк и HP.\n4. Нажимаешь «Выстрел» и наносишь урон случайному врагу.\n5. Кто последний остался жив — забирает 25-50 XP.\n\n<b>Важно:</b> Ты не знаешь, какой танк у противника, пока не начнется бой!",
+        "battle_desc": "⚔️ <b>Танковые бои</b>\n\nЗдесь ты можешь сразиться с другими игроками!\n\n<b>Правила:</b>\n1. Выбираешь формат (или бой с ботом).\n2. Создаешь комнату (или входишь по коду).\n3. Бот выдает каждому случайный танк и HP.\n4. Нажимаешь «Выстрел» и наносишь урон случайному врагу.\n5. Кто последний остался жив — забирает 25-50 XP.\n\n<b>Важно:</b> Ты не знаешь, какой танк у противника, пока не начнется бой!",
         "battle_choose": "Выбери действие:",
+        "battle_bot": "🤖 Бой с ботом",
         "battle_create": "Создать комнату",
         "battle_join": "Войти по коду",
         "battle_list": "Список открытых комнат",
@@ -489,8 +489,9 @@ LOCALES = {
         "appeal_already": "Ты ўжо падаў заяўку на разбан. Чакай адказу.",
         "appeal_accept": "Твая заяўка на разбан ухвалена! Ты разбанены.",
         "appeal_reject": "Твая заяўка на разбан адхілена.",
-        "battle_desc": "⚔️ <b>Танкавыя баі</b>\n\nТут ты можаш змагацца з іншымі гульцамі!\n\n<b>Правілы:</b>\n1. Выбіраеш фармат.\n2. Ствараеш пакой (або ўваходзіш па кодзе).\n3. Бот выдае кожнаму выпадковы танк і HP.\n4. Націскаеш «Стрэл» і наносіш урон выпадковаму ворагу.\n5. Хто апошні застаўся жывы — забірае 25-50 XP.\n\n<b>Важна:</b> Ты не ведаеш, які танк у суперніка!",
+        "battle_desc": "⚔️ <b>Танкавыя баі</b>\n\nТут ты можаш змагацца з іншымі гульцамі!\n\n<b>Правілы:</b>\n1. Выбіраеш фармат (або бой з ботам).\n2. Ствараеш пакой (або ўваходзіш па кодзе).\n3. Бот выдае кожнаму выпадковы танк і HP.\n4. Націскаеш «Стрэл» і наносіш урон выпадковаму ворагу.\n5. Хто апошні застаўся жывы — забірае 25-50 XP.\n\n<b>Важна:</b> Ты не ведаеш, які танк у суперніка!",
         "battle_choose": "Абяры дзеянне:",
+        "battle_bot": "🤖 Бой з ботам",
         "battle_create": "Стварыць пакой",
         "battle_join": "Увайсці па кодзе",
         "battle_list": "Спіс адкрытых пакояў",
@@ -584,8 +585,9 @@ LOCALES = {
         "appeal_already": "You have already submitted an appeal. Wait for a response.",
         "appeal_accept": "Your appeal has been approved! You are unbanned.",
         "appeal_reject": "Your appeal has been rejected.",
-        "battle_desc": "⚔️ <b>Tank Battles</b>\n\nHere you can fight other players!\n\n<b>Rules:</b>\n1. Choose format.\n2. Create a room (or join by code).\n3. Bot gives each player a random tank and HP.\n4. Press 'Shoot' to deal damage to a random enemy.\n5. Last one standing gets 25-50 XP.\n\n<b>Important:</b> You don't know the enemy's tank until battle starts!",
+        "battle_desc": "⚔️ <b>Tank Battles</b>\n\nHere you can fight other players!\n\n<b>Rules:</b>\n1. Choose format (or fight a bot).\n2. Create a room (or join by code).\n3. Bot gives each player a random tank and HP.\n4. Press 'Shoot' to deal damage to a random enemy.\n5. Last one standing gets 25-50 XP.\n\n<b>Important:</b> You don't know the enemy's tank until battle starts!",
         "battle_choose": "Choose an action:",
+        "battle_bot": "🤖 Fight with bot",
         "battle_create": "Create a room",
         "battle_join": "Join by code",
         "battle_list": "List of open rooms",
@@ -809,9 +811,11 @@ async def cb_invite(callback: CallbackQuery):
 
 # --- ИГРА ---
 @dp.callback_query(F.data == "battle_menu")
-async def cb_battle_menu(callback: CallbackQuery):
+async def cb_battle_menu(callback: CallbackQuery, state: FSMContext):
+    await state.clear() # Очищаем возможный стейт PvE
     uid = str(callback.from_user.id)
     kb = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text=tr(uid, "battle_bot"), callback_data="battle_vs_bot")],
         [InlineKeyboardButton(text=tr(uid, "battle_create"), callback_data="create_room")],
         [InlineKeyboardButton(text=tr(uid, "battle_join"), callback_data="join_by_code")],
         [InlineKeyboardButton(text=tr(uid, "battle_list"), callback_data="list_rooms")],
@@ -822,9 +826,110 @@ async def cb_battle_menu(callback: CallbackQuery):
 
 @dp.callback_query(F.data == "back_to_profile")
 async def cb_back_to_profile(callback: CallbackQuery, state: FSMContext):
+    await state.clear()
     await callback.answer()
     await cmd_profile(callback.message, state)
 
+# --- PvE (Бой с ботом) ---
+@dp.callback_query(F.data == "battle_vs_bot")
+async def cb_battle_vs_bot(callback: CallbackQuery, state: FSMContext):
+    uid = str(callback.from_user.id)
+    await callback.answer()
+    
+    p_tank, p_hp = get_random_tank()
+    e_tank, e_hp = get_random_tank()
+    
+    await state.set_state(UserState.in_battle)
+    await state.update_data(
+        is_pve=True,
+        p_hp=p_hp, p_tank=p_tank,
+        e_hp=e_hp, e_tank=e_tank
+    )
+    
+    text = (
+        f"🤖 <b>Бой против бота начался!</b>\n\n"
+        f"Твой танк: <b>{p_tank}</b> (HP: {p_hp})\n"
+        f"Танк врага: <b>Неизвестно</b> (HP: ???)\n\n"
+        f"Твой ход!"
+    )
+    
+    kb = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="💥 Выстрел", callback_data="pve_shoot")],
+        [InlineKeyboardButton(text="🏳️ Сдаться", callback_data="pve_surrender")]
+    ])
+    
+    await callback.message.edit_text(text, parse_mode="HTML", reply_markup=kb)
+
+@dp.callback_query(F.data == "pve_shoot", UserState.in_battle)
+async def cb_pve_shoot(callback: CallbackQuery, state: FSMContext):
+    await callback.answer()
+    data = await state.get_data()
+    
+    if not data.get("is_pve"):
+        return
+        
+    p_hp = data["p_hp"]
+    e_hp = data["e_hp"]
+    p_tank = data["p_tank"]
+    e_tank = data["e_tank"]
+    
+    # Игрок стреляет
+    p_dmg = random.randint(150, 300)
+    e_hp -= p_dmg
+    
+    text = f"💥 Ты попал по врагу на {p_dmg} урона!\n"
+    
+    if e_hp <= 0:
+        # Победа
+        uid = str(callback.from_user.id)
+        xp_reward = random.randint(25, 50)
+        add_xp(uid, xp_reward)
+        text += f"\n💀 <b>Враг уничтожен!</b>\n🏆 Победа! Ты получил +{xp_reward} XP.\n\n👀 Танк врага был: <b>{e_tank}</b> (HP: {data['e_hp']})"
+        kb = InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text="В меню боев", callback_data="battle_menu")]
+        ])
+        await callback.message.edit_text(text, parse_mode="HTML", reply_markup=kb)
+        await state.clear()
+        return
+        
+    # Бот стреляет в ответ
+    e_dmg = random.randint(150, 300)
+    p_hp -= e_dmg
+    text += f"🔫 Враг стреляет в ответ на {e_dmg} урона!\n"
+    
+    if p_hp <= 0:
+        # Поражение
+        text += f"\n💀 <b>Ты уничтожен!</b>\nТанк врага был: <b>{e_tank}</b> (HP: {e_hp + p_dmg})."
+        kb = InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text="В меню боев", callback_data="battle_menu")]
+        ])
+        await callback.message.edit_text(text, parse_mode="HTML", reply_markup=kb)
+        await state.clear()
+        return
+        
+    await state.update_data(p_hp=p_hp, e_hp=e_hp)
+    
+    text += (
+        f"\n❤️ Твое HP: <b>{p_hp}</b>\n"
+        f"💀 HP врага: <b>{e_hp}</b>\n\n"
+        f"Твой ход:"
+    )
+    
+    kb = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="💥 Выстрел", callback_data="pve_shoot")],
+        [InlineKeyboardButton(text="🏳️ Сдаться", callback_data="pve_surrender")]
+    ])
+    await callback.message.edit_text(text, parse_mode="HTML", reply_markup=kb)
+
+@dp.callback_query(F.data == "pve_surrender", UserState.in_battle)
+async def cb_pve_surrender(callback: CallbackQuery, state: FSMContext):
+    await callback.answer("Ты сдался")
+    await state.clear()
+    await callback.message.edit_text("🏳️ Ты сдался. Возвращайся, когда наберешься сил!", reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="В меню боев", callback_data="battle_menu")]
+    ]))
+
+# --- PvP (Комнаты) ---
 @dp.callback_query(F.data == "create_room")
 async def cb_create_room(callback: CallbackQuery, state: FSMContext):
     uid = str(callback.from_user.id)
@@ -880,12 +985,12 @@ async def cb_hide_room(callback: CallbackQuery):
     await callback.answer()
 
 @dp.callback_query(F.data.startswith("leave_"))
-async def cb_leave_room(callback: CallbackQuery):
+async def cb_leave_room(callback: CallbackQuery, state: FSMContext):
     code = callback.data.replace("leave_", "")
     if code in ROOMS:
         del ROOMS[code]
     await callback.answer("Ты вышел из комнаты")
-    await cmd_profile(callback.message, FSMContext(storage=dp.storage, key=None, chat_id=None, user_id=None))
+    await cb_back_to_profile(callback, state)
 
 @dp.callback_query(F.data == "join_by_code")
 async def cb_join_by_code(callback: CallbackQuery, state: FSMContext):
@@ -949,7 +1054,6 @@ async def cb_start_battle_manual(callback: CallbackQuery):
         return
     
     room = ROOMS[code]
-    # Если комната 1х1, разрешаем начать сразу
     if room["max_players"] == 2 and len(room["players"]) >= 1:
         await callback.message.edit_text("⚔️ Бой начинается...")
         await start_room_battle(code, callback.message.chat.id)
@@ -1015,7 +1119,6 @@ async def cb_shoot(callback: CallbackQuery):
             add_xp(winner, xp_reward)
             text += f"\n\n🏆 <b>Победитель: {room['tank'][winner]}!</b>\n💰 +{xp_reward} XP"
             
-            # Кнопка узнать противника
             kb = InlineKeyboardMarkup(inline_keyboard=[
                 [InlineKeyboardButton(text="👀 Узнать противника", callback_data=f"reveal_{code}")]
             ])
@@ -1046,7 +1149,6 @@ async def cb_reveal(callback: CallbackQuery):
     await callback.message.answer(text, parse_mode="HTML")
     await callback.answer()
     
-    # Удаляем комнату после раскрытия
     if code in ROOMS:
         del ROOMS[code]
 
