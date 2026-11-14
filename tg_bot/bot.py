@@ -5,6 +5,7 @@ import os
 import random
 import re
 import string
+import time
 from datetime import datetime
 
 from dotenv import load_dotenv
@@ -102,6 +103,7 @@ ROOMS = {}
 class BattleState(StatesGroup):
     choosing_size = State()
     entering_code = State()
+    in_battle = State()
 
 def generate_room_code():
     return ''.join(random.choices(string.ascii_uppercase + string.digits, k=4))
@@ -280,41 +282,19 @@ LOCALES = {
         "start": "Привет, {name}!\n\nДобро пожаловать! Выбери нужный раздел:",
         "choose_lang": "Выбери язык / Абяры мову / Choose language:",
         "lang_changed": "Язык изменён на Русский",
-        "btn_mods": "Моды",
-        "btn_fun": "Приколы",
-        "btn_help": "Помощь",
-        "btn_feedback": "Обратная связь",
-        "btn_suggest": "Предложить мод",
-        "btn_dev": "В разработке",
-        "btn_donate": "Поддержать",
-        "btn_bug": "Сообщить об ошибке",
-        "btn_question": "Задать вопрос",
-        "btn_misc": "Разное",
-        "btn_lang": "Язык",
-        "btn_profile": "Профиль",
-        "btn_back": "Назад",
-        "btn_invite": "Пригласить друга",
-        "main_menu": "Главное меню",
-        "feedback_menu": "<b>Обратная связь</b>\n\nВыбери действие:",
-        "mods_menu": "<b>Моды</b>\n\nВыбери мод:",
-        "subscribe_needed": "Чтобы скачать этот мод, пожалуйста, подпишись на наш канал!",
-        "btn_subscribe": "Подписаться на канал",
-        "version": "Версия мода: {ver}",
-        "btn_info": "Описание мода",
-        "cancel": "Отменено, возвращаюсь в главное меню",
-        "nothing_cancel": "Нечего отменять",
-        "profile_title": "<b>Профиль</b>",
-        "profile_id": "Твой ID: <code>{uid}</code>",
-        "profile_rank": "Звание: <b>{rank}</b>",
-        "profile_xp": "Опыт: {xp} XP",
+        "btn_mods": "Моды", "btn_fun": "Приколы", "btn_help": "Помощь", "btn_suggest": "Предложить мод",
+        "btn_feedback": "Обратная связь", "btn_dev": "В разработке", "btn_donate": "Поддержать", "btn_bug": "Сообщить об ошибке",
+        "btn_question": "Задать вопрос", "btn_misc": "Разное", "btn_lang": "Язык", "btn_profile": "Профиль", "btn_back": "Назад", "btn_invite": "Пригласить друга",
+        "main_menu": "Главное меню", "feedback_menu": "<b>Обратная связь</b>\n\nВыбери действие:",
+        "mods_menu": "<b>Моды</b>\n\nВыбери мод:", "subscribe_needed": "Чтобы скачать этот мод, пожалуйста, подпишись на наш канал!",
+        "btn_subscribe": "Подписаться на канал", "version": "Версия мода: {ver}", "btn_info": "Описание мода",
+        "cancel": "Отменено, возвращаюсь в главное меню", "nothing_cancel": "Нечего отменять",
+        "profile_title": "<b>Профиль</b>", "profile_id": "Твой ID: <code>{uid}</code>", "profile_rank": "Звание: <b>{rank}</b>", "profile_xp": "Опыт: {xp} XP",
         "profile_next": "До следующего звания: {xp_left} XP (и {ideas_left} идей)",
         "profile_next_manual": "Следующее звание выдаётся вручную",
         "profile_stats": "<b>Статистика</b>\nСкачано модов: {downloads}\nПредложено идей: {ideas}\nЗадано вопросов: {questions}\nПолучено банов: {bans}",
-        "profile_achievements": "<b>Достижения</b>\n{list}",
-        "profile_no_achievements": "Пока нет достижений",
-        "rank_up": "Поздравляю! Ты получил новое звание: <b>{rank}</b>",
-        "rank_given": "Тебе выдано новое звание: <b>{rank}</b>",
-        "ach_unlocked": "Получено достижение: <b>{ach}</b>",
+        "profile_achievements": "<b>Достижения</b>\n{list}", "profile_no_achievements": "Пока нет достижений",
+        "rank_up": "Поздравляю! Ты получил новое звание: <b>{rank}</b>", "rank_given": "Тебе выдано новое звание: <b>{rank}</b>", "ach_unlocked": "Получено достижение: <b>{ach}</b>",
         "fun_prompt": "Кидай свой игровой прикол сюда!\n\nЭто может быть:\n• Забавный момент из боя\n• Необычная ситуация с физикой игры\n• Смешной баг или совпадение\n• Любой другой забавный случай из игры\n\nОтправляй хоть видео, хоть фото, хоть текст\nДля отмены напиши /cancel",
         "fun_thanks": "Спасибо! Твой прикол принят, когда его проверят модераторы, он попадёт в наш канал",
         "suggest_prompt": "<b>Предложить идею для мода</b>\n\nНапиши описание мода и как что работает, фото/видео/голосовые/видеосообщения не принимаются\nОно будет переслано администратору\n\nДля отмены напиши /cancel",
@@ -323,21 +303,15 @@ LOCALES = {
         "bug_voice": "Напиши подробности текстом и по возможности фото или видео, голосовые и пустые сообщения не принимаются",
         "bug_thanks": "Спасибо, сообщение об ошибке передано разработчикам, постараемся исправить в ближайшее время",
         "question_prompt": "Задай свой вопрос, и мы ответим тебе прямо здесь!\nНапиши свой вопрос или опиши проблему\nДля отмены напиши /cancel",
-        "question_thanks": "Твой вопрос отправлен! Ожидай ответа здесь",
-        "question_no_group": "Ошибка: группа для заявок не настроена",
+        "question_thanks": "Твой вопрос отправлен! Ожидай ответа здесь", "question_no_group": "Ошибка: группа для заявок не настроена",
         "dev_text": "Сейчас в разработке:\n\n• Мод на старое окно шансов\n• Старое окно выбора режима\n• Старое окно ТТХ танка \n\nИ всё из этого может и не выйти\nДанный список, это набросок планируемых модов Что-то выйдет, что-то нет",
         "donate_text": "Поддержать разработку модов\n\n• Расскажи о нашем канале и боте друзьям\n• Предложи идею для нового мода\n",
         "misc_menu": "<b>Разное</b>\n\nВыбери интересующий вопрос:",
-        "misc_team_btn": "О команде MOD_rak.rar",
-        "misc_join_btn": "Можно ли присоединиться к вам",
-        "misc_share_btn": "Поделиться ботом",
+        "misc_team_btn": "О команде MOD_rak.rar", "misc_join_btn": "Можно ли присоединиться к вам", "misc_share_btn": "Поделиться ботом",
         "misc_team_text": "<b>О команде</b>\n\nМы парни-мододелы\nМы те, кто могут отстоять точку зрения\nА наша точка зрения это старый вид игры\nИ мы не собираемся от неё отступать",
         "help_menu": "<b>Помощь</b>\n\nВыбери вопрос:",
-        "help_install_btn": "Как установить мод",
-        "help_remove_btn": "Как удалить мод",
-        "help_why_btn": "Зачем нужны данные модификации",
-        "help_time_btn": "Сколько разрабатываются моды",
-        "help_why_old_btn": "Почему моды только на возвращение старого в игру",
+        "help_install_btn": "Как установить мод", "help_remove_btn": "Как удалить мод", "help_why_btn": "Зачем нужны данные модификации",
+        "help_time_btn": "Сколько разрабатываются моды", "help_why_old_btn": "Почему моды только на возвращение старого в игру",
         "help_install_text": "Как установить мод:\n\nШаг 1: Скачать мод с официального сайта For Blitz или в нашем боте\nШаг 1.1: Установки модов на телефон нету, если нужно, то используйте инструкцию/приложения от For Blitz\nОбрати внимание, моды в этом боте только на ПК\nШаг 2: Распаковать архив или просто зайти в него\nШаг 3: Скопировать папку Data\nШаг 4: Зайти в папку игры: C:\\Games\\Tanks Blitz\nШаг 5: Нажать вставить скопированную папку Data с заменой",
         "help_remove_text": "Как удалить мод:\n\nСамый простой способ, нажать в приложении LGC восстановление игры",
         "help_why_text": "Зачем нужны данные модификации:\n\nМоды возвращают удалённые функции и интерфейс, к которым привыкли игроки Это делает игру комфортнее и привычнее для тех, кто играл раньше",
@@ -345,75 +319,45 @@ LOCALES = {
         "help_why_old_text": "Почему модификации только на возвращение старого в игру:\n\nНостальгия у всей команды по старой игре",
         "old_ui_info_text": "Данный мод возвращает:\n• Старую кнопку выбора режима\n• Старый UI хранилища\n• Старую кнопку магазина\n• Старую левую панель\n• Старую кнопку «Тренироваться»\n• Старую кнопку «В Бой»\n• Убраны новые чёрные точки на фоне кнопок боя/выбора режима/взвода\n• Старые иконки для режимов\n• Старые иконки победы/поражения/ничьи во вкладке уведомлений\n• Старые звуки при нажатии кнопок/иконок в ангаре\n• Старые кнопки (зелёные, красные)\n• Старый UI дерева исследования\n• Старый UI окна уведомлений\n• Всякие мелочи",
         "unknown_media_text": "Эт что? Я понимаю только текст и кнопки Выбери нужный раздел на клавиатуре ниже",
-        "unavailable_text": "Временно недоступно",
-        "break_hard_text": "Хватит меня ломать, я и так еле держусь 🤖",
-        "break_soft_text": "Не сломаешь, я крепкий",
-        "banned_text": "Ты был забанен {count} раз",
+        "unavailable_text": "Временно недоступно", "break_hard_text": "Хватит меня ломать, я и так еле держусь 🤖", "break_soft_text": "Не сломаешь, я крепкий",
         "no_rights": "У тебя нет прав для этого действия",
         "ban_usage": "Использование: /ban <user_id> <дд.мм.гггг> <чч:мм:сс> [причина]\nИли: /ban <user_id> never [причина]\nИли ответьте на сообщение пользователя: /ban [причина]",
         "unban_usage": "Использование: /unban <user_id> или ответьте на сообщение пользователя",
         "ban_cant_admin": "Нельзя забанить администратора",
-        "ban_done": "Пользователь {uid} забанен до {until}. Причина: {reason}",
-        "ban_done_forever": "Пользователь {uid} забанен навсегда. Причина: {reason}",
-        "unban_done": "Пользователь {uid} разбанен",
-        "unban_reply_success": "Пользователь {uid} успешно разбанен",
-        "unban_not_found": "Этот пользователь не в бане",
-        "banlist_empty": "Список банов пуст",
-        "banlist_title": "Забаненные:",
-        "ban_notify": "Ты был забанен\nПричина: {reason}\nСрок: до {until}",
-        "ban_notify_forever": "Ты был забанен\nПричина: {reason}\nСрок: навсегда",
-        "setrank_usage": "Использование: /setrank <user_id> <rank_id>",
-        "setrank_bad_id": "Неверный формат ID",
-        "setrank_no_rank": "Такого звания нет",
-        "setrank_done": "Пользователю {uid} выдано звание: {rank}",
-        "setrank_notify_fail": "Не удалось отправить уведомление: {err}",
+        "ban_done": "Пользователь {uid} забанен до {until}. Причина: {reason}", "ban_done_forever": "Пользователь {uid} забанен навсегда. Причина: {reason}",
+        "unban_done": "Пользователь {uid} разбанен", "unban_reply_success": "Пользователь {uid} успешно разбанен", "unban_not_found": "Этот пользователь не в бане",
+        "banlist_empty": "Список банов пуст", "banlist_title": "Забаненные:",
+        "ban_notify": "Ты был забанен\nПричина: {reason}\nСрок: до {until}", "ban_notify_forever": "Ты был забанен\nПричина: {reason}\nСрок: навсегда",
+        "setrank_usage": "Использование: /setrank <user_id> <rank_id>", "setrank_bad_id": "Неверный формат ID", "setrank_no_rank": "Такого звания нет",
+        "setrank_done": "Пользователю {uid} выдано звание: {rank}", "setrank_notify_fail": "Не удалось отправить уведомление: {err}",
         "banned_bot_text": "Вы забанены в этом боте\nВы будете разбанены либо при решении администратора, либо когда истекет срок бана\nПосмотреть свой срок бана: /mystatus",
-        "ban_invalid_date": "Неверный формат даты. Используй: <дд.мм.гггг> <чч:мм:сс> или никогда (never)",
-        "ban_past": "Указанное время уже прошло",
-        "mystatus_no_ban": "Вы не забанены",
-        "mystatus_title": "Ваш бан:",
-        "mystatus_until": "Срок бана: до {until}",
-        "mystatus_until_forever": "Срок бана: навсегда",
-        "mystatus_reason": "Причина: {reason}",
-        "staff_empty": "Команда пока пуста",
-        "staff_title": "<b>Состав команды:</b>",
+        "ban_invalid_date": "Неверный формат даты. Используй: <дд.мм.гггг> <чч:мм:сс> или никогда (never)", "ban_past": "Указанное время уже прошло",
+        "mystatus_no_ban": "Вы не забанены", "mystatus_title": "Ваш бан:", "mystatus_until": "Срок бана: до {until}", "mystatus_until_forever": "Срок бана: навсегда", "mystatus_reason": "Причина: {reason}",
+        "staff_empty": "Команда пока пуста", "staff_title": "<b>Состав команды:</b>",
         "invite_text": "Пригласи друга в нашего бота и получи +150 XP!\n\nТвоя ссылка:\n{link}\n\nЗа каждого друга, который зайдет, вы оба получите опыт",
-        "ref_bonus": "Твой друг зашел по твоей ссылке! Ты получил +150 XP",
-        "ref_welcome": "Добро пожаловать по приглашению! Ты и твой друг получили +150 XP",
+        "ref_bonus": "Твой друг зашел по твоей ссылке! Ты получил +150 XP", "ref_welcome": "Добро пожаловать по приглашению! Ты и твой друг получили +150 XP",
         "apply_team_btn": "Подать заявку в команду",
         "apply_team_text": "<b>Анкета в команду MOD_rak.rar</b>\n\n⚠️ <b>Примечание:</b> Набор в команду закрыт. Мы не принимаем всех подряд. Нам нужны люди с нужным настроением, опытом и свободным временем. Заполнение анкеты не гарантирует вступление, но мы рассмотрим её, когда откроется набор.\n\nПожалуйста, ответь на все вопросы одним сообщением (или несколькими, но подряд):\n\n1. Твой возраст и часовой пояс?\n2. Есть ли опыт в создании модов (каких игр, какие моды)?\n3. Какие инструменты и софт ты знаешь (Python, Blender, редакторы текстур, 3D-редакторы)?\n4. Сколько времени в день/неделю ты готов уделять проекту?\n5. Почему ты хочешь в команду именно MOD_rak.rar?\n6. Твоя любимая фича старого Танкс Блитц?\n7. Ссылка на твои прошлые работы (если есть)?\n8. Что ты хочешь делать в команде (кодить, рисовать, тестировать, модерировать)?\n\nОтправь ответ одним сообщением. Для отмены напиши /cancel",
         "apply_team_thanks": "Твоя анкета отправлена на рассмотрение! Мы свяжемся с тобой, если ты нам подойдешь.",
-        "bug_report_fixed": "Твой баг-репорт исправлен! Спасибо за помощь, ты получил +50 XP.",
-        "btn_report_fixed": "✅ Исправлено",
-        "appeal_btn": "Подать заявку на разбан",
-        "appeal_usage": "Отправь причину, по которой ты хочешь, чтобы тебя разбанили.",
-        "appeal_sent": "Твоя заявка на разбан отправлена администраторам.",
-        "appeal_already": "Ты уже подал заявку на разбан. Ожидай ответа.",
-        "appeal_accept": "Твоя заявка на разбан одобрена! Ты разбанен.",
-        "appeal_reject": "Твоя заявка на разбан отклонена.",
-        "battle_desc": "⚔️ <b>Танковые бои</b>\n\nЗдесь ты можешь сразиться с другими игроками!\n\n<b>Правила:</b>\n1. Выбираешь формат (или бой с ботом).\n2. Создаешь комнату (или входишь по коду).\n3. Бот выдает каждому случайный танк и HP.\n4. Нажимаешь «Выстрел» и наносишь урон случайному врагу.\n5. Кто последний остался жив — забирает 25-50 XP.\n\n<b>Важно:</b> Ты не знаешь, какой танк у противника, пока не начнется бой!",
+        "bug_report_fixed": "Твой баг-репорт исправлен! Спасибо за помощь, ты получил +50 XP.", "btn_report_fixed": "✅ Исправлено",
+        "appeal_btn": "Подать заявку на разбан", "appeal_usage": "Отправь причину, по которой ты хочешь, чтобы тебя разбанили.",
+        "appeal_sent": "Твоя заявка на разбан отправлена администраторам.", "appeal_already": "Ты уже подал заявку на разбан. Ожидай ответа.",
+        "appeal_accept": "Твоя заявка на разбан одобрена! Ты разбанен.", "appeal_reject": "Твоя заявка на разбан отклонена.",
+        "battle_desc": "⚔️ <b>Танковые бои</b>\n\nЗдесь ты можешь сразиться с другими игроками!\n\n<b>Правила:</b>\n1. Выбираешь формат (или бой с ботом).\n2. Создаешь комнату (или входишь по коду).\n3. Бот выдает каждому случайный танк и HP.\n4. Ходы идут по очереди! Выбирай цель кнопкой.\n5. Кто последний остался жив — забирает 25-50 XP.\n\n<b>Важно:</b> Ты не знаешь, какой танк у противника, пока не начнется бой!",
         "battle_choose": "Выбери действие:",
-        "battle_bot": "🤖 Бой с ботом",
-        "battle_create": "Создать комнату",
-        "battle_join": "Войти по коду",
-        "battle_list": "Список открытых комнат",
-        "battle_back": "Назад",
+        "battle_bot": "🤖 Бой с ботом", "battle_create": "Создать комнату", "battle_join": "Войти по коду", "battle_list": "Список открытых комнат", "battle_back": "Назад",
     },
     "be": {
-        "start": "Прывітанне, {name}!\n\nСардэчна запрашаем! Абяры патрэбны раздзел:",
-        "choose_lang": "Выбяры мову / Choose language:",
-        "lang_changed": "Мова зменена на Беларускую",
+        "start": "Прывітанне, {name}!\n\nСардэчна запрашаем! Абяры патрэбны раздзел:", "choose_lang": "Выбяры мову / Choose language:", "lang_changed": "Мова зменена на Беларускую",
         "btn_mods": "Моды", "btn_fun": "Прыколы", "btn_help": "Дапамога", "btn_suggest": "Прапанаваць мод",
         "btn_feedback": "Зваротная сувязь", "btn_dev": "У распрацоўцы", "btn_donate": "Падтрымаць", "btn_bug": "Паведаміць пра памылку",
         "btn_question": "Задаць пытанне", "btn_misc": "Рознае", "btn_lang": "Мова", "btn_profile": "Профіль", "btn_back": "Назад", "btn_invite": "Запрасіць сябра",
-        "main_menu": "Галоўнае меню",
-        "feedback_menu": "<b>Зваротная сувязь</b>\n\nАбяры дзеянне:",
+        "main_menu": "Галоўнае меню", "feedback_menu": "<b>Зваротная сувязь</b>\n\nАбяры дзеянне:",
         "mods_menu": "<b>Моды</b>\n\nАбяры мод:", "subscribe_needed": "Каб спампаваць гэты мод, калі ласка, падпішыся на наш канал!",
         "btn_subscribe": "Падпісацца на канал", "version": "Версія мода: {ver}", "btn_info": "Апісанне мода",
         "cancel": "Адменена, вяртаюся ў галоўнае меню", "nothing_cancel": "Няма чаго адмяняць",
         "profile_title": "<b>Профіль</b>", "profile_id": "Твой ID: <code>{uid}</code>", "profile_rank": "Званне: <b>{rank}</b>", "profile_xp": "Вопыт: {xp} XP",
-        "profile_next": "Да наступнага звання: {xp_left} XP (і {ideas_left} ідэй)",
-        "profile_next_manual": "Наступнае званне выдаецца ўручную",
+        "profile_next": "Да наступнага звання: {xp_left} XP (і {ideas_left} ідэй)", "profile_next_manual": "Наступнае званне выдаецца ўручную",
         "profile_stats": "<b>Статыстыка</b>\nСпампавана модаў: {downloads}\nПрапанавана ідэй: {ideas}\nЗададзена пытанняў: {questions}\nАтрымана банаў: {bans}",
         "profile_achievements": "<b>Дасягненні</b>\n{list}", "profile_no_achievements": "Пакуль няма дасягненняў",
         "rank_up": "Віншую! Ты атрымаў новае званне: <b>{rank}</b>", "rank_given": "Табе выдадзена новае званне: <b>{rank}</b>", "ach_unlocked": "Атрымана дасягненне: <b>{ach}</b>",
@@ -421,21 +365,14 @@ LOCALES = {
         "fun_thanks": "Дзякуй! Твой гульнявы прыкол прыняты",
         "suggest_prompt": "<b>Прапанаваць ідэю для мода</b>\n\nНапішы апісанне мода і як што працуе\nДля адмены напішы /cancel",
         "suggest_thanks": "Твая ідэя адпраўлена на разгляд! Дзякуй!",
-        "bug_prompt": "Апішы памылку ў модзе\nДля адмены напішы /cancel",
-        "bug_voice": "Напішы падрабязнасці тэкстам, галасавыя паведамленні не прымаюцца",
+        "bug_prompt": "Апішы памылку ў модзе\nДля адмены напішы /cancel", "bug_voice": "Напішы падрабязнасці тэкстам, галасавыя паведамленні не прымаюцца",
         "bug_thanks": "Дзякуй, паведамленне пра памылку перададзена распрацоўшчыкам",
-        "question_prompt": "Задай сваё пытанне, і мы адкажам табе прама тут!\nДля адмены напішы /cancel",
-        "question_thanks": "Тваё пытанне адпраўлена! Чакай адказу тут",
-        "question_no_group": "Памылка: група для заявак не наладжана",
+        "question_prompt": "Задай сваё пытанне, і мы адкажам табе прама тут!\nДля адмены напішы /cancel", "question_thanks": "Тваё пытанне адпраўлена! Чакай адказу тут", "question_no_group": "Памылка: група для заявак не наладжана",
         "dev_text": "Зараз у распрацоўцы:\n\n• Мод на старое акно шанцаў\n• Старое акно выбару рэжыму\n• Старое акно ТТХ танка \n\nІ ўсё з гэтага можа і не выйсці",
         "donate_text": "Падтрымаць распрацоўку модаў\n\n• Раскажы пра наш канал і бота сябрам\n• Прапануй ідэю для новага мода\n",
-        "misc_menu": "<b>Рознае</b>\n\nАбяры пытанне:",
-        "misc_team_btn": "Пра каманду MOD_rak.rar",
-        "misc_join_btn": "Ці можна далучыцца да вас",
-        "misc_share_btn": "Падзяліцца ботам",
+        "misc_menu": "<b>Рознае</b>\n\nАбяры пытанне:", "misc_team_btn": "Пра каманду MOD_rak.rar", "misc_join_btn": "Ці можна далучыцца да вас", "misc_share_btn": "Падзяліцца ботам",
         "misc_team_text": "<b>Пра каманду</b>\n\nМы хлопцы-модадзелы\nМы тыя, хто могуць адстаяць пункт гледжання\nА наш пункт гледжання гэта стары выгляд гульні",
-        "help_menu": "<b>Дапамога</b>\n\nАбяры пытанне:",
-        "help_install_btn": "Як усталяваць мод", "help_remove_btn": "Як выдаліць мод", "help_why_btn": "Навошта патрэбныя гэтыя мадыфікацыі",
+        "help_menu": "<b>Дапамога</b>\n\nАбяры пытанне:", "help_install_btn": "Як усталяваць мод", "help_remove_btn": "Як выдаліць мод", "help_why_btn": "Навошта патрэбныя гэтыя мадыфікацыі",
         "help_time_btn": "Колькі распрацоўваюцца моды", "help_why_old_btn": "Чаму моды толькі на вяртанне старога",
         "help_install_text": "Як усталяваць мод:\n\nКрок 1: Спампаваць мод\nКрок 2: Распакаваць архіў\nКрок 3: Скапіяваць папку Data\nКрок 4: Зайсці ў папку гульні: C:\\Games\\Tanks Blitz\nКрок 5: Уставіць з заменай",
         "help_remove_text": "Як выдаліць мод:\n\nСамы просты спосаб, націснуць у праграме LGC аднаўленне гульні",
@@ -444,74 +381,42 @@ LOCALES = {
         "help_why_old_text": "Чаму мадыфікацыі толькі на вяртанне старога:\n\nНастальгія ўсёй каманды па старой гульні",
         "old_ui_info_text": "Гэты мод вяртае:\n• Старую кнопку выбару рэжыму\n• Стары UI сховішча\n• Старую кнопку крамы\n• Старую левую панэль\n• Старую кнопку «Трэніравацца»\n• Старую кнопку «У Бой»\n• Прыбраныя новыя чорныя кропкі на фоне кнопак бою/выбару рэжыму/узвода\n• Старыя іконкі для рэжымаў\n• Старыя іконкі перамогі/паражэння/нічыі ў закладцы апавяшчэнняў\n• Старыя гукі пры націску кнопак/іконак у ангары\n• Старыя кнопкі (зялёныя, чырвоныя)\n• Стары UI дрэва даследавання\n• Стары UI акна апавяшчэнняў\n• Розныя дробязі",
         "unknown_media_text": "Гэта што? Я разумею толькі тэкст і кнопкі Абяры патрэбны раздзел на клавіятуры ніжэй",
-        "unavailable_text": "Часова недаступна",
-        "break_hard_text": "Хопіць мяне ламаць, я і так ледзь трымаюся 🤖",
-        "break_soft_text": "Не зламаеш, я моцны",
-        "no_rights": "У цябе няма правоў для гэтага дзеяння",
-        "ban_usage": "Выкарыстанне: /ban <user_id> <дд.мм.гггг> <чч:мм:сс> [прычына]\nАбо: /ban <user_id> never [прычына]\nАбо адкажыце на паведамленне: /ban [прычына]",
-        "unban_usage": "Выкарыстанне: /unban <user_id> або адкажыце на паведамленне карыстальніка",
-        "ban_cant_admin": "Нельга забаніць адміністратара",
-        "ban_done": "Карыстальнік {uid} забанены да {until}. Прычына: {reason}",
-        "ban_done_forever": "Карыстальнік {uid} забанены назаўжды. Прычына: {reason}",
-        "unban_done": "Карыстальнік {uid} разбанены",
-        "unban_reply_success": "Карыстальнік {uid} паспяхова разбанены",
-        "unban_not_found": "Гэты карыстальнік не ў бане",
-        "banlist_empty": "Спіс банаў пусты",
-        "banlist_title": "Забаненыя:",
-        "ban_notify": "Ты быў забанены\nПрычына: {reason}\nТэрмін: да {until}",
-        "ban_notify_forever": "Ты быў забанены\nПрычына: {reason}\nТэрмін: назаўжды",
-        "setrank_usage": "Выкарыстанне: /setrank <user_id> <rank_id>",
-        "setrank_bad_id": "Няверны фармат ID",
-        "setrank_no_rank": "Такога звання няма",
-        "setrank_done": "Карыстальніку {uid} выдадзена званне: {rank}",
-        "setrank_notify_fail": "Не ўдалося адправіць апавяшчэнне: {err}",
+        "unavailable_text": "Часова недаступна", "break_hard_text": "Хопіць мяне ламаць, я і так ледзь трымаюся 🤖", "break_soft_text": "Не зламаеш, я моцны",
+        "no_rights": "У цябе няма правоў для гэтага дзеяння", "ban_usage": "Выкарыстанне: /ban <user_id> <дд.мм.гггг> <чч:мм:сс> [прычына]\nАбо: /ban <user_id> never [прычына]\nАбо адкажыце на паведамленне: /ban [прычына]",
+        "unban_usage": "Выкарыстанне: /unban <user_id> або адкажыце на паведамленне карыстальніка", "ban_cant_admin": "Нельга забаніць адміністратара",
+        "ban_done": "Карыстальнік {uid} забанены да {until}. Прычына: {reason}", "ban_done_forever": "Карыстальнік {uid} забанены назаўжды. Прычына: {reason}",
+        "unban_done": "Карыстальнік {uid} разбанены", "unban_reply_success": "Карыстальнік {uid} паспяхова разбанены", "unban_not_found": "Гэты карыстальнік не ў бане",
+        "banlist_empty": "Спіс банаў пусты", "banlist_title": "Забаненыя:", "ban_notify": "Ты быў забанены\nПрычына: {reason}\nТэрмін: да {until}", "ban_notify_forever": "Ты быў забанены\nПрычына: {reason}\nТэрмін: назаўжды",
+        "setrank_usage": "Выкарыстанне: /setrank <user_id> <rank_id>", "setrank_bad_id": "Няверны фармат ID", "setrank_no_rank": "Такога звання няма",
+        "setrank_done": "Карыстальніку {uid} выдадзена званне: {rank}", "setrank_notify_fail": "Не ўдалося адправіць апавяшчэнне: {err}",
         "banned_bot_text": "Вы забанены ў гэтым боце\nВы будзеце разбаненыя альбо па рашэнні адміністратара, альбо калі скончыцца тэрмін бану\nПаглядзець свой тэрмін бану: /mystatus",
-        "ban_invalid_date": "Няверны фармат даты. Выкарыстоўвай: <дд.мм.гггг> <чч:мм:сс> або never",
-        "ban_past": "Паказаны час ужо прайшоў",
-        "mystatus_no_ban": "Вы не забанены",
-        "mystatus_title": "Ваш бан:",
-        "mystatus_until": "Тэрмін бану: да {until}",
-        "mystatus_until_forever": "Тэрмін бану: назаўжды",
-        "mystatus_reason": "Прычына: {reason}",
-        "staff_empty": "Каманда пакуль пустая",
-        "staff_title": "<b>Склад каманды:</b>",
+        "ban_invalid_date": "Няверны фармат даты. Выкарыстоўвай: <дд.мм.гггг> <чч:мм:сс> або never", "ban_past": "Паказаны час ужо прайшоў",
+        "mystatus_no_ban": "Вы не забанены", "mystatus_title": "Ваш бан:", "mystatus_until": "Тэрмін бану: да {until}", "mystatus_until_forever": "Тэрмін бану: назаўжды", "mystatus_reason": "Прычына: {reason}",
+        "staff_empty": "Каманда пакуль пустая", "staff_title": "<b>Склад каманды:</b>",
         "invite_text": "Запрасі сябра ў нашага бота і атрымай +150 XP!\n\nТвая спасылка:\n{link}\n\nЗа кожнага сябра, які зайдзе, вы абодва атрымаеце вопыт",
-        "ref_bonus": "Твой сябар зайшоў па тваёй спасылцы! Ты атрымаў +150 XP",
-        "ref_welcome": "Сардэчна запрашаем па запрашэнні! Ты і твой сябар атрымалі +150 XP",
+        "ref_bonus": "Твой сябар зайшоў па тваёй спасылцы! Ты атрымаў +150 XP", "ref_welcome": "Сардэчна запрашаем па запрашэнні! Ты і твой сябар атрымалі +150 XP",
         "apply_team_btn": "Падаць заяўку ў каманду",
         "apply_team_text": "<b>Анкета ў каманду MOD_rak.rar</b>\n\n⚠️ <b>Заўвага:</b> Набор у каманду закрыты. Мы не прымаем усіх запар. Нам патрэбныя людзі з патрэбным настроем, вопытам і вольным часам. Запаўненне анкеты не гарантуе ўступ, але мы разгледзім яе, калі адкрыецца набор.\n\nКалі ласка, адкажы на ўсе пытанні адным паведамленнем:\n\n1. Твой узрост і часавы пояс?\n2. Ці ёсць вопыт у стварэнні модаў?\n3. Якія інструменты ты ведаеш?\n4. Колькі часу ты гатовы ўдзяляць праекту?\n5. Чаму ты хочаш у MOD_rak.rar?\n6. Твая любімая фіча старога Танкс Бліц?\n7. Спасылка на твае мінулыя працы?\n8. Што ты хочаш рабіць у камандзе?\n\nАдпраў адказ адным паведамленнем. Для адмены напішы /cancel",
         "apply_team_thanks": "Твая анкета адпраўлена на разгляд! Мы звяжамся з табой, калі ты нам падыдзеш.",
-        "bug_report_fixed": "Твой баг-рэпарт выпраўлены! Дзякуй за дапамогу, ты атрымаў +50 XP.",
-        "btn_report_fixed": "✅ Выпраўлена",
-        "appeal_btn": "Падаць заяўку на разбан",
-        "appeal_usage": "Адпраў прычыну, па якой ты хочаш, каб цябе разбанілі.",
-        "appeal_sent": "Твая заяўка на разбан адпраўлена адміністратарам.",
-        "appeal_already": "Ты ўжо падаў заяўку на разбан. Чакай адказу.",
-        "appeal_accept": "Твая заяўка на разбан ухвалена! Ты разбанены.",
-        "appeal_reject": "Твая заяўка на разбан адхілена.",
-        "battle_desc": "⚔️ <b>Танкавыя баі</b>\n\nТут ты можаш змагацца з іншымі гульцамі!\n\n<b>Правілы:</b>\n1. Выбіраеш фармат (або бой з ботам).\n2. Ствараеш пакой (або ўваходзіш па кодзе).\n3. Бот выдае кожнаму выпадковы танк і HP.\n4. Націскаеш «Стрэл» і наносіш урон выпадковаму ворагу.\n5. Хто апошні застаўся жывы — забірае 25-50 XP.\n\n<b>Важна:</b> Ты не ведаеш, які танк у суперніка!",
+        "bug_report_fixed": "Твой баг-рэпарт выпраўлены! Дзякуй за дапамогу, ты атрымаў +50 XP.", "btn_report_fixed": "✅ Выпраўлена",
+        "appeal_btn": "Падаць заяўку на разбан", "appeal_usage": "Адпраў прычыну, па якой ты хочаш, каб цябе разбанілі.",
+        "appeal_sent": "Твая заяўка на разбан адпраўлена адміністратарам.", "appeal_already": "Ты ўжо падаў заяўку на разбан. Чакай адказу.",
+        "appeal_accept": "Твая заяўка на разбан ухвалена! Ты разбанены.", "appeal_reject": "Твая заяўка на разбан адхілена.",
+        "battle_desc": "⚔️ <b>Танкавыя баі</b>\n\nТут ты можаш змагацца з іншымі гульцамі!\n\n<b>Правілы:</b>\n1. Выбіраеш фармат (або бой з ботам).\n2. Ствараеш пакой (або ўваходзіш па кодзе).\n3. Бот выдае кожнаму выпадковы танк і HP.\n4. Хады ідуць па чарзе! Выбірай мэту кнопкай.\n5. Хто апошні застаўся жывы — забірае 25-50 XP.\n\n<b>Важна:</b> Ты не ведаеш, які танк у суперніка!",
         "battle_choose": "Абяры дзеянне:",
-        "battle_bot": "🤖 Бой з ботам",
-        "battle_create": "Стварыць пакой",
-        "battle_join": "Увайсці па кодзе",
-        "battle_list": "Спіс адкрытых пакояў",
-        "battle_back": "Назад",
+        "battle_bot": "🤖 Бой з ботам", "battle_create": "Стварыць пакой", "battle_join": "Увайсці па кодзе", "battle_list": "Спіс адкрытых пакояў", "battle_back": "Назад",
     },
     "en": {
-        "start": "Hello, {name}!\n\nWelcome! Choose a section:",
-        "choose_lang": "Choose language:",
-        "lang_changed": "Language changed to English",
+        "start": "Hello, {name}!\n\nWelcome! Choose a section:", "choose_lang": "Choose language:", "lang_changed": "Language changed to English",
         "btn_mods": "Mods", "btn_fun": "Fun", "btn_help": "Help", "btn_suggest": "Suggest a mod",
         "btn_feedback": "Feedback", "btn_dev": "In development", "btn_donate": "Support", "btn_bug": "Report a bug",
         "btn_question": "Ask a question", "btn_misc": "Misc", "btn_lang": "Language", "btn_profile": "Profile", "btn_back": "Back", "btn_invite": "Invite a friend",
-        "main_menu": "Main menu",
-        "feedback_menu": "<b>Feedback</b>\n\nChoose an action:",
+        "main_menu": "Main menu", "feedback_menu": "<b>Feedback</b>\n\nChoose an action:",
         "mods_menu": "<b>Mods</b>\n\nChoose a mod:", "subscribe_needed": "To download this mod, please subscribe to our channel!",
         "btn_subscribe": "Subscribe to channel", "version": "Mod version: {ver}", "btn_info": "Mod description",
         "cancel": "Cancelled, returning to main menu", "nothing_cancel": "Nothing to cancel",
         "profile_title": "<b>Profile</b>", "profile_id": "Your ID: <code>{uid}</code>", "profile_rank": "Rank: <b>{rank}</b>", "profile_xp": "XP: {xp}",
-        "profile_next": "To next rank: {xp_left} XP (and {ideas_left} ideas)",
-        "profile_next_manual": "Next rank is given manually",
+        "profile_next": "To next rank: {xp_left} XP (and {ideas_left} ideas)", "profile_next_manual": "Next rank is given manually",
         "profile_stats": "<b>Stats</b>\nMods downloaded: {downloads}\nIdeas suggested: {ideas}\nQuestions asked: {questions}\nBans received: {bans}",
         "profile_achievements": "<b>Achievements</b>\n{list}", "profile_no_achievements": "No achievements yet",
         "rank_up": "Congratulations! You reached a new rank: <b>{rank}</b>", "rank_given": "You were given a new rank: <b>{rank}</b>", "ach_unlocked": "Achievement unlocked: <b>{ach}</b>",
@@ -519,12 +424,9 @@ LOCALES = {
         "fun_thanks": "Thanks! Your funny moment is accepted",
         "suggest_prompt": "<b>Suggest a mod idea</b>\n\nWrite a description of the mod and how it works\nTo cancel, type /cancel",
         "suggest_thanks": "Your idea has been sent for review! Thanks!",
-        "bug_prompt": "Describe the bug in the mod\nTo cancel, type /cancel",
-        "bug_voice": "Write details in text, voice messages are not accepted",
+        "bug_prompt": "Describe the bug in the mod\nTo cancel, type /cancel", "bug_voice": "Write details in text, voice messages are not accepted",
         "bug_thanks": "Thanks, the bug report has been sent to the developers",
-        "question_prompt": "Ask your question, and we will answer you right here!\nTo cancel, type /cancel",
-        "question_thanks": "Your question has been sent! Wait for an answer here",
-        "question_no_group": "Error: support group is not configured",
+        "question_prompt": "Ask your question, and we will answer you right here!\nTo cancel, type /cancel", "question_thanks": "Your question has been sent! Wait for an answer here", "question_no_group": "Error: support group is not configured",
         "dev_text": "Currently in development:\n\n• Old chances window mod\n• Old mode selection window\n• Old tank characteristics window\n\nAnd all of this might not even be released",
         "donate_text": "Support mod development\n\n• Tell your friends about our channel and bot\n• Suggest an idea for a new mod\n",
         "misc_menu": "<b>Misc</b>\n\nChoose a question:",
@@ -540,58 +442,30 @@ LOCALES = {
         "help_why_old_text": "Why mods only bring back old features:\n\nNostalgia of the whole team for the old game",
         "old_ui_info_text": "This mod brings back:\n• Old mode selection button\n• Old storage UI\n• Old shop button\n• Old left panel\n• Old 'Train' button\n• Old 'To Battle' button\n• Removed new black dots on the background of battle/mode selection/platoon buttons\n• Old icons for modes\n• Old victory/defeat/draw icons in the notifications tab\n• Old sounds when pressing buttons/icons in the hangar\n• Old buttons (green, red)\n• Old research tree UI\n• Old notifications window UI\n• Various small things",
         "unknown_media_text": "What is this? I only understand text and buttons Choose a section on the keyboard below",
-        "unavailable_text": "Temporarily unavailable",
-        "break_hard_text": "Stop breaking me, I'm barely holding on as it is 🤖",
-        "break_soft_text": "You won't break me, I'm tough",
-        "no_rights": "You have no rights for this action",
-        "ban_usage": "Usage: /ban <user_id> <dd.mm.yyyy> <hh:mm:ss> [reason]\nOr: /ban <user_id> never [reason]\nOr reply to user's message: /ban [reason]",
-        "unban_usage": "Usage: /unban <user_id> or reply to user's message",
-        "ban_cant_admin": "Cannot ban an administrator",
-        "ban_done": "User {uid} banned until {until}. Reason: {reason}",
-        "ban_done_forever": "User {uid} banned forever. Reason: {reason}",
-        "unban_done": "User {uid} unbanned",
-        "unban_reply_success": "User {uid} successfully unbanned",
-        "unban_not_found": "This user is not banned",
-        "banlist_empty": "Ban list is empty",
-        "banlist_title": "Banned users:",
-        "ban_notify": "You were banned\nReason: {reason}\nTerm: until {until}",
-        "ban_notify_forever": "You were banned\nReason: {reason}\nTerm: forever",
-        "setrank_usage": "Usage: /setrank <user_id> <rank_id>",
-        "setrank_bad_id": "Invalid ID format",
-        "setrank_no_rank": "No such rank",
-        "setrank_done": "User {uid} given rank: {rank}",
-        "setrank_notify_fail": "Failed to send notification: {err}",
+        "unavailable_text": "Temporarily unavailable", "break_hard_text": "Stop breaking me, I'm barely holding on as it is 🤖", "break_soft_text": "You won't break me, I'm tough",
+        "no_rights": "You have no rights for this action", "ban_usage": "Usage: /ban <user_id> <dd.mm.yyyy> <hh:mm:ss> [reason]\nOr: /ban <user_id> never [reason]\nOr reply to user's message: /ban [reason]",
+        "unban_usage": "Usage: /unban <user_id> or reply to user's message", "ban_cant_admin": "Cannot ban an administrator",
+        "ban_done": "User {uid} banned until {until}. Reason: {reason}", "ban_done_forever": "User {uid} banned forever. Reason: {reason}",
+        "unban_done": "User {uid} unbanned", "unban_reply_success": "User {uid} successfully unbanned", "unban_not_found": "This user is not banned",
+        "banlist_empty": "Ban list is empty", "banlist_title": "Banned users:", "ban_notify": "You were banned\nReason: {reason}\nTerm: until {until}", "ban_notify_forever": "You were banned\nReason: {reason}\nTerm: forever",
+        "setrank_usage": "Usage: /setrank <user_id> <rank_id>", "setrank_bad_id": "Invalid ID format", "setrank_no_rank": "No such rank",
+        "setrank_done": "User {uid} given rank: {rank}", "setrank_notify_fail": "Failed to send notification: {err}",
         "banned_bot_text": "You are banned in this bot\nYou will be unbanned either by administrator decision or when the ban expires\nCheck your ban term: /mystatus",
-        "ban_invalid_date": "Invalid date format. Use: <dd.mm.yyyy> <hh:mm:ss> or never",
-        "ban_past": "The specified time has already passed",
-        "mystatus_no_ban": "You are not banned",
-        "mystatus_title": "Your ban:",
-        "mystatus_until": "Ban term: until {until}",
-        "mystatus_until_forever": "Ban term: forever",
-        "mystatus_reason": "Reason: {reason}",
-        "staff_empty": "Team is empty",
-        "staff_title": "<b>Team list:</b>",
+        "ban_invalid_date": "Invalid date format. Use: <dd.mm.yyyy> <hh:mm:ss> or never", "ban_past": "The specified time has already passed",
+        "mystatus_no_ban": "You are not banned", "mystatus_title": "Your ban:", "mystatus_until": "Ban term: until {until}", "mystatus_until_forever": "Ban term: forever", "mystatus_reason": "Reason: {reason}",
+        "staff_empty": "Team is empty", "staff_title": "<b>Team list:</b>",
         "invite_text": "Invite a friend to our bot and get +150 XP!\n\nYour link:\n{link}\n\nFor each friend who joins, both of you get XP",
-        "ref_bonus": "Your friend joined using your link! You received +150 XP",
-        "ref_welcome": "Welcome by invitation! You and your friend received +150 XP",
+        "ref_bonus": "Your friend joined using your link! You received +150 XP", "ref_welcome": "Welcome by invitation! You and your friend received +150 XP",
         "apply_team_btn": "Apply to the team",
         "apply_team_text": "<b>Application to MOD_rak.rar team</b>\n\n⚠️ <b>Note:</b> Recruitment is closed. We don't accept just anyone. We need people with the right mindset, experience and free time. Filling out this form does not guarantee acceptance, but we will review it when recruitment opens.\n\nPlease answer all questions in one message:\n\n1. Your age and time zone?\n2. Do you have modding experience?\n3. What tools and software do you know?\n4. How much time can you dedicate?\n5. Why do you want to join MOD_rak.rar?\n6. Your favorite old Tanks Blitz feature?\n7. Link to your past works?\n8. What do you want to do in the team?\n\nSend your answer in one message. To cancel, type /cancel",
         "apply_team_thanks": "Your application has been sent for review! We will contact you if you fit.",
-        "bug_report_fixed": "Your bug report has been fixed! Thanks for helping, you received +50 XP.",
-        "btn_report_fixed": "✅ Fixed",
-        "appeal_btn": "Submit an appeal",
-        "appeal_usage": "Send the reason why you want to be unbanned.",
-        "appeal_sent": "Your appeal has been sent to the administrators.",
-        "appeal_already": "You have already submitted an appeal. Wait for a response.",
-        "appeal_accept": "Your appeal has been approved! You are unbanned.",
-        "appeal_reject": "Your appeal has been rejected.",
-        "battle_desc": "⚔️ <b>Tank Battles</b>\n\nHere you can fight other players!\n\n<b>Rules:</b>\n1. Choose format (or fight a bot).\n2. Create a room (or join by code).\n3. Bot gives each player a random tank and HP.\n4. Press 'Shoot' to deal damage to a random enemy.\n5. Last one standing gets 25-50 XP.\n\n<b>Important:</b> You don't know the enemy's tank until battle starts!",
+        "bug_report_fixed": "Your bug report has been fixed! Thanks for helping, you received +50 XP.", "btn_report_fixed": "✅ Fixed",
+        "appeal_btn": "Submit an appeal", "appeal_usage": "Send the reason why you want to be unbanned.",
+        "appeal_sent": "Your appeal has been sent to the administrators.", "appeal_already": "You have already submitted an appeal. Wait for a response.",
+        "appeal_accept": "Your appeal has been approved! You are unbanned.", "appeal_reject": "Your appeal has been rejected.",
+        "battle_desc": "⚔️ <b>Tank Battles</b>\n\nHere you can fight other players!\n\n<b>Rules:</b>\n1. Choose format (or fight a bot).\n2. Create a room (or join by code).\n3. Bot gives each player a random tank and HP.\n4. Turns go in order! Choose target with a button.\n5. Last one standing gets 25-50 XP.\n\n<b>Important:</b> You don't know the enemy's tank until battle starts!",
         "battle_choose": "Choose an action:",
-        "battle_bot": "🤖 Fight with bot",
-        "battle_create": "Create a room",
-        "battle_join": "Join by code",
-        "battle_list": "List of open rooms",
-        "battle_back": "Back",
+        "battle_bot": "🤖 Fight with bot", "battle_create": "Create a room", "battle_join": "Join by code", "battle_list": "List of open rooms", "battle_back": "Back",
     }
 }
 
@@ -812,7 +686,7 @@ async def cb_invite(callback: CallbackQuery):
 # --- ИГРА ---
 @dp.callback_query(F.data == "battle_menu")
 async def cb_battle_menu(callback: CallbackQuery, state: FSMContext):
-    await state.clear() # Очищаем возможный стейт PvE
+    await state.clear()
     uid = str(callback.from_user.id)
     kb = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text=tr(uid, "battle_bot"), callback_data="battle_vs_bot")],
@@ -841,9 +715,9 @@ async def cb_battle_vs_bot(callback: CallbackQuery, state: FSMContext):
     
     await state.set_state(UserState.in_battle)
     await state.update_data(
-        is_pve=True,
+        is_pve=True, turn="player",
         p_hp=p_hp, p_tank=p_tank,
-        e_hp=e_hp, e_tank=e_tank
+        e_hp=e_hp, e_tank=e_tank, e_defend=False
     )
     
     text = (
@@ -855,6 +729,7 @@ async def cb_battle_vs_bot(callback: CallbackQuery, state: FSMContext):
     
     kb = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="💥 Выстрел", callback_data="pve_shoot")],
+        [InlineKeyboardButton(text="🛡 Защита", callback_data="pve_defend")],
         [InlineKeyboardButton(text="🏳️ Сдаться", callback_data="pve_surrender")]
     ])
     
@@ -864,59 +739,92 @@ async def cb_battle_vs_bot(callback: CallbackQuery, state: FSMContext):
 async def cb_pve_shoot(callback: CallbackQuery, state: FSMContext):
     await callback.answer()
     data = await state.get_data()
-    
-    if not data.get("is_pve"):
-        return
+    if not data.get("is_pve"): return
         
-    p_hp = data["p_hp"]
-    e_hp = data["e_hp"]
-    p_tank = data["p_tank"]
-    e_tank = data["e_tank"]
+    p_hp, e_hp = data["p_hp"], data["e_hp"]
+    p_tank, e_tank = data["p_tank"], data["e_tank"]
     
     # Игрок стреляет
     p_dmg = random.randint(150, 300)
     e_hp -= p_dmg
-    
     text = f"💥 Ты попал по врагу на {p_dmg} урона!\n"
     
     if e_hp <= 0:
-        # Победа
-        uid = str(callback.from_user.id)
         xp_reward = random.randint(25, 50)
-        add_xp(uid, xp_reward)
+        add_xp(str(callback.from_user.id), xp_reward)
         text += f"\n💀 <b>Враг уничтожен!</b>\n🏆 Победа! Ты получил +{xp_reward} XP.\n\n👀 Танк врага был: <b>{e_tank}</b> (HP: {data['e_hp']})"
-        kb = InlineKeyboardMarkup(inline_keyboard=[
-            [InlineKeyboardButton(text="В меню боев", callback_data="battle_menu")]
-        ])
+        kb = InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="В меню боев", callback_data="battle_menu")]])
         await callback.message.edit_text(text, parse_mode="HTML", reply_markup=kb)
         await state.clear()
         return
         
-    # Бот стреляет в ответ
-    e_dmg = random.randint(150, 300)
-    p_hp -= e_dmg
-    text += f"🔫 Враг стреляет в ответ на {e_dmg} урона!\n"
+    # Бот ходит (защита или выстрел)
+    bot_action = random.choices(["shoot", "defend"], weights=[0.8, 0.2])[0]
     
+    if bot_action == "defend":
+        text += f"🛡 Враг ушел в защиту! Урон по нему в следующий раз будет снижен.\n"
+        await state.update_data(p_hp=p_hp, e_hp=e_hp, e_defend=True)
+    else:
+        e_dmg = random.randint(150, 300)
+        if data.get("p_defend", False):
+            e_dmg = int(e_dmg * 0.5)
+            text += f"🛡 Твоя защита поглотила половину урона! Враг нанес {e_dmg} урона.\n"
+            await state.update_data(p_defend=False)
+        else:
+            text += f"🔫 Враг стреляет в ответ на {e_dmg} урона!\n"
+        p_hp -= e_dmg
+        await state.update_data(p_hp=p_hp, e_hp=e_hp)
+        
     if p_hp <= 0:
-        # Поражение
         text += f"\n💀 <b>Ты уничтожен!</b>\nТанк врага был: <b>{e_tank}</b> (HP: {e_hp + p_dmg})."
-        kb = InlineKeyboardMarkup(inline_keyboard=[
-            [InlineKeyboardButton(text="В меню боев", callback_data="battle_menu")]
-        ])
+        kb = InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="В меню боев", callback_data="battle_menu")]])
         await callback.message.edit_text(text, parse_mode="HTML", reply_markup=kb)
         await state.clear()
         return
         
-    await state.update_data(p_hp=p_hp, e_hp=e_hp)
-    
-    text += (
-        f"\n❤️ Твое HP: <b>{p_hp}</b>\n"
-        f"💀 HP врага: <b>{e_hp}</b>\n\n"
-        f"Твой ход:"
-    )
-    
+    text += f"\n❤️ Твое HP: <b>{p_hp}</b>\n💀 HP врага: <b>{e_hp}</b>\n\nТвой ход:"
     kb = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="💥 Выстрел", callback_data="pve_shoot")],
+        [InlineKeyboardButton(text="🛡 Защита", callback_data="pve_defend")],
+        [InlineKeyboardButton(text="🏳️ Сдаться", callback_data="pve_surrender")]
+    ])
+    await callback.message.edit_text(text, parse_mode="HTML", reply_markup=kb)
+
+@dp.callback_query(F.data == "pve_defend", UserState.in_battle)
+async def cb_pve_defend(callback: CallbackQuery, state: FSMContext):
+    await callback.answer()
+    data = await state.get_data()
+    if not data.get("is_pve"): return
+        
+    p_hp, e_hp = data["p_hp"], data["e_hp"]
+    p_tank, e_tank = data["p_tank"], data["e_tank"]
+    
+    text = "🛡 Ты ушел в защиту. Следующий удар врага будет ослаблен вдвое.\n"
+    await state.update_data(p_defend=True)
+    
+    # Бот ходит
+    bot_action = random.choices(["shoot", "defend"], weights=[0.8, 0.2])[0]
+    if bot_action == "defend":
+        text += f"🛡 Враг тоже ушел в защиту!\n"
+        await state.update_data(e_defend=True)
+    else:
+        e_dmg = random.randint(150, 300)
+        e_dmg = int(e_dmg * 0.5)
+        text += f"🔫 Враг выстрелил, но защита поглотила половину. Урон: {e_dmg}.\n"
+        p_hp -= e_dmg
+        await state.update_data(p_hp=p_hp, p_defend=False)
+        
+    if p_hp <= 0:
+        text += f"\n💀 <b>Ты уничтожен!</b>\nТанк врага был: <b>{e_tank}</b>."
+        kb = InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="В меню боев", callback_data="battle_menu")]])
+        await callback.message.edit_text(text, parse_mode="HTML", reply_markup=kb)
+        await state.clear()
+        return
+        
+    text += f"\n❤️ Твое HP: <b>{p_hp}</b>\n💀 HP врага: <b>{e_hp}</b>\n\nТвой ход:"
+    kb = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="💥 Выстрел", callback_data="pve_shoot")],
+        [InlineKeyboardButton(text="🛡 Защита", callback_data="pve_defend")],
         [InlineKeyboardButton(text="🏳️ Сдаться", callback_data="pve_surrender")]
     ])
     await callback.message.edit_text(text, parse_mode="HTML", reply_markup=kb)
@@ -925,9 +833,7 @@ async def cb_pve_shoot(callback: CallbackQuery, state: FSMContext):
 async def cb_pve_surrender(callback: CallbackQuery, state: FSMContext):
     await callback.answer("Ты сдался")
     await state.clear()
-    await callback.message.edit_text("🏳️ Ты сдался. Возвращайся, когда наберешься сил!", reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="В меню боев", callback_data="battle_menu")]
-    ]))
+    await callback.message.edit_text("🏳️ Ты сдался. Возвращайся, когда наберешься сил!", reply_markup=InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="В меню боев", callback_data="battle_menu")]]))
 
 # --- PvP (Комнаты) ---
 @dp.callback_query(F.data == "create_room")
@@ -952,12 +858,7 @@ async def cb_create_size(callback: CallbackQuery, state: FSMContext):
     code = generate_room_code()
     
     ROOMS[code] = {
-        "players": [uid],
-        "max_players": max_players,
-        "is_private": False,
-        "status": "waiting",
-        "hp": {},
-        "tank": {}
+        "players": [uid], "max_players": max_players, "is_private": False, "status": "waiting", "hp": {}, "tank": {}
     }
     
     kb = InlineKeyboardMarkup(inline_keyboard=[
@@ -966,13 +867,7 @@ async def cb_create_size(callback: CallbackQuery, state: FSMContext):
         [InlineKeyboardButton(text="Выйти", callback_data=f"leave_{code}")]
     ])
     
-    text = (
-        f"🏠 Комната создана!\n\n"
-        f"Код для входа: <code>{code}</code>\n"
-        f"Формат: {max_players // 2} на {max_players // 2}\n"
-        f"Игроков: 1/{max_players}\n\n"
-        f"<i>Отправь код друзьям или нажми 'Начать бой', если играешь 1 на 1.</i>"
-    )
+    text = f"🏠 Комната создана!\n\nКод для входа: <code>{code}</code>\nФормат: {max_players // 2} на {max_players // 2}\nИгроков: 1/{max_players}\n\n<i>Отправь код друзьям или нажми 'Начать бой', если играешь 1 на 1.</i>"
     await callback.message.edit_text(text, parse_mode="HTML", reply_markup=kb)
     await callback.answer()
 
@@ -1041,17 +936,13 @@ async def cb_list_rooms(callback: CallbackQuery):
         lines.append(f"<code>{code}</code> | {len(room['players'])}/{room['max_players']}")
     
     lines.append("\n<i>Нажми на код в сообщении, чтобы скопировать, и введи его в 'Войти по коду'.</i>")
-    await callback.message.edit_text("\n".join(lines), parse_mode="HTML", reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="Назад", callback_data="battle_menu")]
-    ]))
+    await callback.message.edit_text("\n".join(lines), parse_mode="HTML", reply_markup=InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="Назад", callback_data="battle_menu")]]))
     await callback.answer()
 
 @dp.callback_query(F.data.startswith("start_battle_"))
 async def cb_start_battle_manual(callback: CallbackQuery):
     code = callback.data.replace("start_battle_", "")
-    if code not in ROOMS:
-        await callback.answer("Комната не найдена")
-        return
+    if code not in ROOMS: return
     
     room = ROOMS[code]
     if room["max_players"] == 2 and len(room["players"]) >= 1:
@@ -1063,6 +954,8 @@ async def cb_start_battle_manual(callback: CallbackQuery):
 async def start_room_battle(code: str, chat_id: int):
     room = ROOMS[code]
     room["status"] = "battle"
+    room["turn_index"] = 0
+    room["defend"] = {p: False for p in room["players"]}
     
     text = "⚔️ <b>Бой начался!</b>\n\n"
     for uid in room["players"]:
@@ -1071,110 +964,170 @@ async def start_room_battle(code: str, chat_id: int):
         room["tank"][uid] = tank
         text += f"👤 <code>{uid}</code> — {tank} (HP: {hp})\n"
         
-    text += "\n<i>Каждый игрок может выстрелить раз в 5 секунд. Наноси урон врагам!</i>"
+    text += "\nХод первого игрока!"
     
-    kb = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="💥 Выстрел", callback_data=f"shoot_{code}")]
-    ])
-    
-    try:
-        await bot.send_message(chat_id, text, parse_mode="HTML", reply_markup=kb)
-    except:
-        pass
+    # Отправляем сообщение всем участникам (в личку)
+    for uid in room["players"]:
+        try:
+            kb = InlineKeyboardMarkup(inline_keyboard=[
+                [InlineKeyboardButton(text="💥 Выстрел", callback_data=f"pvp_shoot_{code}")],
+                [InlineKeyboardButton(text="🛡 Защита", callback_data=f"pvp_defend_{code}")]
+            ])
+            await bot.send_message(int(uid), text, parse_mode="HTML", reply_markup=kb)
+        except:
+            pass
 
-@dp.callback_query(F.data.startswith("shoot_"))
-async def cb_shoot(callback: CallbackQuery):
-    code = callback.data.replace("shoot_", "")
+@dp.callback_query(F.data.startswith("pvp_shoot_"))
+async def cb_pvp_shoot(callback: CallbackQuery):
+    code = callback.data.replace("pvp_shoot_", "")
     uid = str(callback.from_user.id)
     
     if code not in ROOMS or ROOMS[code]["status"] != "battle":
-        await callback.answer("Бой не найден или уже закончен.", show_alert=True)
-        return
+        await callback.answer("Бой не найден.", show_alert=True); return
         
     room = ROOMS[code]
-    if uid not in room["players"]:
-        await callback.answer("Ты не участник этого боя.", show_alert=True)
-        return
+    current_turn = room["players"][room["turn_index"]]
+    
+    if uid != current_turn:
+        await callback.answer("Сейчас не твой ход!", show_alert=True); return
         
     enemies = [p for p in room["players"] if p != uid]
     if not enemies:
-        await callback.answer("Нет врагов.", show_alert=True)
-        return
+        await callback.answer("Нет врагов.", show_alert=True); return
         
-    target = random.choice(enemies)
+    # Выбор цели
+    kb = InlineKeyboardMarkup(inline_keyboard=[])
+    for enemy in enemies:
+        kb.inline_keyboard.append([InlineKeyboardButton(text=f"Цель: {room['tank'][enemy]}", callback_data=f"pvp_target_{code}_{enemy}")])
+        
+    await callback.message.edit_text("Выбери цель для выстрела:", reply_markup=kb)
+    await callback.answer()
+
+@dp.callback_query(F.data.startswith("pvp_target_"))
+async def cb_pvp_target(callback: CallbackQuery):
+    parts = callback.data.split("_")
+    code = parts[2]
+    target_id = parts[3]
+    uid = str(callback.from_user.id)
+    
+    if code not in ROOMS or ROOMS[code]["status"] != "battle": return
+    
+    room = ROOMS[code]
+    current_turn = room["players"][room["turn_index"]]
+    if uid != current_turn: return
+        
     damage = random.randint(100, 300)
-    
-    room["hp"][target] -= damage
-    
-    text = f"💥 <b>{room['tank'][uid]}</b> попал в <b>{room['tank'][target]}</b> на {damage} урона!\n"
-    text += f"❤️ У {room['tank'][target]} осталось {max(0, room['hp'][target])} HP."
-    
-    if room["hp"][target] <= 0:
-        text += f"\n\n💀 <b>{room['tank'][target]}</b> уничтожен!"
-        room["players"].remove(target)
+    if room["defend"].get(target_id, False):
+        damage = int(damage * 0.5)
+        room["defend"][target_id] = False
+        text = f"🛡 <b>{room['tank'][target_id]}</b> был в защите, урон снижен вдвое.\n"
+    else:
+        text = ""
         
+    room["hp"][target_id] -= damage
+    text = f"💥 <b>{room['tank'][uid]}</b> попал в <b>{room['tank'][target_id]}</b> на {damage} урона!\n" + text
+    text += f"❤️ У {room['tank'][target_id]} осталось {max(0, room['hp'][target_id])} HP."
+    
+    if room["hp"][target_id] <= 0:
+        text += f"\n\n💀 <b>{room['tank'][target_id]}</b> уничтожен!"
+        room["players"].remove(target_id)
+        if room["turn_index"] >= len(room["players"]):
+            room["turn_index"] = 0
+            
         if len(room["players"]) == 1:
             winner = room["players"][0]
             xp_reward = random.randint(25, 50)
             add_xp(winner, xp_reward)
             text += f"\n\n🏆 <b>Победитель: {room['tank'][winner]}!</b>\n💰 +{xp_reward} XP"
             
-            kb = InlineKeyboardMarkup(inline_keyboard=[
-                [InlineKeyboardButton(text="👀 Узнать противника", callback_data=f"reveal_{code}")]
-            ])
-            
-            await callback.message.edit_text(text, parse_mode="HTML", reply_markup=kb)
-            room["status"] = "finished"
+            for p in [winner, target_id]:
+                try:
+                    await bot.send_message(int(p), text, parse_mode="HTML")
+                except: pass
+            del ROOMS[code]
             return
-            
-    await callback.message.edit_text(text, parse_mode="HTML")
-    await callback.answer("Выстрел!")
+
+    # Передача хода
+    room["turn_index"] = (room["turn_index"] + 1) % len(room["players"])
+    next_uid = room["players"][room["turn_index"]]
+    
+    room["last_action"] = text
+    room["last_action_time"] = time.time()
+    
+    # Обновляем сообщение у всех
+    for p in room["players"]:
+        try:
+            msg_text = text + f"\n\nСледующий ход: <code>{next_uid}</code>"
+            kb = None
+            if p == next_uid:
+                kb = InlineKeyboardMarkup(inline_keyboard=[
+                    [InlineKeyboardButton(text="💥 Выстрел", callback_data=f"pvp_shoot_{code}")],
+                    [InlineKeyboardButton(text="🛡 Защита", callback_data=f"pvp_defend_{code}")]
+                ])
+            await bot.send_message(int(p), msg_text, parse_mode="HTML", reply_markup=kb)
+        except: pass
+        
+    await callback.answer()
+
+@dp.callback_query(F.data.startswith("pvp_defend_"))
+async def cb_pvp_defend(callback: CallbackQuery):
+    code = callback.data.replace("pvp_defend_", "")
+    uid = str(callback.from_user.id)
+    
+    if code not in ROOMS or ROOMS[code]["status"] != "battle": return
+    room = ROOMS[code]
+    if uid != room["players"][room["turn_index"]]: return
+    
+    room["defend"][uid] = True
+    text = f"🛡 <b>{room['tank'][uid]}</b> ушел в защиту."
+    
+    room["turn_index"] = (room["turn_index"] + 1) % len(room["players"])
+    next_uid = room["players"][room["turn_index"]]
+    
+    for p in room["players"]:
+        try:
+            msg_text = text + f"\n\nСледующий ход: <code>{next_uid}</code>"
+            kb = None
+            if p == next_uid:
+                kb = InlineKeyboardMarkup(inline_keyboard=[
+                    [InlineKeyboardButton(text="💥 Выстрел", callback_data=f"pvp_shoot_{code}")],
+                    [InlineKeyboardButton(text="🛡 Защита", callback_data=f"pvp_defend_{code}")]
+                ])
+            await bot.send_message(int(p), msg_text, parse_mode="HTML", reply_markup=kb)
+        except: pass
+        
+    await callback.answer()
 
 @dp.callback_query(F.data.startswith("reveal_"))
 async def cb_reveal(callback: CallbackQuery):
     code = callback.data.replace("reveal_", "")
-    uid = str(callback.from_user.id)
-    
-    if code not in ROOMS:
-        await callback.answer("Информация о бое утеряна.", show_alert=True)
-        return
-        
+    if code not in ROOMS: return
     room = ROOMS[code]
     text = "🔍 <b>Данные о бое:</b>\n\n"
     for player_uid, tank in room["tank"].items():
         hp = room["hp"].get(player_uid, 0)
         status = "выжил" if hp > 0 else "уничтожен"
         text += f"<code>{player_uid}</code> — {tank} (Осталось HP: {max(0, hp)}) — {status}\n"
-        
     await callback.message.answer(text, parse_mode="HTML")
     await callback.answer()
-    
-    if code in ROOMS:
-        del ROOMS[code]
 
 
 # --- АДМИН: ВЫДАЧА ЗВАНИЙ И СПИСОК КОМАНДЫ ---
 @dp.message(Command("setrank"))
 async def cmd_setrank(message: Message):
-    if message.from_user.id not in ADMIN_IDS:
-        return
+    if message.from_user.id not in ADMIN_IDS: return
     args = message.text.split()
     if len(args) < 3:
-        await message.answer(tr(str(message.from_user.id), "setrank_usage"))
-        return
+        await message.answer(tr(str(message.from_user.id), "setrank_usage")); return
     try:
-        target_id = str(args[1])
-        rank_id = int(args[2])
+        target_id = str(args[1]); rank_id = int(args[2])
     except ValueError:
-        await message.answer(tr(str(message.from_user.id), "setrank_bad_id"))
-        return
+        await message.answer(tr(str(message.from_user.id), "setrank_bad_id")); return
 
     if rank_id not in RANKS:
-        await message.answer(tr(str(message.from_user.id), "setrank_no_rank"))
-        return
+        await message.answer(tr(str(message.from_user.id), "setrank_no_rank")); return
 
-    if target_id not in USERS:
-        USERS[target_id] = default_user_data()
+    if target_id not in USERS: USERS[target_id] = default_user_data()
 
     USERS[target_id]["rank_id"] = rank_id
     save_users()
@@ -1182,11 +1135,7 @@ async def cmd_setrank(message: Message):
     await message.answer(tr(admin_uid, "setrank_done", uid=target_id, rank=RANKS[rank_id][0]))
 
     try:
-        await bot.send_message(
-            int(target_id),
-            tr(target_id, "rank_given", rank=RANKS[rank_id][0]),
-            parse_mode="HTML"
-        )
+        await bot.send_message(int(target_id), tr(target_id, "rank_given", rank=RANKS[rank_id][0]), parse_mode="HTML")
     except Exception as e:
         await message.answer(tr(admin_uid, "setrank_notify_fail", err=e))
 
@@ -1194,253 +1143,149 @@ async def cmd_setrank(message: Message):
 async def cmd_staff(message: Message):
     uid_admin = str(message.from_user.id)
     rank_admin = USERS.get(uid_admin, {}).get("rank_id", 0)
-    
     if message.from_user.id not in ADMIN_IDS and rank_admin < 19:
-        await message.answer(tr(uid_admin, "no_rights"))
-        return
+        await message.answer(tr(uid_admin, "no_rights")); return
 
     staff_list = []
     for uid, data in USERS.items():
         rank_id = data.get("rank_id", 1)
         if rank_id in RANKS:
             _, _, _, rank_type = RANKS[rank_id]
-            if rank_type in ("modder", "staff"):
-                staff_list.append((rank_id, uid, data))
+            if rank_type in ("modder", "staff"): staff_list.append((rank_id, uid, data))
     
     if not staff_list:
-        await message.answer(tr(uid_admin, "staff_empty"))
-        return
+        await message.answer(tr(uid_admin, "staff_empty")); return
 
     staff_list.sort(key=lambda x: x[0], reverse=True)
-    
     text_lines = [tr(uid_admin, "staff_title") + "\n"]
     for rank_id, uid, data in staff_list:
-        rank_name = RANKS[rank_id][0]
-        xp = data.get("xp", 0)
-        ideas = data.get("ideas", 0)
-        bans = data.get("bans", 0)
-        text_lines.append(f"<b>{rank_name}</b> | ID: <code>{uid}</code>\n└ XP: {xp} | Идей: {ideas} | Банов: {bans}\n")
+        text_lines.append(f"<b>{RANKS[rank_id][0]}</b> | ID: <code>{uid}</code>\n└ XP: {data.get('xp', 0)} | Идей: {data.get('ideas', 0)} | Банов: {data.get('bans', 0)}\n")
     
     full_text = "\n".join(text_lines)
-    
     if len(full_text) > 4000:
-        parts = []
-        current_part = ""
+        parts = []; current_part = ""
         for line in text_lines:
             if len(current_part) + len(line) > 4000:
-                parts.append(current_part)
-                current_part = line + "\n"
-            else:
-                current_part += line + "\n"
-        if current_part:
-            parts.append(current_part)
-            
-        for part in parts:
-            await message.answer(part, parse_mode="HTML")
+                parts.append(current_part); current_part = line + "\n"
+            else: current_part += line + "\n"
+        if current_part: parts.append(current_part)
+        for part in parts: await message.answer(part, parse_mode="HTML")
     else:
         await message.answer(full_text, parse_mode="HTML")
 
 
 @dp.message(Command("reply"))
 async def cmd_reply(message: Message):
-    if message.from_user.id not in ADMIN_IDS:
-        return
-        
+    if message.from_user.id not in ADMIN_IDS: return
     args = message.text.split(maxsplit=2)
     
     if message.reply_to_message and len(args) >= 2:
         target_user_id = None
-        
         if message.reply_to_message.text:
             match = USER_ID_RE.search(message.reply_to_message.text)
-            if match:
-                target_user_id = int(match.group(1))
-            elif message.reply_to_message.forward_from:
-                target_user_id = message.reply_to_message.forward_from.id
-                
+            if match: target_user_id = int(match.group(1))
+            elif message.reply_to_message.forward_from: target_user_id = message.reply_to_message.forward_from.id
         if not target_user_id:
-            await message.answer("❌ Не удалось найти ID пользователя в сообщении. Напиши вручную: `/reply <id> <текст>`")
-            return
-            
+            await message.answer("❌ Не удалось найти ID в сообщении. Напиши: `/reply <id> <текст>`"); return
         reply_text = args[1] if len(args) > 1 else ""
-        
     elif len(args) >= 3:
-        try:
-            target_user_id = int(args[1])
-            reply_text = args[2]
-        except ValueError:
-            await message.answer("❌ Неверный формат ID. Используй: `/reply <user_id> <текст>`")
-            return
+        try: target_user_id = int(args[1]); reply_text = args[2]
+        except ValueError: await message.answer("❌ Неверный ID."); return
     else:
-        await message.answer("❌ Использование:\n1. Ответь (Reply) на сообщение бота с ID и напиши `/reply <текст>`\n2. Или напиши `/reply <user_id> <текст>`")
-        return
+        await message.answer("❌ Использование:\n1. Ответь на сообщение с ID: `/reply <текст>`\n2. Или: `/reply <user_id> <текст>`"); return
 
     try:
-        await bot.send_message(
-            target_user_id, 
-            f"<b>✉️ Сообщение от администрации:</b>\n\n{reply_text}", 
-            parse_mode="HTML"
-        )
-        await message.answer(f"✅ Сообщение успешно доставлено пользователю {target_user_id}")
+        await bot.send_message(target_user_id, f"<b>✉️ Сообщение от администрации:</b>\n\n{reply_text}", parse_mode="HTML")
+        await message.answer(f"✅ Доставлено пользователю {target_user_id}")
     except Exception as e:
-        await message.answer(f"❌ Не удалось отправить сообщение. Возможно, пользователь заблокировал бота.\nОшибка: {e}")
+        await message.answer(f"❌ Ошибка: {e}")
 
 
 # --- СИСТЕМА БАНОВ ---
 @dp.message(Command("ban"))
 async def cmd_ban(message: Message):
     uid_admin = str(message.from_user.id)
-    rank = USERS.get(uid_admin, {}).get("rank_id", 0)
-    if message.from_user.id not in ADMIN_IDS and rank < 18:
-        await message.answer(tr(uid_admin, "no_rights"))
-        return
+    if message.from_user.id not in ADMIN_IDS and USERS.get(uid_admin, {}).get("rank_id", 0) < 18:
+        await message.answer(tr(uid_admin, "no_rights")); return
 
-    target_id = None
-    args = message.text.split()
-
+    target_id = None; args = message.text.split()
     if message.reply_to_message and message.reply_to_message.from_user:
-        target_id = message.reply_to_message.from_user.id
-        reason_args = args[1:]
+        target_id = message.reply_to_message.from_user.id; reason_args = args[1:]
     else:
-        if len(args) < 3:
-            await message.answer(tr(uid_admin, "ban_usage"))
-            return
-        try:
-            target_id = int(args[1])
-            reason_args = args[2:]
-        except ValueError:
-            await message.answer(tr(uid_admin, "setrank_bad_id"))
-            return
+        if len(args) < 3: await message.answer(tr(uid_admin, "ban_usage")); return
+        try: target_id = int(args[1]); reason_args = args[2:]
+        except ValueError: await message.answer(tr(uid_admin, "setrank_bad_id")); return
 
-    if target_id in ADMIN_IDS:
-        await message.answer(tr(uid_admin, "ban_cant_admin"))
-        return
+    if target_id in ADMIN_IDS: await message.answer(tr(uid_admin, "ban_cant_admin")); return
 
-    forever = False
-    until_dt = None
-    
+    forever = False; until_dt = None
     if reason_args and reason_args[0].lower() in ("never", "навсегда", "назаўжды"):
-        forever = True
-        reason = " ".join(reason_args[1:]) if len(reason_args) > 1 else "Без причины"
+        forever = True; reason = " ".join(reason_args[1:]) if len(reason_args) > 1 else "Без причины"
     else:
-        if len(reason_args) < 2 and not message.reply_to_message:
-            await message.answer(tr(uid_admin, "ban_usage"))
-            return
-        
+        if len(reason_args) < 2 and not message.reply_to_message: await message.answer(tr(uid_admin, "ban_usage")); return
         if message.reply_to_message:
-            forever = True 
-            reason = " ".join(reason_args) if reason_args else "Без причины"
+            forever = True; reason = " ".join(reason_args) if reason_args else "Без причины"
         else:
             try:
-                date_str = reason_args[0]
-                time_str = reason_args[1]
-                until_dt = datetime.strptime(f"{date_str} {time_str}", "%d.%m.%Y %H:%M:%S")
-            except ValueError:
-                await message.answer(tr(uid_admin, "ban_invalid_date"))
-                return
-
-            if until_dt <= datetime.now():
-                await message.answer(tr(uid_admin, "ban_past"))
-                return
-            
+                until_dt = datetime.strptime(f"{reason_args[0]} {reason_args[1]}", "%d.%m.%Y %H:%M:%S")
+            except ValueError: await message.answer(tr(uid_admin, "ban_invalid_date")); return
+            if until_dt <= datetime.now(): await message.answer(tr(uid_admin, "ban_past")); return
             reason = " ".join(reason_args[2:]) if len(reason_args) > 2 else "Без причины"
 
     target_str = str(target_id)
-    
-    BANNED[target_str] = {
-        "reason": reason,
-        "until": "never" if forever else until_dt.strftime("%Y-%m-%d %H:%M:%S"),
-        "date_banned": datetime.now().strftime("%Y-%m-%d %H:%M"),
-        "banned_by": message.from_user.id
-    }
+    BANNED[target_str] = {"reason": reason, "until": "never" if forever else until_dt.strftime("%Y-%m-%d %H:%M:%S"), "date_banned": datetime.now().strftime("%Y-%m-%d %H:%M"), "banned_by": message.from_user.id}
     save_banned()
 
-    if target_str not in USERS:
-        USERS[target_str] = default_user_data()
+    if target_str not in USERS: USERS[target_str] = default_user_data()
     USERS[target_str]["bans"] += 1
     save_users()
 
-    if USERS[target_str]["bans"] == 1:
-        ach = unlock_achievement(target_str, "banned_1")
+    if USERS[target_str]["bans"] in (1, 10):
+        ach = unlock_achievement(target_str, f"banned_{USERS[target_str]['bans']}")
         if ach:
-            try:
-                await bot.send_message(target_id, tr(target_str, "ach_unlocked", ach=ach), parse_mode="HTML")
-            except:
-                pass
-    elif USERS[target_str]["bans"] == 10:
-        ach = unlock_achievement(target_str, "banned_10")
-        if ach:
-            try:
-                await bot.send_message(target_id, tr(target_str, "ach_unlocked", ach=ach), parse_mode="HTML")
-            except:
-                pass
+            try: await bot.send_message(target_id, tr(target_str, "ach_unlocked", ach=ach), parse_mode="HTML")
+            except: pass
 
     if TARGET_CHAT_IDS:
-        try:
-            await bot.ban_chat_member(TARGET_CHAT_IDS[0], target_id)
-        except Exception as e:
-            logger.error(f"Не удалось забанить в группе: {e}")
+        try: await bot.ban_chat_member(TARGET_CHAT_IDS[0], target_id)
+        except: pass
 
     try:
-        if forever:
-            await bot.send_message(target_id, tr(target_str, "ban_notify_forever", reason=reason))
-        else:
-            await bot.send_message(target_id, tr(target_str, "ban_notify", reason=reason, until=until_dt.strftime("%d.%m.%Y %H:%M:%S")))
-    except:
-        pass
+        if forever: await bot.send_message(target_id, tr(target_str, "ban_notify_forever", reason=reason))
+        else: await bot.send_message(target_id, tr(target_str, "ban_notify", reason=reason, until=until_dt.strftime("%d.%m.%Y %H:%M:%S")))
+    except: pass
 
     if TARGET_CHAT_IDS:
         try:
-            if forever:
-                await bot.send_message(
-                    TARGET_CHAT_IDS[0],
-                    f"Пользователь {target_id} забанен навсегда\nПричина: {reason}\nЗабанил: {message.from_user.id}"
-                )
-            else:
-                await bot.send_message(
-                    TARGET_CHAT_IDS[0],
-                    f"Пользователь {target_id} забанен до {until_dt.strftime('%d.%m.%Y %H:%M:%S')}\nПричина: {reason}\nЗабанил: {message.from_user.id}"
-                )
-        except:
-            pass
+            log_text = f"Пользователь {target_id} забанен " + ("навсегда" if forever else f"до {until_dt.strftime('%d.%m.%Y %H:%M:%S')}") + f"\nПричина: {reason}\nЗабанил: {message.from_user.id}"
+            await bot.send_message(TARGET_CHAT_IDS[0], log_text)
+        except: pass
 
-    if forever:
-        await message.answer(tr(uid_admin, "ban_done_forever", uid=target_id, reason=reason))
-    else:
-        await message.answer(tr(uid_admin, "ban_done", uid=target_id, until=until_dt.strftime("%d.%m.%Y %H:%M:%S"), reason=reason))
+    if forever: await message.answer(tr(uid_admin, "ban_done_forever", uid=target_id, reason=reason))
+    else: await message.answer(tr(uid_admin, "ban_done", uid=target_id, until=until_dt.strftime("%d.%m.%Y %H:%M:%S"), reason=reason))
 
 
 @dp.message(Command("unban"))
 async def cmd_unban(message: Message):
     uid_admin = str(message.from_user.id)
-    rank = USERS.get(uid_admin, {}).get("rank_id", 0)
-    if message.from_user.id not in ADMIN_IDS and rank < 18:
-        await message.answer(tr(uid_admin, "no_rights"))
-        return
+    if message.from_user.id not in ADMIN_IDS and USERS.get(uid_admin, {}).get("rank_id", 0) < 18:
+        await message.answer(tr(uid_admin, "no_rights")); return
 
     target_id = None
     if message.reply_to_message and message.reply_to_message.from_user:
         target_id = message.reply_to_message.from_user.id
     else:
         args = message.text.split()
-        if len(args) < 2:
-            await message.answer(tr(uid_admin, "unban_usage"))
-            return
-        try:
-            target_id = int(args[1])
-        except ValueError:
-            await message.answer(tr(uid_admin, "setrank_bad_id"))
-            return
+        if len(args) < 2: await message.answer(tr(uid_admin, "unban_usage")); return
+        try: target_id = int(args[1])
+        except ValueError: await message.answer(tr(uid_admin, "setrank_bad_id")); return
 
     target_str = str(target_id)
     if target_str in BANNED:
-        del BANNED[target_str]
-        save_banned()
+        del BANNED[target_str]; save_banned()
         if TARGET_CHAT_IDS:
-            try:
-                await bot.unban_chat_member(TARGET_CHAT_IDS[0], target_id)
-            except Exception as e:
-                logger.error(f"Не удалось разбанить в группе: {e}")
+            try: await bot.unban_chat_member(TARGET_CHAT_IDS[0], target_id)
+            except: pass
         await message.answer(tr(uid_admin, "unban_reply_success", uid=target_id))
     else:
         await message.answer(tr(uid_admin, "unban_not_found"))
@@ -1449,20 +1294,15 @@ async def cmd_unban(message: Message):
 @dp.message(Command("banlist"))
 async def cmd_banlist(message: Message):
     uid_admin = str(message.from_user.id)
-    rank = USERS.get(uid_admin, {}).get("rank_id", 0)
-    if message.from_user.id not in ADMIN_IDS and rank < 18:
-        await message.answer(tr(uid_admin, "no_rights"))
-        return
+    if message.from_user.id not in ADMIN_IDS and USERS.get(uid_admin, {}).get("rank_id", 0) < 18:
+        await message.answer(tr(uid_admin, "no_rights")); return
 
-    if not BANNED:
-        await message.answer(tr(uid_admin, "banlist_empty"))
-        return
+    if not BANNED: await message.answer(tr(uid_admin, "banlist_empty")); return
 
     lines = []
     for uid, info in BANNED.items():
         until = info.get("until", "?")
-        if until == "never":
-            until = "навсегда"
+        if until == "never": until = "навсегда"
         lines.append(f"• {uid} | до {until} | {info.get('reason', '')}")
     await message.answer(tr(uid_admin, "banlist_title") + "\n" + "\n".join(lines))
 
@@ -1471,21 +1311,13 @@ async def cmd_banlist(message: Message):
 async def cmd_mystatus(message: Message):
     uid = str(message.from_user.id)
     banned, info = is_banned(uid)
-    if not banned:
-        await message.answer(tr(uid, "mystatus_no_ban"))
-        return
+    if not banned: await message.answer(tr(uid, "mystatus_no_ban")); return
 
     until = info.get("until", "")
-    if until == "never":
-        until_text = tr(uid, "mystatus_until_forever")
-    else:
-        until_text = tr(uid, "mystatus_until", until=datetime.strptime(until, "%Y-%m-%d %H:%M:%S").strftime("%d.%m.%Y %H:%M:%S"))
+    if until == "never": until_text = tr(uid, "mystatus_until_forever")
+    else: until_text = tr(uid, "mystatus_until", until=datetime.strptime(until, "%Y-%m-%d %H:%M:%S").strftime("%d.%m.%Y %H:%M:%S"))
 
-    text = (
-        f"{tr(uid, 'mystatus_title')}\n"
-        f"{until_text}\n"
-        f"{tr(uid, 'mystatus_reason', reason=info.get('reason', '?'))}"
-    )
+    text = f"{tr(uid, 'mystatus_title')}\n{until_text}\n{tr(uid, 'mystatus_reason', reason=info.get('reason', '?'))}"
     await message.answer(text, reply_markup=None)
 
 
@@ -1497,7 +1329,6 @@ async def group_document_handler(message: Message):
         if doc.file_name:
             FILE_IDS[doc.file_name] = doc.file_id
             save_file_ids()
-            logger.info(f"Сохранен файл из группы: {doc.file_name}")
             await message.answer(f"Файл {doc.file_name} сохранен")
 
 
@@ -1510,14 +1341,12 @@ async def on_chat_member(event: ChatMemberUpdated):
             try:
                 await bot.ban_chat_member(event.chat.id, event.new_chat_member.user.id)
                 await bot.send_message(event.chat.id, f"Пользователь {uid} в чёрном списке и был удалён")
-            except Exception as e:
-                logger.error(f"Не удалось забанить при входе: {e}")
+            except: pass
 
 
 @dp.message(CommandStart())
 async def cmd_start(message: Message, state: FSMContext):
-    if await check_ban_and_block(message):
-        return
+    if await check_ban_and_block(message): return
     await state.clear()
     uid = str(message.from_user.id)
     
@@ -1527,77 +1356,55 @@ async def cmd_start(message: Message, state: FSMContext):
     if len(args) > 1 and args[1].startswith("ref_"):
         referrer_id = args[1].replace("ref_", "")
         if referrer_id in USERS and referrer_id != uid and is_new:
-            add_xp(referrer_id, 150)
-            add_xp(uid, 150)
-            try:
-                await bot.send_message(int(referrer_id), tr(referrer_id, "ref_bonus"))
-            except:
-                pass
+            add_xp(referrer_id, 150); add_xp(uid, 150)
+            try: await bot.send_message(int(referrer_id), tr(referrer_id, "ref_bonus"))
+            except: pass
             await message.answer(tr(uid, "ref_welcome"))
     
     if is_new:
         USERS[uid] = default_user_data()
-        if message.from_user.id in ADMIN_IDS:
-            USERS[uid]["rank_id"] = 13
+        if message.from_user.id in ADMIN_IDS: USERS[uid]["rank_id"] = 13
         save_users()
 
     if not USERS[uid].get("lang"):
-        await message.answer(
-            "Выбери язык / Абяры мову / Choose language:",
-            reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-                [InlineKeyboardButton(text="🇷🇺 Русский", callback_data="set_lang_ru")],
-                [InlineKeyboardButton(text="🇧🇾 Беларуская", callback_data="set_lang_be")],
-                [InlineKeyboardButton(text="🇬🇧 English", callback_data="set_lang_en")],
-            ])
-        )
+        await message.answer("Выбери язык / Абяры мову / Choose language:", reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text="🇷🇺 Русский", callback_data="set_lang_ru")],
+            [InlineKeyboardButton(text="🇧🇾 Беларуская", callback_data="set_lang_be")],
+            [InlineKeyboardButton(text="🇬🇧 English", callback_data="set_lang_en")],
+        ]))
         return
 
-    await message.answer(
-        tr(uid, "start", name=message.from_user.first_name),
-        reply_markup=get_main_keyboard(uid),
-    )
+    await message.answer(tr(uid, "start", name=message.from_user.first_name), reply_markup=get_main_keyboard(uid))
 
 
 @dp.message(Command("lang"))
 async def cmd_lang(message: Message, state: FSMContext):
-    if await check_ban_and_block(message):
-        return
+    if await check_ban_and_block(message): return
     await state.clear()
-    await message.answer(
-        tr(str(message.from_user.id), "choose_lang"),
-        reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-            [InlineKeyboardButton(text="🇷🇺 Русский", callback_data="set_lang_ru")],
-            [InlineKeyboardButton(text="🇧🇾 Беларуская", callback_data="set_lang_be")],
-            [InlineKeyboardButton(text="🇬🇧 English", callback_data="set_lang_en")],
-        ])
-    )
+    await message.answer(tr(str(message.from_user.id), "choose_lang"), reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="🇷🇺 Русский", callback_data="set_lang_ru")],
+        [InlineKeyboardButton(text="🇧🇾 Беларуская", callback_data="set_lang_be")],
+        [InlineKeyboardButton(text="🇬🇧 English", callback_data="set_lang_en")],
+    ]))
 
 
 @dp.callback_query(F.data.startswith("set_lang_"))
 async def cb_set_lang(callback: CallbackQuery, state: FSMContext):
     uid = str(callback.from_user.id)
     banned, _ = is_banned(uid)
-    if banned:
-        await callback.answer("Вы забанены", show_alert=True)
-        return
+    if banned: await callback.answer("Вы забанены", show_alert=True); return
     lang = callback.data.split("_")[-1]
-    if uid not in USERS:
-        USERS[uid] = default_user_data()
+    if uid not in USERS: USERS[uid] = default_user_data()
     USERS[uid]["lang"] = lang
     save_users()
-
     await callback.message.delete()
-    await callback.message.answer(
-        tr(uid, "lang_changed"),
-        reply_markup=get_main_keyboard(uid)
-    )
+    await callback.message.answer(tr(uid, "lang_changed"), reply_markup=get_main_keyboard(uid))
     await callback.answer()
 
 
 @dp.message(Command("cancel"))
 async def cmd_cancel(message: Message, state: FSMContext):
-    if await check_ban_and_block(message):
-        return
+    if await check_ban_and_block(message): return
     uid = str(message.from_user.id)
     if await state.get_state():
         await state.clear()
@@ -1609,25 +1416,17 @@ async def cmd_cancel(message: Message, state: FSMContext):
 @dp.message(Command("testgroup"))
 async def cmd_test_group(message: Message, state: FSMContext):
     if message.from_user.id not in ADMIN_IDS:
-        await easter_egg_handler(message, state)
-        return
-
-    if not TARGET_CHAT_IDS:
-        await message.answer("❌ TARGET_CHAT_IDS пуст, GROUP_ID не задан в секретах")
-        return
-
-    await message.answer(f"Пробую отправить в группу `{TARGET_CHAT_IDS[0]}`")
+        await easter_egg_handler(message, state); return
+    if not TARGET_CHAT_IDS: await message.answer("❌ TARGET_CHAT_IDS пуст"); return
     try:
-        await bot.send_message(TARGET_CHAT_IDS[0], "✅ Тестовое сообщение из бота! Связь есть")
-        await message.answer("✅ Успешно отправлено в группу!")
-    except Exception as e:
-        await message.answer(f"❌ Ошибка: {e}")
+        await bot.send_message(TARGET_CHAT_IDS[0], "✅ Тест связи")
+        await message.answer("✅ Успешно отправлено!")
+    except Exception as e: await message.answer(f"❌ Ошибка: {e}")
 
 
 @dp.message(F.text.in_([LOCALES["ru"]["btn_mods"], LOCALES["be"]["btn_mods"], LOCALES["en"]["btn_mods"]]))
 async def btn_mods(message: Message, state: FSMContext):
-    if await check_ban_and_block(message):
-        return
+    if await check_ban_and_block(message): return
     await state.clear()
     uid = str(message.from_user.id)
     await message.answer(tr(uid, "mods_menu"), parse_mode="HTML", reply_markup=get_mods_keyboard(uid))
@@ -1637,26 +1436,17 @@ async def btn_mods(message: Message, state: FSMContext):
 async def cb_mod_any(callback: CallbackQuery):
     uid = str(callback.from_user.id)
     banned, _ = is_banned(uid)
-    if banned:
-        await callback.answer("Вы забанены", show_alert=True)
-        return
+    if banned: await callback.answer("Вы забанены", show_alert=True); return
 
     if callback.data == "mod_old_ui_info":
-        await callback.answer()
-        await callback.message.answer(tr(uid, "old_ui_info_text"))
-        return
+        await callback.answer(); await callback.message.answer(tr(uid, "old_ui_info_text")); return
 
     await callback.answer()
     mod_key = callback.data.replace("mod_", "")
     version = "v3.0" if mod_key == "old_ui" else "v1.0"
 
     if not await check_subscription(callback.from_user.id):
-        await callback.message.answer(
-            tr(uid, "subscribe_needed"),
-            reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-                [InlineKeyboardButton(text=tr(uid, "btn_subscribe"), url=CHANNEL_LINK)]
-            ])
-        )
+        await callback.message.answer(tr(uid, "subscribe_needed"), reply_markup=InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text=tr(uid, "btn_subscribe"), url=CHANNEL_LINK)]]))
         return
 
     await callback.message.answer(tr(uid, "version", ver=version))
@@ -1664,34 +1454,22 @@ async def cb_mod_any(callback: CallbackQuery):
     kb = get_mod_info_keyboard(uid) if mod_key == "old_ui" else None
     await send_mod_file(callback.from_user.id, f"{mod_key}.{ext}", reply_markup=kb)
 
-    if uid not in USERS:
-        USERS[uid] = default_user_data()
+    if uid not in USERS: USERS[uid] = default_user_data()
     USERS[uid]["downloads"] += 1
     add_xp(uid, 10)
     save_users()
 
     new_rank = check_rank_up(uid)
-    if new_rank:
-        await callback.message.answer(tr(uid, "rank_up", rank=new_rank))
+    if new_rank: await callback.message.answer(tr(uid, "rank_up", rank=new_rank))
 
-    if USERS[uid]["downloads"] == 1:
-        ach = unlock_achievement(uid, "first_download")
-        if ach:
-            await callback.message.answer(tr(uid, "ach_unlocked", ach=ach))
-    elif USERS[uid]["downloads"] == 10:
-        ach = unlock_achievement(uid, "mods_10")
-        if ach:
-            await callback.message.answer(tr(uid, "ach_unlocked", ach=ach))
-    elif USERS[uid]["downloads"] == 50:
-        ach = unlock_achievement(uid, "mods_50")
-        if ach:
-            await callback.message.answer(tr(uid, "ach_unlocked", ach=ach))
+    if USERS[uid]["downloads"] in (1, 10, 50):
+        ach = unlock_achievement(uid, f"mods_{USERS[uid]['downloads']}" if USERS[uid]["downloads"] > 1 else "first_download")
+        if ach: await callback.message.answer(tr(uid, "ach_unlocked", ach=ach))
 
 
 @dp.message(F.text.in_([LOCALES["ru"]["btn_fun"], LOCALES["be"]["btn_fun"], LOCALES["en"]["btn_fun"]]))
 async def btn_fun(message: Message, state: FSMContext):
-    if await check_ban_and_block(message):
-        return
+    if await check_ban_and_block(message): return
     await state.set_state(UserState.awaiting_fun)
     uid = str(message.from_user.id)
     await message.answer(tr(uid, "fun_prompt"), reply_markup=get_main_keyboard(uid))
@@ -1711,8 +1489,7 @@ async def receive_fun(message: Message, state: FSMContext):
 # --- ОБРАТНАЯ СВЯЗЬ ---
 @dp.message(F.text.in_([LOCALES["ru"]["btn_feedback"], LOCALES["be"]["btn_feedback"], LOCALES["en"]["btn_feedback"]]))
 async def btn_feedback(message: Message, state: FSMContext):
-    if await check_ban_and_block(message):
-        return
+    if await check_ban_and_block(message): return
     await state.clear()
     uid = str(message.from_user.id)
     await message.answer(tr(uid, "feedback_menu"), parse_mode="HTML", reply_markup=get_feedback_keyboard(uid))
@@ -1726,8 +1503,7 @@ async def btn_back(message: Message, state: FSMContext):
 
 @dp.message(F.text.in_([LOCALES["ru"]["btn_suggest"], LOCALES["be"]["btn_suggest"], LOCALES["en"]["btn_suggest"]]))
 async def btn_suggest_mod(message: Message, state: FSMContext):
-    if await check_ban_and_block(message):
-        return
+    if await check_ban_and_block(message): return
     await state.set_state(UserState.awaiting_mod_suggestion)
     uid = str(message.from_user.id)
     await message.answer(tr(uid, "suggest_prompt"), parse_mode="HTML", reply_markup=get_feedback_keyboard(uid))
@@ -1741,32 +1517,24 @@ async def receive_mod_suggestion(message: Message, state: FSMContext):
     header = f"<b>Новая идея от пользователя!</b>\n👤 {user.full_name} (@{user.username})\n🆔 <code>{user.id}</code>\n\n"
     await forward_to_admins(message, header)
 
-    if uid not in USERS:
-        USERS[uid] = default_user_data()
+    if uid not in USERS: USERS[uid] = default_user_data()
     USERS[uid]["ideas"] += 1
     add_xp(uid, 25)
     save_users()
 
     new_rank = check_rank_up(uid)
-    if new_rank:
-        await message.answer(tr(uid, "rank_up", rank=new_rank))
+    if new_rank: await message.answer(tr(uid, "rank_up", rank=new_rank))
 
-    if USERS[uid]["ideas"] == 1:
-        ach = unlock_achievement(uid, "first_idea")
-        if ach:
-            await message.answer(tr(uid, "ach_unlocked", ach=ach))
-    elif USERS[uid]["ideas"] == 10:
-        ach = unlock_achievement(uid, "ideas_10")
-        if ach:
-            await message.answer(tr(uid, "ach_unlocked", ach=ach))
+    if USERS[uid]["ideas"] in (1, 10):
+        ach = unlock_achievement(uid, f"ideas_{USERS[uid]['ideas']}" if USERS[uid]["ideas"] > 1 else "first_idea")
+        if ach: await message.answer(tr(uid, "ach_unlocked", ach=ach))
 
     await message.answer(tr(uid, "suggest_thanks"), reply_markup=get_main_keyboard(uid))
 
 
 @dp.message(F.text.in_([LOCALES["ru"]["btn_bug"], LOCALES["be"]["btn_bug"], LOCALES["en"]["btn_bug"]]))
 async def btn_bug_report(message: Message, state: FSMContext):
-    if await check_ban_and_block(message):
-        return
+    if await check_ban_and_block(message): return
     await state.set_state(UserState.awaiting_bug_report)
     uid = str(message.from_user.id)
     await message.answer(tr(uid, "bug_prompt"), reply_markup=get_feedback_keyboard(uid))
@@ -1776,23 +1544,19 @@ async def btn_bug_report(message: Message, state: FSMContext):
 async def receive_bug_report(message: Message, state: FSMContext):
     uid = str(message.from_user.id)
     if message.voice or (not message.text and not message.photo and not message.video and not message.document):
-        await message.answer(tr(uid, "bug_voice"))
-        return
+        await message.answer(tr(uid, "bug_voice")); return
     await state.clear()
     user = message.from_user
     header = f"<b>[ОШИБКА] Сообщение об ошибке</b>\n👤 {user.full_name} (@{user.username})\n🆔 <code>{user.id}</code>\n\n"
     
-    kb = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text=tr(uid, "btn_report_fixed"), callback_data=f"bug_fixed_{uid}")]
-    ])
+    kb = InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text=tr(uid, "btn_report_fixed"), callback_data=f"bug_fixed_{uid}")]])
     
     if TARGET_CHAT_IDS:
         for chat_id in TARGET_CHAT_IDS:
             try:
                 await bot.send_message(chat_id, header, parse_mode="HTML", reply_markup=kb)
                 await message.forward(chat_id)
-            except Exception as exc:
-                logger.error(f"Не удалось отправить в {chat_id}. Ошибка: {exc}")
+            except Exception as exc: logger.error(f"Не удалось отправить: {exc}")
                 
     add_xp(uid, 15)
     await message.answer(tr(uid, "bug_thanks"), reply_markup=get_main_keyboard(uid))
@@ -1800,8 +1564,7 @@ async def receive_bug_report(message: Message, state: FSMContext):
 
 @dp.message(F.text.in_([LOCALES["ru"]["btn_question"], LOCALES["be"]["btn_question"], LOCALES["en"]["btn_question"]]))
 async def btn_question(message: Message, state: FSMContext):
-    if await check_ban_and_block(message):
-        return
+    if await check_ban_and_block(message): return
     await state.set_state(UserState.awaiting_question)
     uid = str(message.from_user.id)
     await message.answer(tr(uid, "question_prompt"), reply_markup=get_feedback_keyboard(uid))
@@ -1814,27 +1577,22 @@ async def receive_question(message: Message, state: FSMContext):
     user = message.from_user
     header = f"<b>Вопрос от пользователя!</b>\n👤 {user.full_name} (@{user.username})\n🆔 <code>{user.id}</code>\n\nОтветьте на это сообщение (Reply), чтобы отправить ответ пользователю"
 
-    if not TARGET_CHAT_IDS:
-        await message.answer(tr(uid, "question_no_group"))
-        return
+    if not TARGET_CHAT_IDS: await message.answer(tr(uid, "question_no_group")); return
 
     for chat_id in TARGET_CHAT_IDS:
         try:
             await bot.send_message(chat_id, header, parse_mode="HTML")
             await message.forward(chat_id)
-        except Exception as exc:
-            logger.error(f"Не удалось отправить в {chat_id}. Ошибка: {exc}")
+        except Exception as exc: logger.error(f"Не удалось отправить: {exc}")
 
-    if uid not in USERS:
-        USERS[uid] = default_user_data()
+    if uid not in USERS: USERS[uid] = default_user_data()
     USERS[uid]["questions"] += 1
     add_xp(uid, 5)
     save_users()
 
     if USERS[uid]["questions"] == 1:
         ach = unlock_achievement(uid, "first_question")
-        if ach:
-            await message.answer(tr(uid, "ach_unlocked", ach=ach))
+        if ach: await message.answer(tr(uid, "ach_unlocked", ach=ach))
 
     await message.answer(tr(uid, "question_thanks"), reply_markup=get_main_keyboard(uid))
 
@@ -1859,28 +1617,20 @@ async def receive_team_apply(message: Message, state: FSMContext):
             try:
                 await bot.send_message(chat_id, header, parse_mode="HTML")
                 await message.forward(chat_id)
-            except Exception as exc:
-                logger.error(f"Ошибка отправки анкеты: {exc}")
+            except Exception as exc: logger.error(f"Ошибка отправки: {exc}")
                 
     await message.answer(tr(uid, "apply_team_thanks"), reply_markup=get_main_keyboard(uid))
 
 # --- ОБРАБОТКА ИСПРАВЛЕННЫХ БАГОВ ---
 @dp.callback_query(F.data.startswith("bug_fixed_"))
 async def cb_bug_fixed(callback: CallbackQuery):
-    if callback.from_user.id not in ADMIN_IDS:
-        await callback.answer("Только админ может это делать", show_alert=True)
-        return
-    
+    if callback.from_user.id not in ADMIN_IDS: await callback.answer("Только админ", show_alert=True); return
     target_id = callback.data.split("_")[-1]
     add_xp(target_id, 50)
-    
-    try:
-        await bot.send_message(int(target_id), tr(target_id, "bug_report_fixed"))
-    except:
-        pass
-        
+    try: await bot.send_message(int(target_id), tr(target_id, "bug_report_fixed"))
+    except: pass
     await callback.message.edit_text(callback.message.text + "\n\n✅ <b>Статус: Исправлено</b>", parse_mode="HTML")
-    await callback.answer("Пользователь уведомлен!")
+    await callback.answer("Уведомлен!")
 
 # --- ЗАЯВКА НА РАЗБАН ---
 @dp.callback_query(F.data == "appeal_ban")
@@ -1894,31 +1644,18 @@ async def cb_appeal_ban(callback: CallbackQuery, state: FSMContext):
 async def receive_appeal(message: Message, state: FSMContext):
     await state.clear()
     uid = str(message.from_user.id)
-    
-    if USERS.get(uid, {}).get("appeal_pending"):
-        await message.answer(tr(uid, "appeal_already"))
-        return
-        
-    if uid not in USERS:
-        USERS[uid] = default_user_data()
+    if USERS.get(uid, {}).get("appeal_pending"): await message.answer(tr(uid, "appeal_already")); return
+    if uid not in USERS: USERS[uid] = default_user_data()
     USERS[uid]["appeal_pending"] = True
     save_users()
     
     user = message.from_user
-    header = (
-        f"<b>🔓 Заявка на разбан!</b>\n"
-        f"👤 {user.full_name} (@{user.username})\n"
-        f"🆔 <code>{user.id}</code>\n"
-        f"Причина: {message.text}\n\n"
-        f"<i>Ответьте на это сообщение (Reply), чтобы разбанить пользователя.</i>"
-    )
+    header = f"<b>🔓 Заявка на разбан!</b>\n👤 {user.full_name} (@{user.username})\n🆔 <code>{user.id}</code>\nПричина: {message.text}\n\n<i>Ответьте на это сообщение (Reply), чтобы разбанить.</i>"
     
     if TARGET_CHAT_IDS:
         for chat_id in TARGET_CHAT_IDS:
-            try:
-                await bot.send_message(chat_id, header, parse_mode="HTML")
-            except Exception as exc:
-                logger.error(f"Ошибка отправки заявки: {exc}")
+            try: await bot.send_message(chat_id, header, parse_mode="HTML")
+            except Exception as exc: logger.error(f"Ошибка: {exc}")
                 
     await message.answer(tr(uid, "appeal_sent"))
 
@@ -1926,29 +1663,21 @@ async def receive_appeal(message: Message, state: FSMContext):
 # --- ПОМОЩЬ ---
 @dp.message(F.text.in_([LOCALES["ru"]["btn_help"], LOCALES["be"]["btn_help"], LOCALES["en"]["btn_help"]]))
 async def btn_help(message: Message, state: FSMContext):
-    if await check_ban_and_block(message):
-        return
+    if await check_ban_and_block(message): return
     await state.clear()
     uid = str(message.from_user.id)
-    await message.answer(
-        tr(uid, "help_menu"),
-        parse_mode="HTML",
-        reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-            [InlineKeyboardButton(text=tr(uid, "help_install_btn"), callback_data="help_install")],
-            [InlineKeyboardButton(text=tr(uid, "help_remove_btn"), callback_data="help_remove")],
-            [InlineKeyboardButton(text=tr(uid, "help_why_btn"), callback_data="help_why")],
-            [InlineKeyboardButton(text=tr(uid, "help_time_btn"), callback_data="help_time")],
-            [InlineKeyboardButton(text=tr(uid, "help_why_old_btn"), callback_data="help_why_old")],
-        ])
-    )
+    await message.answer(tr(uid, "help_menu"), parse_mode="HTML", reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text=tr(uid, "help_install_btn"), callback_data="help_install")],
+        [InlineKeyboardButton(text=tr(uid, "help_remove_btn"), callback_data="help_remove")],
+        [InlineKeyboardButton(text=tr(uid, "help_why_btn"), callback_data="help_why")],
+        [InlineKeyboardButton(text=tr(uid, "help_time_btn"), callback_data="help_time")],
+        [InlineKeyboardButton(text=tr(uid, "help_why_old_btn"), callback_data="help_why_old")],
+    ]))
 
 @dp.callback_query(F.data.startswith("help_"))
 async def cb_help_any(callback: CallbackQuery):
     uid = str(callback.from_user.id)
-    banned, _ = is_banned(uid)
-    if banned:
-        await callback.answer("Вы забанены", show_alert=True)
-        return
+    if is_banned(uid)[0]: await callback.answer("Вы забанены", show_alert=True); return
     await callback.answer()
     key = f"{callback.data}_text"
     await callback.message.answer(tr(uid, key))
@@ -1957,58 +1686,38 @@ async def cb_help_any(callback: CallbackQuery):
 # --- РАЗНОЕ ---
 @dp.message(F.text.in_([LOCALES["ru"]["btn_misc"], LOCALES["be"]["btn_misc"], LOCALES["en"]["btn_misc"]]))
 async def btn_misc(message: Message, state: FSMContext):
-    if await check_ban_and_block(message):
-        return
+    if await check_ban_and_block(message): return
     await state.clear()
     uid = str(message.from_user.id)
-    await message.answer(
-        tr(uid, "misc_menu"),
-        parse_mode="HTML",
-        reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-            [InlineKeyboardButton(text=tr(uid, "btn_dev"), callback_data="misc_dev")],
-            [InlineKeyboardButton(text=tr(uid, "btn_donate"), callback_data="misc_donate")],
-            [InlineKeyboardButton(text=tr(uid, "btn_lang"), callback_data="misc_lang")],
-            [InlineKeyboardButton(text=tr(uid, "misc_team_btn"), callback_data="misc_team")],
-            [InlineKeyboardButton(text=tr(uid, "misc_join_btn"), callback_data="misc_join")],
-            [InlineKeyboardButton(text=tr(uid, "misc_share_btn"), url="https://t.me/share/url?url=https://t.me/ModRak1_bot&text=Смотри, какой крутой бот для модов!")],
-        ])
-    )
+    await message.answer(tr(uid, "misc_menu"), parse_mode="HTML", reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text=tr(uid, "btn_dev"), callback_data="misc_dev")],
+        [InlineKeyboardButton(text=tr(uid, "btn_donate"), callback_data="misc_donate")],
+        [InlineKeyboardButton(text=tr(uid, "btn_lang"), callback_data="misc_lang")],
+        [InlineKeyboardButton(text=tr(uid, "misc_team_btn"), callback_data="misc_team")],
+        [InlineKeyboardButton(text=tr(uid, "misc_join_btn"), callback_data="misc_join")],
+        [InlineKeyboardButton(text=tr(uid, "misc_share_btn"), url="https://t.me/share/url?url=https://t.me/ModRak1_bot&text=Смотри, какой крутой бот для модов!")],
+    ]))
 
 @dp.callback_query(F.data.startswith("misc_"))
 async def cb_misc_any(callback: CallbackQuery):
     uid = str(callback.from_user.id)
-    banned, _ = is_banned(uid)
-    if banned:
-        await callback.answer("Вы забанены", show_alert=True)
-        return
+    if is_banned(uid)[0]: await callback.answer("Вы забанены", show_alert=True); return
     await callback.answer()
     
-    if callback.data == "misc_dev":
-        await callback.message.answer(tr(uid, "dev_text"))
-    elif callback.data == "misc_donate":
-        await callback.message.answer(tr(uid, "donate_text"))
+    if callback.data == "misc_dev": await callback.message.answer(tr(uid, "dev_text"))
+    elif callback.data == "misc_donate": await callback.message.answer(tr(uid, "donate_text"))
     elif callback.data == "misc_lang":
-        await callback.message.answer(
-            tr(uid, "choose_lang"),
-            reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-                [InlineKeyboardButton(text="🇷🇺 Русский", callback_data="set_lang_ru")],
-                [InlineKeyboardButton(text="🇧🇾 Беларуская", callback_data="set_lang_be")],
-                [InlineKeyboardButton(text="🇬🇧 English", callback_data="set_lang_en")],
-            ])
-        )
+        await callback.message.answer(tr(uid, "choose_lang"), reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text="🇷🇺 Русский", callback_data="set_lang_ru")],
+            [InlineKeyboardButton(text="🇧🇾 Беларуская", callback_data="set_lang_be")],
+            [InlineKeyboardButton(text="🇬🇧 English", callback_data="set_lang_en")],
+        ]))
     elif callback.data == "misc_join":
-        await callback.message.answer(
-            "Набор в команду сейчас закрыт. Но ты можешь заполнить анкету, и мы рассмотрим её, когда откроется набор!",
-            reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-                [InlineKeyboardButton(text=tr(uid, "apply_team_btn"), callback_data="apply_team")]
-            ])
-        )
+        await callback.message.answer("Набор в команду сейчас закрыт. Но ты можешь заполнить анкету, и мы рассмотрим её, когда откроется набор!", reply_markup=InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text=tr(uid, "apply_team_btn"), callback_data="apply_team")]]))
     else:
         key = f"{callback.data}_text"
-        if callback.data == "misc_team":
-            await callback.message.answer(tr(uid, key), parse_mode="HTML")
-        else:
-            await callback.message.answer(tr(uid, key))
+        if callback.data == "misc_team": await callback.message.answer(tr(uid, key), parse_mode="HTML")
+        else: await callback.message.answer(tr(uid, key))
 
 
 USER_ID_RE = re.compile(r"🆔 <code>(\d+)</code>")
@@ -2016,64 +1725,49 @@ USER_ID_RE = re.compile(r"🆔 <code>(\d+)</code>")
 @dp.message(F.reply_to_message, F.chat.id.in_(TARGET_CHAT_IDS))
 async def handle_group_reply(message: Message):
     replied_msg = message.reply_to_message
-    if not replied_msg or not replied_msg.text:
-        return
+    if not replied_msg or not replied_msg.text: return
     match = USER_ID_RE.search(replied_msg.text)
-    if not match:
-        return
+    if not match: return
     user_id = int(match.group(1))
     try:
         await bot.send_message(user_id, f"<b>Ответ от поддержки:</b>\n\n{message.text}", parse_mode="HTML")
-        await message.reply("Ответ успешно отправлен пользователю!")
-    except Exception as e:
-        await message.reply(f"Не удалось отправить ответ, ошибка: {e}")
+        await message.reply("Ответ отправлен!")
+    except Exception as e: await message.reply(f"Ошибка: {e}")
 
 @dp.message(F.text)
 async def easter_egg_handler(message: Message, state: FSMContext):
-    if await state.get_state() is not None:
-        return
+    if await state.get_state() is not None: return
     
     uid = str(message.from_user.id)
     banned, _ = is_banned(uid)
     if banned:
-        kb = InlineKeyboardMarkup(inline_keyboard=[
-            [InlineKeyboardButton(text=tr(uid, "appeal_btn"), callback_data="appeal_ban")]
-        ])
-        await message.answer(tr(uid, "banned_bot_text"), reply_markup=kb)
-        return
+        kb = InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text=tr(uid, "appeal_btn"), callback_data="appeal_ban")]])
+        await message.answer(tr(uid, "banned_bot_text"), reply_markup=kb); return
         
     if uid not in USERS or not USERS[uid].get("lang"):
-        await cmd_start(message, state)
-        return
+        await cmd_start(message, state); return
 
     text_lower = message.text.strip().lower()
 
     if text_lower in EASTER_EGGS:
-        await message.answer(EASTER_EGGS[text_lower], reply_markup=get_main_keyboard(uid))
-        return
+        await message.answer(EASTER_EGGS[text_lower], reply_markup=get_main_keyboard(uid)); return
 
     for trigger, reply in EASTER_EGGS.items():
         if len(trigger) >= 3 and trigger in text_lower:
-            await message.answer(reply, reply_markup=get_main_keyboard(uid))
-            return
+            await message.answer(reply, reply_markup=get_main_keyboard(uid)); return
 
     if "сломай" in text_lower or "взломай" in text_lower or "hack" in text_lower or "break" in text_lower:
         hits = EASTER_EGG_HITS.get(uid, 0) + 1
         EASTER_EGG_HITS[uid] = hits
-        if hits >= 3:
-            await message.answer(tr(uid, "break_hard_text"), reply_markup=get_main_keyboard(uid))
-        else:
-            await message.answer(tr(uid, "break_soft_text"), reply_markup=get_main_keyboard(uid))
+        if hits >= 3: await message.answer(tr(uid, "break_hard_text"), reply_markup=get_main_keyboard(uid))
+        else: await message.answer(tr(uid, "break_soft_text"), reply_markup=get_main_keyboard(uid))
         return
 
     is_gibberish = False
-    if len(text_lower) > 50 and " " not in text_lower:
-        is_gibberish = True
-    elif len(text_lower) < 3 or text_lower.isdigit() or not any(c.isalpha() for c in text_lower):
-        is_gibberish = True
+    if len(text_lower) > 50 and " " not in text_lower: is_gibberish = True
+    elif len(text_lower) < 3 or text_lower.isdigit() or not any(c.isalpha() for c in text_lower): is_gibberish = True
 
     replies_key = "gibberish" if is_gibberish else "fallback"
-    
     user_lang = USERS.get(uid, {}).get("lang") or "ru"
     lang_fallbacks = FALLBACKS.get(user_lang, FALLBACKS.get("ru", {}))
     replies_list = lang_fallbacks.get(replies_key, ["Ошибка загрузки фраз"])
@@ -2082,27 +1776,18 @@ async def easter_egg_handler(message: Message, state: FSMContext):
 
 @dp.message()
 async def unknown_media(message: Message, state: FSMContext):
-    if await state.get_state() is not None:
-        return
-    if GROUP_ID_VALUE and str(message.chat.id) == str(GROUP_ID_VALUE):
-        return
+    if await state.get_state() is not None: return
+    if GROUP_ID_VALUE and str(message.chat.id) == str(GROUP_ID_VALUE): return
     uid = str(message.from_user.id)
     banned, _ = is_banned(uid)
     if banned:
-        kb = InlineKeyboardMarkup(inline_keyboard=[
-            [InlineKeyboardButton(text=tr(uid, "appeal_btn"), callback_data="appeal_ban")]
-        ])
-        await message.answer(tr(uid, "banned_bot_text"), reply_markup=kb)
-        return
+        kb = InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text=tr(uid, "appeal_btn"), callback_data="appeal_ban")]])
+        await message.answer(tr(uid, "banned_bot_text"), reply_markup=kb); return
         
     if uid not in USERS or not USERS[uid].get("lang"):
-        await cmd_start(message, state)
-        return
+        await cmd_start(message, state); return
         
-    await message.answer(
-        tr(uid, "unknown_media_text"),
-        reply_markup=get_main_keyboard(uid)
-    )
+    await message.answer(tr(uid, "unknown_media_text"), reply_markup=get_main_keyboard(uid))
 
 async def main():
     logger.info("Bot started")
