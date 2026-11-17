@@ -78,7 +78,7 @@ BANNED = {}
 FALLBACKS_PATH = "fallbacks.json"
 FALLBACKS = {}
 
-# --- ЗАГРУЗКА БАЗЫ ТАНКОВ ИЗ JSON ---
+# --- ЗАГРУЗКА ТАНКОВ ---
 TANKS_DB = {}
 try:
     with open("tanks.json", encoding="utf-8") as f:
@@ -88,17 +88,6 @@ except Exception as e:
     logger.error(f"Ошибка загрузки tanks.json: {e}")
     TANKS_DB = {"FV215B 183": {"hp": 1800, "damage": 950, "pen": 300, "armor": 152, "reload": 18.5, "price": 0}}
 
-# --- ХРАНИЛИЩЕ ИГРОВЫХ КОМНАТ ---
-ROOMS = {}
-
-class BattleState(StatesGroup):
-    choosing_size = State()
-    entering_code = State()
-    in_battle = State()
-
-def generate_room_code():
-    return ''.join(random.choices(string.ascii_uppercase + string.digits, k=4))
-
 MOD_NAMES = {
     "old_font": {"ru": "Старый шрифт", "be": "Стары шрыфт", "en": "Old Font"},
     "old_medals": {"ru": "Старые медали", "be": "Старыя медалі", "en": "Old Medals"},
@@ -107,44 +96,21 @@ MOD_NAMES = {
 
 # --- СИСТЕМА ЗВАНИЙ И ОПЫТА (21 звание) ---
 RANKS = {
-    1:  ("Новичок", 0, 0, "user"),
-    2:  ("Гость", 100, 0, "user"),
-    3:  ("Освоившийся", 300, 0, "user"),
-    4:  ("Постоянный", 700, 0, "user"),
-    5:  ("Ветеран", 1500, 0, "user"),
-    6:  ("Активный", 3000, 0, "user"),
-    7:  ("Знаток", 6000, 0, "user"),
-    8:  ("Эксперт", 12000, 0, "user"),
-    9:  ("Гуру", 24000, 0, "user"),
-    10: ("Легенда", 48000, 0, "user"),
-    11: ("Идейный", 0, 1, "modder"),
-    12: ("Юный мододел", 0, 3, "modder"),
-    13: ("Мододел", 0, 5, "modder"),
-    14: ("Старший мододел", 0, 10, "modder"),
-    15: ("Мастер модов", 0, 20, "modder"),
-    16: ("Тестер", 0, 0, "staff"),
-    17: ("Младший модератор", 0, 0, "staff"),
-    18: ("Модератор", 0, 0, "staff"),
-    19: ("Администратор", 0, 0, "staff"),
-    20: ("Вице-владелец", 0, 0, "staff"),
-    21: ("Владелец", 0, 0, "staff"),
+    1:  ("Новичок", 0, 0, "user"), 2:  ("Гость", 100, 0, "user"), 3:  ("Освоившийся", 300, 0, "user"),
+    4:  ("Постоянный", 700, 0, "user"), 5:  ("Ветеран", 1500, 0, "user"), 6:  ("Активный", 3000, 0, "user"),
+    7:  ("Знаток", 6000, 0, "user"), 8:  ("Эксперт", 12000, 0, "user"), 9:  ("Гуру", 24000, 0, "user"),
+    10: ("Легенда", 48000, 0, "user"), 11: ("Идейный", 0, 1, "modder"), 12: ("Юный мододел", 0, 3, "modder"),
+    13: ("Мододел", 0, 5, "modder"), 14: ("Старший мододел", 0, 10, "modder"), 15: ("Мастер модов", 0, 20, "modder"),
+    16: ("Тестер", 0, 0, "staff"), 17: ("Младший модератор", 0, 0, "staff"), 18: ("Модератор", 0, 0, "staff"),
+    19: ("Администратор", 0, 0, "staff"), 20: ("Вице-владелец", 0, 0, "staff"), 21: ("Владелец", 0, 0, "staff"),
 }
 
 ACHIEVEMENTS = {
-    "first_download": "Первый мод",
-    "mods_10": "10 модов скачано",
-    "mods_50": "50 модов скачано",
-    "first_idea": "Первая идея",
-    "ideas_10": "10 идей",
-    "first_question": "Первый вопрос",
-    "banned_1": "Первый бан",
-    "banned_10": "10 банов",
-    "veteran": "Ветеран движения",
-    "tank_buyer": "Покупатель танков",
-    "first_win": "Первая победа",
-    "social": "Душа компании"
+    "first_download": "Первый мод", "mods_10": "10 модов скачано", "mods_50": "50 модов скачано",
+    "first_idea": "Первая идея", "ideas_10": "10 идей", "first_question": "Первый вопрос",
+    "banned_1": "Первый бан", "banned_10": "10 банов", "veteran": "Ветеран движения",
+    "tank_buyer": "Покупатель танков", "first_win": "Первая победа", "social": "Душа компании"
 }
-
 
 def default_user_data():
     return {
@@ -168,35 +134,27 @@ def default_user_data():
         "friend_requests": []
     }
 
-
 def get_rank_info(rank_id: int):
     return RANKS.get(rank_id, RANKS[1])
 
-
 def check_rank_up(user_id: str):
     data = USERS.get(user_id)
-    if not data:
-        return None
+    if not data: return None
     current_id = data["rank_id"]
     next_id = current_id + 1
-    if next_id not in RANKS:
-        return None
+    if next_id not in RANKS: return None
     _, req_xp, req_ideas, rank_type = RANKS[next_id]
-    if rank_type != "user":
-        return None
+    if rank_type != "user": return None
     if data["xp"] >= req_xp and data["ideas"] >= req_ideas:
         data["rank_id"] = next_id
         save_users()
         return RANKS[next_id][0]
     return None
 
-
 def add_xp(user_id: str, amount: int):
-    if user_id not in USERS:
-        USERS[user_id] = default_user_data()
+    if user_id not in USERS: USERS[user_id] = default_user_data()
     USERS[user_id]["xp"] += amount
     save_users()
-
 
 def unlock_achievement(user_id: str, ach_key: str):
     data = USERS.get(user_id)
@@ -212,70 +170,39 @@ def get_display_name(uid: str):
     if nick: return nick
     return f"Танкист_{str(uid)[-4:]}"
 
-
-# --- Загрузка/Сохранение ---
 def load_data():
     global FILE_IDS, USERS, BANNED, FALLBACKS
-
     FILE_IDS = {
         "old_font.rar": "BQACAgIAAyEFAASo0DuCAAPRaudEoy_WaUJytv6Ax-5vHj49Zk8AAqqZAAJuI4FJZH-8dxswqq09BA",
         "old_medals.zip": "BQACAgIAAyEFAASo0DuCAAPQaudEo89jj1q6kdFa5l4mjYzZCmoAAqmZAAJuI4FJly1Z9B-lN4E9BA",
         "old_ui.rar": "BQACAgIAAyEFAASo0DuCAAPSaudEozVgaEGz-USX1kCO8mw9czsAAp-qAAJqFCBLsufG1Xs4z3E9BA",
     }
     try:
-        with open(FILE_IDS_PATH) as f:
-            FILE_IDS.update(json.load(f))
-    except (OSError, json.JSONDecodeError):
-        pass
-
+        with open(FILE_IDS_PATH) as f: FILE_IDS.update(json.load(f))
+    except: pass
     try:
         with open(USERS_PATH) as f:
             raw = json.load(f)
             for uid, val in raw.items():
-                if isinstance(val, str):
-                    new_data = default_user_data()
-                    new_data["lang"] = val
-                    USERS[uid] = new_data
-                else:
-                    base = default_user_data()
-                    base.update(val)
-                    if "lang" not in val or val["lang"] not in ["ru", "be", "en"]:
-                        base["lang"] = None
-                    USERS[uid] = base
-    except (OSError, json.JSONDecodeError):
-        pass
-
+                base = default_user_data()
+                base.update(val)
+                USERS[uid] = base
+    except: pass
     try:
-        with open(BANNED_PATH) as f:
-            BANNED.update(json.load(f))
-    except (OSError, json.JSONDecodeError):
-        pass
-        
+        with open(BANNED_PATH) as f: BANNED.update(json.load(f))
+    except: pass
     try:
         fallback_file_path = os.path.join(os.path.dirname(__file__), "fallbacks.json")
-        if not os.path.exists(fallback_file_path):
-            fallback_file_path = "fallbacks.json"
-            
-        with open(fallback_file_path, encoding="utf-8") as f:
-            FALLBACKS.update(json.load(f))
-    except Exception as e:
-        logger.error(f"Ошибка загрузки fallbacks.json: {e}")
-
+        if not os.path.exists(fallback_file_path): fallback_file_path = "fallbacks.json"
+        with open(fallback_file_path, encoding="utf-8") as f: FALLBACKS.update(json.load(f))
+    except: pass
 
 def save_file_ids():
-    with open(FILE_IDS_PATH, "w") as f:
-        json.dump(FILE_IDS, f)
-
-
+    with open(FILE_IDS_PATH, "w") as f: json.dump(FILE_IDS, f)
 def save_users():
-    with open(USERS_PATH, "w") as f:
-        json.dump(USERS, f, ensure_ascii=False)
-
-
+    with open(USERS_PATH, "w") as f: json.dump(USERS, f, ensure_ascii=False)
 def save_banned():
-    with open(BANNED_PATH, "w") as f:
-        json.dump(BANNED, f)
-
+    with open(BANNED_PATH, "w") as f: json.dump(BANNED, f)
 
 load_data()
 
@@ -292,11 +219,10 @@ LOCALES = {
         "mods_menu": "<b>Моды</b>\n\nВыбери мод:", "subscribe_needed": "Чтобы скачать этот мод, пожалуйста, подпишись на наш канал!",
         "btn_subscribe": "Подписаться на канал", "version": "Версия мода: {ver}", "btn_info": "Описание мода",
         "cancel": "Отменено, возвращаюсь в главное меню", "nothing_cancel": "Нечего отменять",
-        "profile_title": "<b>Профиль</b>", "profile_nick": "Ник: <b>{nick}</b>", "profile_id": "Твой ID: <code>{uid}</code>", "profile_rank": "Звание: <b>{rank}</b>", "profile_xp": "Опыт: {xp} XP",
-        "profile_next": "До следующего звания: {xp_left} XP (и {ideas_left} идей)",
+        "profile_title": "<b>Профиль</b>", "profile_nick": "Ник: <b>{nick}</b>", "profile_rank": "Звание: <b>{rank}</b>", "profile_xp": "Опыт: {xp} XP",
+        "profile_stats": "<b>Статистика</b>\nБоёв: {battles} | Побед: {wins} | Поражений: {losses}\nМодов: {downloads} | Идей: {ideas} | Вопросов: {questions} | Банов: {bans}",
+        "profile_tank": "Твой танк: <b>{tank}</b>", "profile_next": "До следующего звания: {xp_left} XP (и {ideas_left} идей)",
         "profile_next_manual": "Следующее звание выдаётся вручную",
-        "profile_stats": "<b>Статистика</b>\nБоёв: {battles} | Побед: {wins} | Поражений: {losses}\nСкачано модов: {downloads}\nПредложено идей: {ideas}\nЗадано вопросов: {questions}\nПолучено банов: {bans}",
-        "profile_tank": "Твой танк: <b>{tank}</b>",
         "profile_achievements": "<b>Достижения</b>\n{list}", "profile_no_achievements": "Пока нет достижений",
         "rank_up": "Поздравляю! Ты получил новое звание: <b>{rank}</b>", "rank_given": "Тебе выдано новое звание: <b>{rank}</b>", "ach_unlocked": "Получено достижение: <b>{ach}</b>",
         "fun_prompt": "Кидай свой игровой прикол сюда!\n\nЭто может быть:\n• Забавный момент из боя\n• Необычная ситуация с физикой игры\n• Смешной баг или совпадение\n• Любой другой забавный случай из игры\n\nОтправляй хоть видео, хоть фото, хоть текст\nДля отмены напиши /cancel",
@@ -363,151 +289,9 @@ LOCALES = {
         "friend_msg_prompt": "Напиши сообщение для <b>{name}</b>:", "friend_msg_sent": "Сообщение отправлено!",
         "friend_msg_received": "✉️ <b>Сообщение от друга ({name}):</b>\n\n{text}", "add_friend_btn": "🤝 Добавить в друзья",
     },
-    "be": {
-        "start": "Прывітанне, {name}!\n\nСардэчна запрашаем! Абяры патрэбны раздзел:", "choose_lang": "Выбяры мову / Choose language:", "lang_changed": "Мова зменена на Беларускую",
-        "btn_mods": "Моды", "btn_fun": "Прыколы", "btn_help": "Дапамога", "btn_suggest": "Прапанаваць мод",
-        "btn_feedback": "Зваротная сувязь", "btn_dev": "У распрацоўцы", "btn_donate": "Падтрымаць", "btn_bug": "Паведаміць пра памылку",
-        "btn_question": "Задаць пытанне", "btn_misc": "Рознае", "btn_lang": "Мова", "btn_profile": "Профіль", "btn_back": "Назад", "btn_invite": "Запрасіць сябра",
-        "main_menu": "Галоўнае меню", "feedback_menu": "<b>Зваротная сувязь</b>\n\nАбяры дзеянне:",
-        "mods_menu": "<b>Моды</b>\n\nАбяры мод:", "subscribe_needed": "Каб спампаваць гэты мод, калі ласка, падпішыся на наш канал!",
-        "btn_subscribe": "Падпісацца на канал", "version": "Версія мода: {ver}", "btn_info": "Апісанне мода",
-        "cancel": "Адменена, вяртаюся ў галоўнае меню", "nothing_cancel": "Няма чаго адмяняць",
-        "profile_title": "<b>Профіль</b>", "profile_nick": "Нік: <b>{nick}</b>", "profile_id": "Твой ID: <code>{uid}</code>", "profile_rank": "Званне: <b>{rank}</b>", "profile_xp": "Вопыт: {xp} XP",
-        "profile_next": "Да наступнага звання: {xp_left} XP (і {ideas_left} ідэй)", "profile_next_manual": "Наступнае званне выдаецца ўручную",
-        "profile_stats": "<b>Статыстыка</b>\nБаёў: {battles} | Перамог: {wins} | Паражэнняў: {losses}\nСпампавана модаў: {downloads}\nПрапанавана ідэй: {ideas}\nЗададзена пытанняў: {questions}\nАтрымана банаў: {bans}",
-        "profile_tank": "Твой танк: <b>{tank}</b>",
-        "profile_achievements": "<b>Дасягненні</b>\n{list}", "profile_no_achievements": "Пакуль няма дасягненняў",
-        "rank_up": "Віншую! Ты атрымаў новае званне: <b>{rank}</b>", "rank_given": "Табе выдадзена новае званне: <b>{rank}</b>", "ach_unlocked": "Атрымана дасягненне: <b>{ach}</b>",
-        "fun_prompt": "Кідай свой гульнявы прыкол сюды!\n\nГэта можа быць:\n• Забаўны момант з бою\n• Незвычайная сітуацыя з фізікай гульні\n• Смешны баг ці супадзенне\n\nДля адмены напішы /cancel",
-        "fun_thanks": "Дзякуй! Твой гульнявы прыкол прыняты",
-        "suggest_prompt": "<b>Прапанаваць ідэю для мода</b>\n\nНапішы апісанне мода і як што працуе\nДля адмены напішы /cancel",
-        "suggest_thanks": "Твая ідэя адпраўлена на разгляд! Дзякуй!",
-        "bug_prompt": "Апішы памылку ў модзе\nДля адмены напішы /cancel", "bug_voice": "Напішы падрабязнасці тэкстам, галасавыя паведамленні не прымаюцца",
-        "bug_thanks": "Дзякуй, паведамленне пра памылку перададзена распрацоўшчыкам",
-        "question_prompt": "Задай сваё пытанне, і мы адкажам табе прама тут!\nДля адмены напішы /cancel", "question_thanks": "Тваё пытанне адпраўлена! Чакай адказу тут", "question_no_group": "Памылка: група для заявак не наладжана",
-        "dev_text": "Зараз у распрацоўцы:\n\n• Мод на старое акно шанцаў\n• Старое акно выбару рэжыму\n• Старое акно ТТХ танка \n\nІ ўсё з гэтага можа і не выйсці",
-        "donate_text": "Падтрымаць распрацоўку модаў\n\n• Раскажы пра наш канал і бота сябрам\n• Прапануй ідэю для новага мода\n",
-        "misc_menu": "<b>Рознае</b>\n\nАбяры пытанне:", "misc_team_btn": "Пра каманду MOD_rak.rar", "misc_join_btn": "Ці можна далучыцца да вас", "misc_share_btn": "Падзяліцца ботам",
-        "misc_team_text": "<b>Пра каманду</b>\n\nМы хлопцы-модадзелы\nМы тыя, хто могуць адстаяць пункт гледжання\nА наш пункт гледжання гэта стары выгляд гульні",
-        "misc_join_text": "Набор у каманду зараз закрыты. Але ты заўсёды можаш прапанаваць ідэю для мода праз галоўнае меню!",
-        "help_menu": "<b>Дапамога</b>\n\nАбяры пытанне:", "help_install_btn": "Як усталяваць мод", "help_remove_btn": "Як выдаліць мод", "help_why_btn": "Навошта патрэбныя гэтыя мадыфікацыі",
-        "help_time_btn": "Колькі распрацоўваюцца моды", "help_why_old_btn": "Чаму моды толькі на вяртанне старога",
-        "help_install_text": "Як усталяваць мод:\n\nКрок 1: Спампаваць мод\nКрок 2: Распакаваць архіў\nКрок 3: Скапіяваць папку Data\nКрок 4: Зайсці ў папку гульні: C:\\Games\\Tanks Blitz\nКрок 5: Уставіць з заменай",
-        "help_remove_text": "Як выдаліць мод:\n\nСамы просты спосаб, націснуць у праграме LGC аднаўленне гульні",
-        "help_why_text": "Навошта патрэбныя гэтыя мадыфікацыі:\n\nМоды вяртаюць выдаленыя функцыі і інтэрфейс, да якіх звыкліся гульцы",
-        "help_time_text": "Колькі распрацоўваюцца моды:\n\nЧас распрацоўкі залежыць ад памеру мода, складанасці і вольнага часу",
-        "help_why_old_text": "Чаму мадыфікацыі толькі на вяртанне старога:\n\nНастальгія ўсёй каманды па старой гульні",
-        "old_ui_info_text": "Гэты мод вяртае:\n• Старую кнопку выбару рэжыму\n• Стары UI сховішча\n• Старую кнопку крамы\n• Старую левую панэль\n• Старую кнопку «Трэніравацца»\n• Старую кнопку «У Бой»\n• Прыбраныя новыя чорныя кропкі на фоне кнопак бою/выбару рэжыму/узвода\n• Старыя іконкі для рэжымаў\n• Старыя іконкі перамогі/паражэння/нічыі ў закладцы апавяшчэнняў\n• Старыя гукі пры націску кнопак/іконак у ангары\n• Старыя кнопкі (зялёныя, чырвоныя)\n• Стары UI дрэва даследавання\n• Стары UI акна апавяшчэнняў\n• Розныя дробязі",
-        "unknown_media_text": "Гэта што? Я разумею толькі тэкст і кнопкі Абяры патрэбны раздзел на клавіятуры ніжэй",
-        "unavailable_text": "Часова недаступна", "break_hard_text": "Хопіць мяне ламаць, я і так ледзь трымаюся 🤖", "break_soft_text": "Не зламаеш, я моцны",
-        "no_rights": "У цябе няма правоў для гэтага дзеяння", "ban_usage": "Выкарыстанне: /ban <user_id> <дд.мм.гггг> <чч:мм:сс> [прычына]\nАбо: /ban <user_id> never [прычына]\nАбо адкажыце на паведамленне: /ban [прычына]",
-        "unban_usage": "Выкарыстанне: /unban <user_id> або адкажыце на паведамленне карыстальніка", "ban_cant_admin": "Нельга забаніць адміністратара",
-        "ban_done": "Карыстальнік {uid} забанены да {until}. Прычына: {reason}", "ban_done_forever": "Карыстальнік {uid} забанены назаўжды. Прычына: {reason}",
-        "unban_done": "Карыстальнік {uid} разбанены", "unban_reply_success": "Карыстальнік {uid} паспяхова разбанены", "unban_not_found": "Гэты карыстальнік не ў бане",
-        "banlist_empty": "Спіс банаў пусты", "banlist_title": "Забаненыя:", "ban_notify": "Ты быў забанены\nПрычына: {reason}\nТэрмін: да {until}", "ban_notify_forever": "Ты быў забанены\nПрычына: {reason}\nТэрмін: назаўжды",
-        "setrank_usage": "Выкарыстанне: /setrank <user_id> <rank_id>", "setrank_bad_id": "Няверны фармат ID", "setrank_no_rank": "Такога звання няма",
-        "setrank_done": "Карыстальніку {uid} выдадзена званне: {rank}", "setrank_notify_fail": "Не ўдалося адправіць апавяшчэнне: {err}",
-        "banned_bot_text": "Вы забанены ў гэтым боце\nВы будзеце разбаненыя альбо па рашэнні адміністратара, альбо калі скончыцца тэрмін бану\nПаглядзець свой тэрмін бану: /mystatus",
-        "ban_invalid_date": "Няверны фармат даты. Выкарыстоўвай: <дд.мм.гггг> <чч:мм:сс> або never", "ban_past": "Паказаны час ужо прайшоў",
-        "mystatus_no_ban": "Вы не забанены", "mystatus_title": "Ваш бан:", "mystatus_until": "Тэрмін бану: да {until}", "mystatus_until_forever": "Тэрмін бану: назаўжды", "mystatus_reason": "Прычына: {reason}",
-        "staff_empty": "Каманда пакуль пустая", "staff_title": "<b>Склад каманды:</b>",
-        "invite_text": "Запрасі сябра ў нашага бота і атрымай +150 XP!\n\nТвая спасылка:\n{link}\n\nЗа кожнага сябра, які зайдзе, вы абодва атрымаеце вопыт",
-        "ref_bonus": "Твой сябар зайшоў па тваёй спасылцы! Ты атрымаў +150 XP", "ref_welcome": "Сардэчна запрашаем па запрашэнні! Ты і твой сябар атрымалі +150 XP",
-        "apply_team_btn": "Падаць заяўку ў каманду",
-        "apply_team_text": "<b>Анкета ў каманду MOD_rak.rar</b>\n\n⚠️ <b>Заўвага:</b> Набор у каманду закрыты. Мы не прымаем усіх запар. Нам патрэбныя людзі з патрэбным настроем, вопытам і вольным часам. Запаўненне анкеты не гарантуе ўступ, але мы разгледзім яе, калі адкрыецца набор.\n\nКалі ласка, адкажы на ўсе пытанні адным паведамленнем:\n\n1. Твой узрост і часавы пояс?\n2. Ці ёсць вопыт у стварэнні модаў?\n3. Якія інструменты ты ведаеш?\n4. Колькі часу ты гатовы ўдзяляць праекту?\n5. Чаму ты хочаш у MOD_rak.rar?\n6. Твая любімая фіча старога Танкс Бліц?\n7. Спасылка на твае мінулыя працы?\n8. Што ты хочаш рабіць у камандзе?\n\nАдпраў адказ адным паведамленнем. Для адмены напішы /cancel",
-        "apply_team_thanks": "Твая анкета адпраўлена на разгляд! Мы звяжамся з табой, калі ты нам падыдзеш.",
-        "bug_report_fixed": "Твой баг-рэпарт выпраўлены! Дзякуй за дапамогу, ты атрымаў +50 XP.", "btn_report_fixed": "✅ Выпраўлена",
-        "appeal_btn": "Падаць заяўку на разбан", "appeal_usage": "Адпраў прычыну, па якой ты хочаш, каб цябе разбанілі.",
-        "appeal_sent": "Твая заяўка на разбан адпраўлена адміністратарам.", "appeal_already": "Ты ўжо падаў заяўку на разбан. Чакай адказу.",
-        "appeal_accept": "Твая заяўка на разбан ухвалена! Ты разбанены.", "appeal_reject": "Твая заяўка на разбан адхілена.",
-        "battle_desc": "⚔️ <b>Танкавыя баі</b>\n\nТут ты можаш змагацца з іншымі гульцамі!\n\n<b>Правілы:</b>\n1. Выбіраеш фармат (або бой з ботам).\n2. Ствараеш пакой (або ўваходзіш па кодзе).\n3. Бот выдае танк з твайго ангара.\n4. Хады ідуць па чарзе! Выбірай снарад і мэту.\n5. Хто апошні застаўся жывы — забірае 25-50 XP.\n\n<b>Важна:</b> Ты бачыш толькі нік суперніка!",
-        "battle_choose": "Абяры дзеянне:", "battle_bot": "🤖 Бой з ботам", "battle_create": "Стварыць пакой", "battle_join": "Увайсці па кодзе", "battle_list": "Спіс адкрытых пакояў", "battle_back": "Назад",
-        "shop_btn": "🛒 Крама танкаў", "shop_title": "🛒 <b>Крама танкаў</b>\n\nТвой баланс: <b>{xp} XP</b>\nАбяры танк:", 
-        "shop_buy": "Купіць за {price} XP", "shop_bought": "✅ Ты купіў <b>{tank}</b>!", "shop_not_enough": "❌ Трэба {price} XP.", 
-        "shop_select": "Выбраць", "shop_selected": "🚀 Цяпер твой танк: <b>{tank}</b>!",
-        "tank_stats": "❤️ HP: {hp}\n💥 Урон: {damage}\n🎯 Прабіццё: {pen}\n🛡 Браня: {armor}\n⏱ Перазарадка: {reload}с",
-        "btn_friends": "👥 Сябры", "friends_title": "<b>Сябры</b>", "friends_requests": "\n🔔 <b>Уваходныя заяўкі:</b>", "friends_list": "\n👥 <b>Твае сябры:</b>",
-        "friends_empty": "\nУ цябе пакуль няма сяброў.", "friends_accept": "Прыняць", "friends_decline": "Адхіліць",
-        "nickname_prompt": "Прыдумай сабе нік (ад 3 да 15 сімвалаў):", "nickname_taken": "Гэты нік ужо заняты!",
-        "nickname_invalid": "Нік павінен быць ад 3 да 15 сімвалаў без прабелаў.", "nickname_success": "Выдатна, твой нік цяпер <b>{nick}</b>!",
-        "friend_req_sent": "Заяўка адпраўлена!", "friend_req_accept": "Ты прыняў заяўку ад {name}!", "friend_req_decline": "Заяўка адхілена.",
-        "friend_msg_prompt": "Напішы паведамленне для <b>{name}</b>:", "friend_msg_sent": "Паведамленне адпраўлена!",
-        "friend_msg_received": "✉️ <b>Паведамленне ад сябра ({name}):</b>\n\n{text}", "add_friend_btn": "🤝 Дадаць у сябры",
-    },
-    "en": {
-        "start": "Hello, {name}!\n\nWelcome! Choose a section:", "choose_lang": "Choose language:", "lang_changed": "Language changed to English",
-        "btn_mods": "Mods", "btn_fun": "Fun", "btn_help": "Help", "btn_suggest": "Suggest a mod",
-        "btn_feedback": "Feedback", "btn_dev": "In development", "btn_donate": "Support", "btn_bug": "Report a bug",
-        "btn_question": "Ask a question", "btn_misc": "Misc", "btn_lang": "Language", "btn_profile": "Profile", "btn_back": "Back", "btn_invite": "Invite a friend",
-        "main_menu": "Main menu", "feedback_menu": "<b>Feedback</b>\n\nChoose an action:",
-        "mods_menu": "<b>Mods</b>\n\nChoose a mod:", "subscribe_needed": "To download this mod, please subscribe to our channel!",
-        "btn_subscribe": "Subscribe to channel", "version": "Mod version: {ver}", "btn_info": "Mod description",
-        "cancel": "Cancelled, returning to main menu", "nothing_cancel": "Nothing to cancel",
-        "profile_title": "<b>Profile</b>", "profile_nick": "Nickname: <b>{nick}</b>", "profile_id": "Your ID: <code>{uid}</code>", "profile_rank": "Rank: <b>{rank}</b>", "profile_xp": "XP: {xp}",
-        "profile_next": "To next rank: {xp_left} XP (and {ideas_left} ideas)", "profile_next_manual": "Next rank is given manually",
-        "profile_stats": "<b>Stats</b>\nBattles: {battles} | Wins: {wins} | Losses: {losses}\nMods downloaded: {downloads}\nIdeas suggested: {ideas}\nQuestions asked: {questions}\nBans received: {bans}",
-        "profile_tank": "Your tank: <b>{tank}</b>",
-        "profile_achievements": "<b>Achievements</b>\n{list}", "profile_no_achievements": "No achievements yet",
-        "rank_up": "Congratulations! You reached a new rank: <b>{rank}</b>", "rank_given": "You were given a new rank: <b>{rank}</b>", "ach_unlocked": "Achievement unlocked: <b>{ach}</b>",
-        "fun_prompt": "Send your funny gaming moment here!\n\nIt could be:\n• A funny moment from battle\n• An unusual physics situation\n• A funny bug or coincidence\n\nTo cancel, type /cancel",
-        "fun_thanks": "Thanks! Your funny moment is accepted",
-        "suggest_prompt": "<b>Suggest a mod idea</b>\n\nWrite a description of the mod and how it works\nTo cancel, type /cancel",
-        "suggest_thanks": "Your idea has been sent for review! Thanks!",
-        "bug_prompt": "Describe the bug in the mod\nTo cancel, type /cancel", "bug_voice": "Write details in text, voice messages are not accepted",
-        "bug_thanks": "Thanks, the bug report has been sent to the developers",
-        "question_prompt": "Ask your question, and we will answer you right here!\nTo cancel, type /cancel", "question_thanks": "Your question has been sent! Wait for an answer here", "question_no_group": "Error: support group is not configured",
-        "dev_text": "Currently in development:\n\n• Old chances window mod\n• Old mode selection window\n• Old tank characteristics window\n\nAnd all of this might not even be released",
-        "donate_text": "Support mod development\n\n• Tell your friends about our channel and bot\n• Suggest an idea for a new mod\n",
-        "misc_menu": "<b>Misc</b>\n\nChoose a question:",
-        "misc_team_btn": "About MOD_rak.rar team", "misc_join_btn": "Can I join you?", "misc_share_btn": "Share the bot",
-        "misc_team_text": "<b>About the team</b>\n\nWe are modders\nWe are the ones who can defend a point of view\nAnd our point of view is the old look of the game",
-        "misc_join_text": "Recruitment is currently closed. But you can always suggest a mod idea through the main menu!",
-        "help_menu": "<b>Help</b>\n\nChoose a question:",
-        "help_install_btn": "How to install a mod", "help_remove_btn": "How to remove a mod", "help_why_btn": "Why are modifications needed",
-        "help_time_btn": "How long mods take to develop", "help_why_old_btn": "Why mods only bring back old features",
-        "help_install_text": "How to install a mod:\n\nStep 1: Download the mod\nStep 2: Unzip the archive\nStep 3: Copy the Data folder\nStep 4: Go to the game folder: C:\\Games\\Tanks Blitz\nStep 5: Paste and replace",
-        "help_remove_text": "How to remove a mod:\n\nEasiest way is to press restore game in the LGC app",
-        "help_why_text": "Why are modifications needed:\n\nMods bring back deleted features and interfaces that players are used to",
-        "help_time_text": "How long mods take to develop:\n\nDevelopment time depends on the mod size, complexity, and free time",
-        "help_why_old_text": "Why mods only bring back old features:\n\nNostalgia of the whole team for the old game",
-        "old_ui_info_text": "This mod brings back:\n• Old mode selection button\n• Old storage UI\n• Old shop button\n• Old left panel\n• Old 'Train' button\n• Old 'To Battle' button\n• Removed new black dots on the background of battle/mode selection/platoon buttons\n• Old icons for modes\n• Old victory/defeat/draw icons in the notifications tab\n• Old sounds when pressing buttons/icons in the hangar\n• Old buttons (green, red)\n• Old research tree UI\n• Old notifications window UI\n• Various small things",
-        "unknown_media_text": "What is this? I only understand text and buttons Choose a section on the keyboard below",
-        "unavailable_text": "Temporarily unavailable", "break_hard_text": "Stop breaking me, I'm barely holding on as it is 🤖", "break_soft_text": "You won't break me, I'm tough",
-        "no_rights": "You have no rights for this action", "ban_usage": "Usage: /ban <user_id> <dd.mm.yyyy> <hh:mm:ss> [reason]\nOr: /ban <user_id> never [reason]\nOr reply to user's message: /ban [reason]",
-        "unban_usage": "Usage: /unban <user_id> or reply to user's message", "ban_cant_admin": "Cannot ban an administrator",
-        "ban_done": "User {uid} banned until {until}. Reason: {reason}", "ban_done_forever": "User {uid} banned forever. Reason: {reason}",
-        "unban_done": "User {uid} unbanned", "unban_reply_success": "User {uid} successfully unbanned", "unban_not_found": "This user is not banned",
-        "banlist_empty": "Ban list is empty", "banlist_title": "Banned users:", "ban_notify": "You were banned\nReason: {reason}\nTerm: until {until}", "ban_notify_forever": "You were banned\nReason: {reason}\nTerm: forever",
-        "setrank_usage": "Usage: /setrank <user_id> <rank_id>", "setrank_bad_id": "Invalid ID format", "setrank_no_rank": "No such rank",
-        "setrank_done": "User {uid} given rank: {rank}", "setrank_notify_fail": "Failed to send notification: {err}",
-        "banned_bot_text": "You are banned in this bot\nYou will be unbanned either by administrator decision or when the ban expires\nCheck your ban term: /mystatus",
-        "ban_invalid_date": "Invalid date format. Use: <dd.mm.yyyy> <hh:mm:ss> or never", "ban_past": "The specified time has already passed",
-        "mystatus_no_ban": "You are not banned", "mystatus_title": "Your ban:", "mystatus_until": "Ban term: until {until}", "mystatus_until_forever": "Ban term: forever", "mystatus_reason": "Reason: {reason}",
-        "staff_empty": "Team is empty", "staff_title": "<b>Team list:</b>",
-        "invite_text": "Invite a friend to our bot and get +150 XP!\n\nYour link:\n{link}\n\nFor each friend who joins, both of you get XP",
-        "ref_bonus": "Your friend joined using your link! You received +150 XP", "ref_welcome": "Welcome by invitation! You and your friend received +150 XP",
-        "apply_team_btn": "Apply to the team",
-        "apply_team_text": "<b>Application to MOD_rak.rar team</b>\n\n⚠️ <b>Note:</b> Recruitment is closed. We don't accept just anyone. We need people with the right mindset, experience and free time. Filling out this form does not guarantee acceptance, but we will review it when recruitment opens.\n\nPlease answer all questions in one message:\n\n1. Your age and time zone?\n2. Do you have modding experience?\n3. What tools and software do you know?\n4. How much time can you dedicate?\n5. Why do you want to join MOD_rak.rar?\n6. Your favorite old Tanks Blitz feature?\n7. Link to your past works?\n8. What do you want to do in the team?\n\nSend your answer in one message. To cancel, type /cancel",
-        "apply_team_thanks": "Your application has been sent for review! We will contact you if you fit.",
-        "bug_report_fixed": "Your bug report has been fixed! Thanks for helping, you received +50 XP.", "btn_report_fixed": "✅ Fixed",
-        "appeal_btn": "Submit an appeal", "appeal_usage": "Send the reason why you want to be unbanned.",
-        "appeal_sent": "Your appeal has been sent to the administrators.", "appeal_already": "You have already submitted an appeal. Wait for a response.",
-        "appeal_accept": "Your appeal has been approved! You are unbanned.", "appeal_reject": "Your appeal has been rejected.",
-        "battle_desc": "⚔️ <b>Tank Battles</b>\n\nHere you can fight other players!\n\n<b>Rules:</b>\n1. Choose format (or fight a bot).\n2. Create a room (or join by code).\n3. Bot gives a tank from your hangar.\n4. Turns go in order! Choose ammo and target.\n5. Last one standing gets 25-50 XP.\n\n<b>Important:</b> You only see the enemy's nickname!",
-        "battle_choose": "Choose an action:", "battle_bot": "🤖 Fight with bot", "battle_create": "Create a room", "battle_join": "Join by code", "battle_list": "List of open rooms", "battle_back": "Back",
-        "shop_btn": "🛒 Tank Shop", "shop_title": "🛒 <b>Tank Shop</b>\n\nYour balance: <b>{xp} XP</b>\nChoose a tank:", 
-        "shop_buy": "Buy for {price} XP", "shop_bought": "✅ You bought <b>{tank}</b>!", "shop_not_enough": "❌ Need {price} XP.", 
-        "shop_select": "Select", "shop_selected": "🚀 Now your tank is: <b>{tank}</b>!",
-        "tank_stats": "❤️ HP: {hp}\n💥 Damage: {damage}\n🎯 Penetration: {pen}\n🛡 Armor: {armor}\n⏱ Reload: {reload}s",
-        "btn_friends": "👥 Friends", "friends_title": "<b>Friends</b>", "friends_requests": "\n🔔 <b>Incoming requests:</b>", "friends_list": "\n👥 <b>Your friends:</b>",
-        "friends_empty": "\nYou have no friends yet.", "friends_accept": "Accept", "friends_decline": "Decline",
-        "nickname_prompt": "Create a nickname (3 to 15 characters):", "nickname_taken": "This nickname is already taken!",
-        "nickname_invalid": "Nickname must be 3-15 characters without spaces.", "nickname_success": "Great, your nickname is now <b>{nick}</b>!",
-        "friend_req_sent": "Request sent!", "friend_req_accept": "You accepted the request from {name}!", "friend_req_decline": "Request declined.",
-        "friend_msg_prompt": "Write a message to <b>{name}</b>:", "friend_msg_sent": "Message sent!",
-        "friend_msg_received": "✉️ <b>Message from friend ({name}):</b>\n\n{text}", "add_friend_btn": "🤝 Add to friends",
-    }
+    "be": {}, "en": {}
 }
+for lang in ["be", "en"]: LOCALES[lang] = LOCALES["ru"].copy()
 
 def tr(user_id: str, key: str, **kwargs) -> str:
     data = USERS.get(user_id)
@@ -515,37 +299,26 @@ def tr(user_id: str, key: str, **kwargs) -> str:
     text = LOCALES.get(lang, LOCALES["ru"]).get(key, f"[{key}]")
     return text.format(**kwargs) if kwargs else text
 
-
 # --- Проверка бана ---
 def is_banned(user_id: str) -> tuple[bool, dict]:
-    if user_id not in BANNED:
-        return False, {}
+    if user_id not in BANNED: return False, {}
     info = BANNED[user_id]
     until_str = info.get("until", "")
-    if until_str == "never":
-        return True, info
-    try:
-        until = datetime.strptime(until_str, "%Y-%m-%d %H:%M:%S")
-    except (KeyError, ValueError):
-        return False, {}
+    if until_str == "never": return True, info
+    try: until = datetime.strptime(until_str, "%Y-%m-%d %H:%M:%S")
+    except (KeyError, ValueError): return False, {}
     if datetime.now() >= until:
-        del BANNED[user_id]
-        save_banned()
-        return False, {}
+        del BANNED[user_id]; save_banned(); return False, {}
     return True, info
-
 
 async def check_ban_and_block(message: Message) -> bool:
     uid = str(message.from_user.id)
     banned, info = is_banned(uid)
     if banned:
-        kb = InlineKeyboardMarkup(inline_keyboard=[
-            [InlineKeyboardButton(text=tr(uid, "appeal_btn"), callback_data="appeal_ban")]
-        ])
+        kb = InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text=tr(uid, "appeal_btn"), callback_data="appeal_ban")]])
         await message.answer(tr(uid, "banned_bot_text"), reply_markup=kb)
         return True
     return False
-
 
 # --- Клавиатуры ---
 def get_main_keyboard(user_id: str) -> ReplyKeyboardMarkup:
@@ -580,13 +353,11 @@ def get_mod_info_keyboard(user_id: str) -> InlineKeyboardMarkup:
         [InlineKeyboardButton(text=tr(user_id, "btn_info"), callback_data="mod_old_ui_info")]
     ])
 
-
 ALL_MENU_BUTTONS = set()
 for lang_data in LOCALES.values():
     for k, v in lang_data.items():
         if k.startswith("btn_") or (k.startswith("misc_") and k.endswith("_btn")) or (k.startswith("help_") and k.endswith("_btn")):
             ALL_MENU_BUTTONS.add(v)
-
 
 # --- Пасхалки ---
 EASTER_EGGS = {
@@ -622,57 +393,96 @@ class UserState(StatesGroup):
     choosing_size = State()
     entering_code = State()
 
+# --- Хелперы ---
 def find_file_id(base_name: str):
     base_lower = base_name.lower()
-    if base_name in FILE_IDS:
-        return base_name, FILE_IDS[base_name]
+    if base_name in FILE_IDS: return base_name, FILE_IDS[base_name]
     for stored_name, file_id in FILE_IDS.items():
-        if stored_name.rsplit(".", 1)[0].lower() == base_lower:
-            return stored_name, file_id
+        if stored_name.rsplit(".", 1)[0].lower() == base_lower: return stored_name, file_id
     return None
 
 async def check_subscription(user_id: int) -> bool:
-    if not CHANNEL_ID:
-        return True
+    if not CHANNEL_ID: return True
     try:
         member = await bot.get_chat_member(chat_id=CHANNEL_ID, user_id=user_id)
-        if member.status in ["creator", "administrator", "member"]:
-            return True
-    except TelegramBadRequest as e:
-        logger.error(f"Ошибка проверки подписки: {e}")
+        if member.status in ["creator", "administrator", "member"]: return True
+    except TelegramBadRequest as e: logger.error(f"Ошибка проверки подписки: {e}")
     return False
 
 async def send_mod_file(chat_id: int, base_name: str, reply_markup=None):
     result = find_file_id(base_name)
     if not result:
-        await bot.send_message(chat_id, tr(str(chat_id), "unavailable_text"))
-        return
+        await bot.send_message(chat_id, tr(str(chat_id), "unavailable_text")); return
     _, file_id = result
     await bot.send_document(chat_id, file_id, reply_markup=reply_markup)
 
-
 async def forward_to_admins(message: Message, header: str):
-    if not TARGET_CHAT_IDS:
-        return
+    if not TARGET_CHAT_IDS: return
     for chat_id in TARGET_CHAT_IDS:
         try:
             await bot.send_message(chat_id, header, parse_mode="HTML")
             await message.forward(chat_id)
-        except Exception as exc:
-            logger.error(f"Не удалось отправить в {chat_id}. Ошибка: {exc}")
+        except Exception as exc: logger.error(f"Не удалось отправить в {chat_id}. Ошибка: {exc}")
 
+# --- СТАРТ И НИК ---
+@dp.message(CommandStart())
+async def cmd_start(message: Message, state: FSMContext):
+    if await check_ban_and_block(message): return
+    await state.clear()
+    uid = str(message.from_user.id)
+    args = message.text.split()
+    is_new = uid not in USERS
+    
+    if len(args) > 1 and args[1].startswith("ref_"):
+        referrer_id = args[1].replace("ref_", "")
+        if referrer_id in USERS and referrer_id != uid and is_new:
+            add_xp(referrer_id, 150); add_xp(uid, 150)
+            try: await bot.send_message(int(referrer_id), tr(referrer_id, "ref_bonus"))
+            except: pass
+            await message.answer(tr(uid, "ref_welcome"))
+    
+    if is_new:
+        USERS[uid] = default_user_data()
+        if message.from_user.id in ADMIN_IDS: USERS[uid]["rank_id"] = 13
+        save_users()
+
+    if not USERS[uid].get("nickname"):
+        await state.set_state(UserState.awaiting_nickname)
+        await message.answer(tr(uid, "nickname_prompt"), reply_markup=ReplyKeyboardMarkup(keyboard=[[KeyboardButton(text="/cancel")]], resize_keyboard=True))
+        return
+
+    if not USERS[uid].get("lang"):
+        await message.answer("Выбери язык / Абяры мову / Choose language:", reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text="🇷🇺 Русский", callback_data="set_lang_ru")],
+            [InlineKeyboardButton(text="🇧🇾 Беларуская", callback_data="set_lang_be")],
+            [InlineKeyboardButton(text="🇬🇧 English", callback_data="set_lang_en")],
+        ]))
+        return
+
+    await message.answer(tr(uid, "start", name=message.from_user.first_name), reply_markup=get_main_keyboard(uid))
+
+@dp.message(UserState.awaiting_nickname)
+async def process_nickname(message: Message, state: FSMContext):
+    uid = str(message.from_user.id)
+    nick = message.text.strip()
+    if len(nick) < 3 or len(nick) > 15 or " " in nick:
+        await message.answer(tr(uid, "nickname_invalid")); return
+    if any(u.get("nickname", "").lower() == nick.lower() for u in USERS.values()):
+        await message.answer(tr(uid, "nickname_taken")); return
+    USERS[uid]["nickname"] = nick
+    save_users()
+    await state.clear()
+    await message.answer(tr(uid, "nickname_success", nick=nick), reply_markup=get_main_keyboard(uid))
 
 # --- ПРОФИЛЬ ---
 @dp.message(Command("profile"))
 async def cmd_profile(message: Message, state: FSMContext):
-    if await check_ban_and_block(message):
-        return
+    if await check_ban_and_block(message): return
     await state.clear()
     uid = str(message.from_user.id)
     
     if uid not in USERS or not USERS[uid].get("nickname"):
-        await cmd_start(message, state)
-        return
+        await cmd_start(message, state); return
 
     data = USERS[uid]
     rank_name, req_xp, req_ideas, _ = get_rank_info(data["rank_id"])
@@ -697,8 +507,7 @@ async def cmd_profile(message: Message, state: FSMContext):
 
     text = (
         f"{tr(uid, 'profile_title')}\n"
-        f"{tr(uid, 'profile_nick', nick=data['nickname'])}\n"
-        f"{tr(uid, 'profile_id', uid=uid)}\n\n"
+        f"{tr(uid, 'profile_nick', nick=data['nickname'])}\n\n"
         f"{tr(uid, 'profile_rank', rank=rank_name)}\n"
         f"{tr(uid, 'profile_xp', xp=data['xp'])}\n"
         f"{tr(uid, 'profile_stats', battles=data.get('battles',0), wins=data.get('wins',0), losses=data.get('losses',0), downloads=data['downloads'], ideas=data['ideas'], questions=data['questions'], bans=data['bans'])}\n"
@@ -715,21 +524,23 @@ async def cmd_profile(message: Message, state: FSMContext):
     ])
     await message.answer(text, parse_mode="HTML", reply_markup=kb)
 
-
 @dp.message(F.text.in_([LOCALES["ru"]["btn_profile"], LOCALES["be"]["btn_profile"], LOCALES["en"]["btn_profile"]]))
 async def btn_profile_click(message: Message, state: FSMContext):
     await cmd_profile(message, state)
-
 
 @dp.callback_query(F.data == "invite_friend")
 async def cb_invite(callback: CallbackQuery):
     uid = str(callback.from_user.id)
     bot_username = (await bot.get_me()).username
     ref_link = f"https://t.me/{bot_username}?start=ref_{uid}"
-    
     await callback.message.answer(tr(uid, "invite_text", link=ref_link))
     await callback.answer()
 
+@dp.callback_query(F.data == "back_to_profile")
+async def cb_back_to_profile(callback: CallbackQuery, state: FSMContext):
+    await state.clear()
+    await callback.answer()
+    await cmd_profile(callback.message, state)
 
 # --- ДРУЗЬЯ ---
 @dp.callback_query(F.data == "friends_menu")
@@ -820,7 +631,6 @@ async def process_friend_msg(message: Message, state: FSMContext):
     except:
         await message.answer("Не удалось отправить (возможно, пользователь заблокировал бота).", reply_markup=get_main_keyboard(uid))
 
-
 # --- МАГАЗИН ---
 @dp.callback_query(F.data == "shop_menu")
 async def cb_shop_menu(callback: CallbackQuery):
@@ -881,7 +691,6 @@ async def cb_shop_select(callback: CallbackQuery):
         await callback.answer(tr(uid, "shop_selected", tank=tank_name), show_alert=True)
     await cb_shop_view(callback)
 
-
 # --- БОИ ---
 @dp.callback_query(F.data == "battle_menu")
 async def cb_battle_menu(callback: CallbackQuery, state: FSMContext):
@@ -896,12 +705,6 @@ async def cb_battle_menu(callback: CallbackQuery, state: FSMContext):
     ])
     await callback.message.edit_text(tr(uid, "battle_desc") + "\n\n" + tr(uid, "battle_choose"), parse_mode="HTML", reply_markup=kb)
     await callback.answer()
-
-@dp.callback_query(F.data == "back_to_profile")
-async def cb_back_to_profile(callback: CallbackQuery, state: FSMContext):
-    await state.clear()
-    await callback.answer()
-    await cmd_profile(callback.message, state)
 
 def calculate_shot(attacker_stats, target_stats, ammo_type):
     if random.random() < 0.10: return 0, "Промах! Снаряд ушел мимо."
@@ -1002,6 +805,9 @@ async def cb_pve_surrender(callback: CallbackQuery, state: FSMContext):
     await callback.message.edit_text("🏳️ Ты сдался.", reply_markup=InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="В меню", callback_data="battle_menu")]]))
 
 # --- PVP ---
+ROOMS = {}
+def generate_room_code(): return ''.join(random.choices(string.ascii_uppercase + string.digits, k=4))
+
 @dp.callback_query(F.data == "create_room")
 async def cb_create_room(callback: CallbackQuery, state: FSMContext):
     uid = str(callback.from_user.id)
@@ -1009,11 +815,11 @@ async def cb_create_room(callback: CallbackQuery, state: FSMContext):
         [InlineKeyboardButton(text="1 на 1", callback_data="create_2")],
         [InlineKeyboardButton(text="2 на 2", callback_data="create_4")]
     ])
-    await state.set_state(BattleState.choosing_size)
+    await state.set_state(UserState.choosing_size)
     await callback.message.edit_text("Выбери формат:", reply_markup=kb)
     await callback.answer()
 
-@dp.callback_query(BattleState.choosing_size, F.data.startswith("create_"))
+@dp.callback_query(UserState.choosing_size, F.data.startswith("create_"))
 async def cb_create_size(callback: CallbackQuery, state: FSMContext):
     max_players = int(callback.data.replace("create_", ""))
     await state.clear()
@@ -1042,11 +848,11 @@ async def cb_leave_room(callback: CallbackQuery, state: FSMContext):
 
 @dp.callback_query(F.data == "join_by_code")
 async def cb_join_by_code(callback: CallbackQuery, state: FSMContext):
-    await state.set_state(BattleState.entering_code)
+    await state.set_state(UserState.entering_code)
     await callback.message.edit_text("Введи код комнаты:")
     await callback.answer()
 
-@dp.message(BattleState.entering_code)
+@dp.message(UserState.entering_code)
 async def process_code(message: Message, state: FSMContext):
     code = message.text.strip().upper()
     await state.clear()
@@ -1173,7 +979,6 @@ async def btn_mods(message: Message, state: FSMContext):
     uid = str(message.from_user.id)
     await message.answer(tr(uid, "mods_menu"), parse_mode="HTML", reply_markup=get_mods_keyboard(uid))
 
-
 @dp.callback_query(F.data.startswith("mod_old_"))
 async def cb_mod_any(callback: CallbackQuery):
     uid = str(callback.from_user.id)
@@ -1208,14 +1013,12 @@ async def cb_mod_any(callback: CallbackQuery):
         ach = unlock_achievement(uid, f"mods_{USERS[uid]['downloads']}" if USERS[uid]["downloads"] > 1 else "first_download")
         if ach: await callback.message.answer(tr(uid, "ach_unlocked", ach=ach))
 
-
 @dp.message(F.text.in_([LOCALES["ru"]["btn_fun"], LOCALES["be"]["btn_fun"], LOCALES["en"]["btn_fun"]]))
 async def btn_fun(message: Message, state: FSMContext):
     if await check_ban_and_block(message): return
     await state.set_state(UserState.awaiting_fun)
     uid = str(message.from_user.id)
     await message.answer(tr(uid, "fun_prompt"), reply_markup=get_main_keyboard(uid))
-
 
 @dp.message(UserState.awaiting_fun, ~F.text.in_(ALL_MENU_BUTTONS))
 async def receive_fun(message: Message, state: FSMContext):
@@ -1227,8 +1030,6 @@ async def receive_fun(message: Message, state: FSMContext):
     add_xp(uid, 5)
     await message.answer(tr(uid, "fun_thanks"), reply_markup=get_main_keyboard(uid))
 
-
-# --- ОБРАТНАЯ СВЯЗЬ ---
 @dp.message(F.text.in_([LOCALES["ru"]["btn_feedback"], LOCALES["be"]["btn_feedback"], LOCALES["en"]["btn_feedback"]]))
 async def btn_feedback(message: Message, state: FSMContext):
     if await check_ban_and_block(message): return
@@ -1242,14 +1043,12 @@ async def btn_back(message: Message, state: FSMContext):
     uid = str(message.from_user.id)
     await message.answer(tr(uid, "main_menu"), reply_markup=get_main_keyboard(uid))
 
-
 @dp.message(F.text.in_([LOCALES["ru"]["btn_suggest"], LOCALES["be"]["btn_suggest"], LOCALES["en"]["btn_suggest"]]))
 async def btn_suggest_mod(message: Message, state: FSMContext):
     if await check_ban_and_block(message): return
     await state.set_state(UserState.awaiting_mod_suggestion)
     uid = str(message.from_user.id)
     await message.answer(tr(uid, "suggest_prompt"), parse_mode="HTML", reply_markup=get_feedback_keyboard(uid))
-
 
 @dp.message(UserState.awaiting_mod_suggestion, ~F.text.in_(ALL_MENU_BUTTONS))
 async def receive_mod_suggestion(message: Message, state: FSMContext):
@@ -1273,14 +1072,12 @@ async def receive_mod_suggestion(message: Message, state: FSMContext):
 
     await message.answer(tr(uid, "suggest_thanks"), reply_markup=get_main_keyboard(uid))
 
-
 @dp.message(F.text.in_([LOCALES["ru"]["btn_bug"], LOCALES["be"]["btn_bug"], LOCALES["en"]["btn_bug"]]))
 async def btn_bug_report(message: Message, state: FSMContext):
     if await check_ban_and_block(message): return
     await state.set_state(UserState.awaiting_bug_report)
     uid = str(message.from_user.id)
     await message.answer(tr(uid, "bug_prompt"), reply_markup=get_feedback_keyboard(uid))
-
 
 @dp.message(UserState.awaiting_bug_report, ~F.text.in_(ALL_MENU_BUTTONS))
 async def receive_bug_report(message: Message, state: FSMContext):
@@ -1303,14 +1100,12 @@ async def receive_bug_report(message: Message, state: FSMContext):
     add_xp(uid, 15)
     await message.answer(tr(uid, "bug_thanks"), reply_markup=get_main_keyboard(uid))
 
-
 @dp.message(F.text.in_([LOCALES["ru"]["btn_question"], LOCALES["be"]["btn_question"], LOCALES["en"]["btn_question"]]))
 async def btn_question(message: Message, state: FSMContext):
     if await check_ban_and_block(message): return
     await state.set_state(UserState.awaiting_question)
     uid = str(message.from_user.id)
     await message.answer(tr(uid, "question_prompt"), reply_markup=get_feedback_keyboard(uid))
-
 
 @dp.message(UserState.awaiting_question, ~F.text.in_(ALL_MENU_BUTTONS))
 async def receive_question(message: Message, state: FSMContext):
@@ -1337,7 +1132,6 @@ async def receive_question(message: Message, state: FSMContext):
         if ach: await message.answer(tr(uid, "ach_unlocked", ach=ach))
 
     await message.answer(tr(uid, "question_thanks"), reply_markup=get_main_keyboard(uid))
-
 
 # --- АНКЕТА В КОМАНДУ ---
 @dp.callback_query(F.data == "apply_team")
@@ -1401,7 +1195,6 @@ async def receive_appeal(message: Message, state: FSMContext):
                 
     await message.answer(tr(uid, "appeal_sent"))
 
-
 # --- ПОМОЩЬ ---
 @dp.message(F.text.in_([LOCALES["ru"]["btn_help"], LOCALES["be"]["btn_help"], LOCALES["en"]["btn_help"]]))
 async def btn_help(message: Message, state: FSMContext):
@@ -1423,7 +1216,6 @@ async def cb_help_any(callback: CallbackQuery):
     await callback.answer()
     key = f"{callback.data}_text"
     await callback.message.answer(tr(uid, key))
-
 
 # --- РАЗНОЕ ---
 @dp.message(F.text.in_([LOCALES["ru"]["btn_misc"], LOCALES["be"]["btn_misc"], LOCALES["en"]["btn_misc"]]))
@@ -1460,7 +1252,6 @@ async def cb_misc_any(callback: CallbackQuery):
         key = f"{callback.data}_text"
         if callback.data == "misc_team": await callback.message.answer(tr(uid, key), parse_mode="HTML")
         else: await callback.message.answer(tr(uid, key))
-
 
 # --- АДМИНКА ---
 @dp.message(Command("setrank"))
@@ -1509,7 +1300,7 @@ async def cmd_staff(message: Message):
     staff_list.sort(key=lambda x: x[0], reverse=True)
     text_lines = [tr(uid_admin, "staff_title") + "\n"]
     for rank_id, uid, data in staff_list:
-        text_lines.append(f"<b>{RANKS[rank_id][0]}</b> | ID: <code>{uid}</code>\n└ XP: {data.get('xp', 0)} | Идей: {data.get('ideas', 0)} | Банов: {data.get('bans', 0)}\n")
+        text_lines.append(f"<b>{RANKS[rank_id][0]}</b> | Ник: <b>{data.get('nickname', 'Не задан')}</b>\n└ XP: {data.get('xp', 0)} | Идей: {data.get('ideas', 0)}\n")
     
     full_text = "\n".join(text_lines)
     if len(full_text) > 4000:
@@ -1601,12 +1392,6 @@ async def cmd_ban(message: Message):
         else: await bot.send_message(target_id, tr(target_str, "ban_notify", reason=reason, until=until_dt.strftime("%d.%m.%Y %H:%M:%S")))
     except: pass
 
-    if TARGET_CHAT_IDS:
-        try:
-            log_text = f"Пользователь {target_id} забанен " + ("навсегда" if forever else f"до {until_dt.strftime('%d.%m.%Y %H:%M:%S')}") + f"\nПричина: {reason}\nЗабанил: {message.from_user.id}"
-            await bot.send_message(TARGET_CHAT_IDS[0], log_text)
-        except: pass
-
     if forever: await message.answer(tr(uid_admin, "ban_done_forever", uid=target_id, reason=reason))
     else: await message.answer(tr(uid_admin, "ban_done", uid=target_id, until=until_dt.strftime("%d.%m.%Y %H:%M:%S"), reason=reason))
 
@@ -1663,58 +1448,27 @@ async def cmd_mystatus(message: Message):
     text = f"{tr(uid, 'mystatus_title')}\n{until_text}\n{tr(uid, 'mystatus_reason', reason=info.get('reason', '?'))}"
     await message.answer(text, reply_markup=None)
 
+# --- Прочие обработчики ---
+@dp.message(F.document)
+async def group_document_handler(message: Message):
+    if GROUP_ID_VALUE and str(message.chat.id) == str(GROUP_ID_VALUE):
+        doc = message.document
+        if doc.file_name:
+            FILE_IDS[doc.file_name] = doc.file_id
+            save_file_ids()
+            await message.answer(f"Файл {doc.file_name} сохранен")
 
-# --- СТАРТ И РЕГИСТРАЦИЯ НИКА ---
-@dp.message(CommandStart())
-async def cmd_start(message: Message, state: FSMContext):
-    if await check_ban_and_block(message): return
-    await state.clear()
-    uid = str(message.from_user.id)
-    args = message.text.split()
-    is_new = uid not in USERS
-    
-    if len(args) > 1 and args[1].startswith("ref_"):
-        referrer_id = args[1].replace("ref_", "")
-        if referrer_id in USERS and referrer_id != uid and is_new:
-            add_xp(referrer_id, 150); add_xp(uid, 150)
-            try: await bot.send_message(int(referrer_id), tr(referrer_id, "ref_bonus"))
+@dp.chat_member(F.chat.id == GROUP_ID_VALUE)
+async def on_chat_member(event: ChatMemberUpdated):
+    if event.new_chat_member.status in ("member", "restricted"):
+        uid = str(event.new_chat_member.user.id)
+        banned, _ = is_banned(uid)
+        if banned:
+            try:
+                await bot.ban_chat_member(event.chat.id, event.new_chat_member.user.id)
+                await bot.send_message(event.chat.id, f"Пользователь {uid} в чёрном списке и был удалён")
             except: pass
-            await message.answer(tr(uid, "ref_welcome"))
-    
-    if is_new:
-        USERS[uid] = default_user_data()
-        if message.from_user.id in ADMIN_IDS: USERS[uid]["rank_id"] = 13
-        save_users()
 
-    if not USERS[uid].get("nickname"):
-        await state.set_state(UserState.awaiting_nickname)
-        await message.answer(tr(uid, "nickname_prompt"), reply_markup=ReplyKeyboardMarkup(keyboard=[[KeyboardButton(text="/cancel")]], resize_keyboard=True))
-        return
-
-    if not USERS[uid].get("lang"):
-        await message.answer("Выбери язык / Абяры мову / Choose language:", reply_markup=InlineKeyboardMarkup(inline_keyboard=[
-            [InlineKeyboardButton(text="🇷🇺 Русский", callback_data="set_lang_ru")],
-            [InlineKeyboardButton(text="🇧🇾 Беларуская", callback_data="set_lang_be")],
-            [InlineKeyboardButton(text="🇬🇧 English", callback_data="set_lang_en")],
-        ]))
-        return
-
-    await message.answer(tr(uid, "start", name=message.from_user.first_name), reply_markup=get_main_keyboard(uid))
-
-@dp.message(UserState.awaiting_nickname)
-async def process_nickname(message: Message, state: FSMContext):
-    uid = str(message.from_user.id)
-    nick = message.text.strip()
-    if len(nick) < 3 or len(nick) > 15 or " " in nick:
-        await message.answer(tr(uid, "nickname_invalid")); return
-    if any(u.get("nickname", "").lower() == nick.lower() for u in USERS.values()):
-        await message.answer(tr(uid, "nickname_taken")); return
-    USERS[uid]["nickname"] = nick
-    save_users()
-    await state.clear()
-    await message.answer(tr(uid, "nickname_success", nick=nick), reply_markup=get_main_keyboard(uid))
-
-# --- ОБРАБОТЧИКИ СОБЫТИЙ ---
 @dp.message(Command("cancel"))
 async def cmd_cancel(message: Message, state: FSMContext):
     if await check_ban_and_block(message): return
@@ -1757,26 +1511,6 @@ async def cmd_test_group(message: Message, state: FSMContext):
         await bot.send_message(TARGET_CHAT_IDS[0], "✅ Тест связи")
         await message.answer("✅ Успешно отправлено!")
     except Exception as e: await message.answer(f"❌ Ошибка: {e}")
-
-@dp.message(F.document)
-async def group_document_handler(message: Message):
-    if GROUP_ID_VALUE and str(message.chat.id) == str(GROUP_ID_VALUE):
-        doc = message.document
-        if doc.file_name:
-            FILE_IDS[doc.file_name] = doc.file_id
-            save_file_ids()
-            await message.answer(f"Файл {doc.file_name} сохранен")
-
-@dp.chat_member(F.chat.id == GROUP_ID_VALUE)
-async def on_chat_member(event: ChatMemberUpdated):
-    if event.new_chat_member.status in ("member", "restricted"):
-        uid = str(event.new_chat_member.user.id)
-        banned, _ = is_banned(uid)
-        if banned:
-            try:
-                await bot.ban_chat_member(event.chat.id, event.new_chat_member.user.id)
-                await bot.send_message(event.chat.id, f"Пользователь {uid} в чёрном списке и был удалён")
-            except: pass
 
 USER_ID_RE = re.compile(r"🆔 <code>(\d+)</code>")
 
