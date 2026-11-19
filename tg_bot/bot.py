@@ -153,7 +153,9 @@ def default_user_data():
         "wins": 0,
         "losses": 0,
         "friends": [],
-        "friend_requests": []
+        "friend_requests": [],
+        "last_anim_msg": None,
+        "containers": 0
     }
 
 
@@ -569,10 +571,13 @@ async def process_friend_msg(message: Message, state: FSMContext):
     data = await state.get_data()
     target_uid = data.get("friend_target")
     uid = str(message.from_user.id)
+    
+    msg_text = message.text
     await state.clear()
+    
     if not target_uid: return
     try:
-        await bot.send_message(int(target_uid), tr(target_uid, "friend_msg_received", name=get_display_name(uid), text=message.text), parse_mode="HTML")
+        await bot.send_message(int(target_uid), tr(target_uid, "friend_msg_received", name=get_display_name(uid), text=msg_text), parse_mode="HTML")
         await message.answer(tr(uid, "friend_msg_sent"), reply_markup=get_main_keyboard(uid))
         if "social" not in USERS[uid]["achievements"]:
             USERS[uid]["achievements"].append("social"); save_users()
@@ -580,20 +585,138 @@ async def process_friend_msg(message: Message, state: FSMContext):
         await message.answer("Не удалось отправить (возможно, пользователь заблокировал бота).", reply_markup=get_main_keyboard(uid))
 
 
-# --- МАГАЗИН ---
+# --- КОНТЕЙНЕРЫ И МАГАЗИН ---
+CONTAINERS_DB = {
+    "ussr": {"name": "📦 Контейнер СССР", "price": 2000, "tanks": ["Т-62А", "Об. 907", "Об. 140", "Т-22 ср.", "Об. 430Б", "ИС-7", "ИС-4", "ИС-3", "КВ-4", "Т-54"]},
+    "germany": {"name": "📦 Контейнер Германии", "price": 2000, "tanks": ["Leopard 1", "E 50 M", "Kpz 50 t", "Maus", "E 100", "E 75", "VK 45.02 B", "Tiger II", "Panther II", "JgPz E 100"]},
+    "usa": {"name": "📦 Контейнер США", "price": 2000, "tanks": ["M48 Patton", "M60", "T110E5", "T57 Heavy", "T29", "T32", "T34", "Pershing", "T69", "T95E2"]},
+    "uk": {"name": "📦 Контейнер Британии", "price": 2000, "tanks": ["FV4202", "FV4005", "FV215b (183)", "Conway", "Cromwell", "Centurion 7/1", "AT 15", "Charioteer", "Black Prince", "Tortoise"]},
+    "france": {"name": "📦 Контейнер Франции", "price": 2000, "tanks": ["AMX 50 B", "AMX M4 54", "Foch B", "Batchat 25t", "AMX 13 90", "AMX 50 100", "Lorraine 40 t", "AMX 13 75", "BDR G1 B", "ARL 44"]},
+    "asia": {"name": "📦 Контейнер Азии", "price": 2000, "tanks": ["Type 5 Heavy", "STB-1", "WZ-121", "121B", "Type 61", "WZ-120", "Chi-To", "Chi-Ri", "Type 58", "Type 97 Chi-Ha"]},
+    "europe": {"name": "📦 Контейнер Европы", "price": 2000, "tanks": ["Progetto 65", "TVP T 50/51", "CS-63", "Carro 45t", "Lion", "Object 263", "T110E3", "T110E4", "FV217 Badger", "Object 705A"]},
+    "premium": {"name": "💎 Премиум контейнер", "price": 5000, "tanks": ["Object 277", "Object 907", "M60", "121B", "Carro 45t", "T95E2", "IS-6", "T26E4 SuperPershing", "Type 59", "T-34-85 Рыжий"]},
+    "top": {"name": "🏆 Топовый контейнер (10 лвл)", "price": 8000, "tanks": ["ИС-7", "Маус", "E 100", "T110E5", "T57 Heavy", "FV215B 183", "FV4005", "Object 268", "Leopard 1", "AMX 50 B"]},
+    "secret": {"name": "🕶 Секретный контейнер", "price": 10000, "tanks": ["Type 5 Heavy", "FV4005", "Object 277", "Kpz 50 t"]}
+}
+
 @dp.callback_query(F.data == "shop_menu")
 async def cb_shop_menu(callback: CallbackQuery):
     uid = str(callback.from_user.id)
     data = USERS.get(uid, default_user_data())
-    owned = data.get("tanks", [])
-    available = {name: stats for name, stats in TANKS_DB.items() if name not in owned}
-    if not available: await callback.message.answer("Все танки скуплены!"); await callback.answer(); return
-    kb = InlineKeyboardMarkup(inline_keyboard=[])
-    for name, stats in list(available.items())[:10]:
-        kb.inline_keyboard.append([InlineKeyboardButton(text=f"{name} ({stats['price']} XP)", callback_data=f"shop_view_{name}")])
-    kb.inline_keyboard.append([InlineKeyboardButton(text=tr(uid, "battle_back"), callback_data="back_to_profile")])
-    await callback.message.edit_text(tr(uid, "shop_title", xp=data["xp"]), parse_mode="HTML", reply_markup=kb)
+    
+    kb = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="🛒 Танки", callback_data="shop_tanks_menu")],
+        [InlineKeyboardButton(text="📦 Контейнеры", callback_data="shop_containers_menu")],
+        [InlineKeyboardButton(text="🔙 Назад", callback_data="back_to_profile")]
+    ])
+    await callback.message.edit_text(tr(uid, "shop_title", xp=data["xp"]) + "\n\nВыбери раздел:", parse_mode="HTML", reply_markup=kb)
     await callback.answer()
+
+@dp.callback_query(F.data == "shop_tanks_menu")
+async def cb_shop_tanks_menu(callback: CallbackQuery):
+    uid = str(callback.from_user.id)
+    data = USERS.get(uid, default_user_data())
+    owned = data.get("tanks", [])
+    
+    available = {name: stats for name, stats in TANKS_DB.items() if name not in owned and not stats.get("exclusive", False)}
+    lvl_tanks = [(name, stats) for name, stats in available.items() if stats['price'] < 4000]
+    
+    if not lvl_tanks:
+        await callback.answer("Все обычные танки скуплены!", show_alert=True); return
+        
+    page = 0
+    per_page = 6
+    page_tanks = lvl_tanks[:per_page]
+    
+    kb = InlineKeyboardMarkup(inline_keyboard=[])
+    for name, stats in page_tanks:
+        kb.inline_keyboard.append([InlineKeyboardButton(text=f"{name} ({stats['price']} XP)", callback_data=f"shop_view_{name}")])
+        
+    kb.inline_keyboard.append([InlineKeyboardButton(text="🔙 Назад", callback_data="shop_menu")])
+    await callback.message.edit_text(f"🛒 <b>Магазин танков (V-VII ур.)</b>\n\nВыбери танк:", parse_mode="HTML", reply_markup=kb)
+    await callback.answer()
+
+@dp.callback_query(F.data == "shop_containers_menu")
+async def cb_shop_containers_menu(callback: CallbackQuery):
+    uid = str(callback.from_user.id)
+    data = USERS.get(uid, default_user_data())
+    
+    kb = InlineKeyboardMarkup(inline_keyboard=[])
+    for c_id, c_data in CONTAINERS_DB.items():
+        kb.inline_keyboard.append([InlineKeyboardButton(text=f"{c_data['name']} ({c_data['price']} XP)", callback_data=f"shop_container_view_{c_id}")])
+        
+    kb.inline_keyboard.append([InlineKeyboardButton(text="🔙 Назад", callback_data="shop_menu")])
+    await callback.message.edit_text(f"📦 <b>Контейнеры</b>\n\nТвой баланс: <b>{data['xp']} XP</b>\nВыбери контейнер:", parse_mode="HTML", reply_markup=kb)
+    await callback.answer()
+
+@dp.callback_query(F.data.startswith("shop_container_view_"))
+async def cb_shop_container_view(callback: CallbackQuery):
+    uid = str(callback.from_user.id)
+    c_id = callback.data.replace("shop_container_view_", "")
+    c_data = CONTAINERS_DB.get(c_id)
+    if not c_data: return
+    
+    text = f"<b>{c_data['name']}</b>\n\nЦена: <b>{c_data['price']} XP</b>\n\n<b>Возможные танки:</b>\n"
+    text += "\n".join([f"• {t}" for t in c_data['tanks']])
+    
+    kb = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="Купить и открыть", callback_data=f"buy_container_{c_id}")],
+        [InlineKeyboardButton(text="🔙 Назад", callback_data="shop_containers_menu")]
+    ])
+    await callback.message.edit_text(text, parse_mode="HTML", reply_markup=kb)
+    await callback.answer()
+
+@dp.callback_query(F.data.startswith("buy_container_"))
+async def cb_buy_container(callback: CallbackQuery):
+    uid = str(callback.from_user.id)
+    c_id = callback.data.replace("buy_container_", "")
+    c_data = CONTAINERS_DB.get(c_id)
+    data = USERS.get(uid, default_user_data())
+    
+    if data["xp"] < c_data["price"]:
+        await callback.answer("Недостаточно XP!", show_alert=True); return
+        
+    data["xp"] -= c_data["price"]
+    save_users()
+    
+    await open_container(callback.message, uid, c_id)
+
+async def open_container(message: Message, uid: str, c_id: str):
+    data = USERS.get(uid, default_user_data())
+    c_data = CONTAINERS_DB.get(c_id)
+    
+    if data.get("last_anim_msg"):
+        try: await bot.delete_message(chat_id=message.chat.id, message_id=data["last_anim_msg"])
+        except: pass
+        
+    GIF_ID = "CgACAgIAAxkBAAEkuYhq_rVAcm5eopqKZ30jCMZM1yKjfQACDZoAAuC5MEvOX4UijG052z0E"
+    
+    try:
+        anim_msg = await bot.send_animation(chat_id=message.chat.id, animation=GIF_ID, caption="Открываем контейнер...")
+        data["last_anim_msg"] = anim_msg.message_id
+        save_users()
+    except Exception as e:
+        logger.error(f"Ошибка отправки гифки: {e}")
+    
+    await asyncio.sleep(2.5)
+    
+    tank_name = random.choice(c_data["tanks"])
+    stats = TANKS_DB.get(tank_name)
+    
+    if tank_name in data.get("tanks", []):
+        compensation = 500
+        add_xp(uid, compensation)
+        result_text = f"🎁 Из контейнера выпал <b>{tank_name}</b>, но он у тебя уже есть!\n💰 Ты получаешь компенсацию: <b>+{compensation} XP</b>."
+    else:
+        data.setdefault("tanks", []).append(tank_name)
+        save_users()
+        result_text = f"🎉 <b>Поздравляю!</b>\nИз контейнера выпал новый танк: <b>{tank_name}</b>!\n\n" + tr(uid, "tank_stats", **stats)
+        
+    kb = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="📦 Открыть еще", callback_data="shop_containers_menu")],
+        [InlineKeyboardButton(text="🔙 В профиль", callback_data="back_to_profile")]
+    ])
+    await bot.send_message(chat_id=message.chat.id, text=result_text, parse_mode="HTML", reply_markup=kb)
 
 @dp.callback_query(F.data.startswith("shop_view_"))
 async def cb_shop_view(callback: CallbackQuery):
@@ -610,7 +733,7 @@ async def cb_shop_view(callback: CallbackQuery):
         else: kb.inline_keyboard.append([InlineKeyboardButton(text=tr(uid, "shop_select"), callback_data=f"shop_select_{tank_name}")])
     else:
         kb.inline_keyboard.append([InlineKeyboardButton(text=tr(uid, "shop_buy", price=stats['price']), callback_data=f"shop_buy_{tank_name}")])
-    kb.inline_keyboard.append([InlineKeyboardButton(text="Назад", callback_data="shop_menu")])
+    kb.inline_keyboard.append([InlineKeyboardButton(text="🔙 Назад", callback_data="shop_tanks_menu")])
     await callback.message.edit_text(text, parse_mode="HTML", reply_markup=kb)
     await callback.answer()
 
@@ -620,6 +743,10 @@ async def cb_shop_buy(callback: CallbackQuery):
     tank_name = callback.data.replace("shop_buy_", "")
     stats = TANKS_DB.get(tank_name)
     data = USERS.get(uid, default_user_data())
+    
+    if stats.get("exclusive", False):
+        await callback.answer("Этот танк нельзя купить, только выбить из контейнера!", show_alert=True); return
+        
     if data["xp"] < stats["price"]: await callback.answer(tr(uid, "shop_not_enough", price=stats['price']), show_alert=True); return
     data["xp"] -= stats["price"]
     data.setdefault("tanks", []).append(tank_name)
@@ -1467,13 +1594,12 @@ async def process_nickname(message: Message, state: FSMContext):
     nick = message.text.strip()
     if len(nick) < 3 or len(nick) > 15 or " " in nick:
         await message.answer(tr(uid, "nickname_invalid")); return
-    # ИСПРАВЛЕНО: защита от None
     if any((u.get("nickname") or "").lower() == nick.lower() for u in USERS.values()):
         await message.answer(tr(uid, "nickname_taken")); return
     USERS[uid]["nickname"] = nick
     save_users()
     await state.clear()
-    await message.answer(tr(uid, "nickname_success", nick=nick), reply_markup=get_main_keyboard(uid))
+    await message.answer(tr(uid, "nickname_success", nick=nick), parse_mode="HTML", reply_markup=get_main_keyboard(uid))
 
 # --- ОБРАБОТЧИКИ СОБЫТИЙ ---
 @dp.message(Command("cancel"))
