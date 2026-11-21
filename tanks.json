@@ -1,99 +1,1595 @@
 {
-    "FV215B 183": {"hp": 1800, "damage": 950, "pen": 300, "armor": 152, "reload": 18.5, "price": 0},
-    "E 100": {"hp": 2400, "damage": 460, "pen": 235, "armor": 200, "reload": 13.0, "price": 8000},
-    "Maus": {"hp": 2600, "damage": 460, "pen": 246, "armor": 250, "reload": 13.5, "price": 8500},
-    "IS-7": {"hp": 2400, "damage": 490, "pen": 250, "armor": 150, "reload": 12.0, "price": 8000},
-    "T110E5": {"hp": 2200, "damage": 400, "pen": 258, "armor": 180, "reload": 9.0, "price": 8000},
-    "T57 Heavy": {"hp": 2100, "damage": 400, "pen": 258, "armor": 150, "reload": 22.0, "price": 8500},
-    "JgPz E 100": {"hp": 2200, "damage": 1050, "pen": 299, "armor": 250, "reload": 18.0, "price": 8500},
-    "Object 268": {"hp": 2000, "damage": 750, "pen": 293, "armor": 187, "reload": 15.0, "price": 8000},
-    "FV4005": {"hp": 1900, "damage": 1150, "pen": 310, "armor": 130, "reload": 20.0, "price": 8500},
-    "Leopard 1": {"hp": 1800, "damage": 350, "pen": 250, "armor": 120, "reload": 7.0, "price": 7000},
-    "AMX 50 B": {"hp": 2200, "damage": 400, "pen": 257, "armor": 120, "reload": 27.0, "price": 8500},
-    "Foch B": {"hp": 2200, "damage": 640, "pen": 293, "armor": 180, "reload": 22.0, "price": 8500},
-    "Object 140": {"hp": 1900, "damage": 320, "pen": 264, "armor": 140, "reload": 5.5, "price": 7000},
-    "T-62A": {"hp": 1900, "damage": 320, "pen": 264, "armor": 140, "reload": 5.5, "price": 7000},
-    "Object 907": {"hp": 1950, "damage": 320, "pen": 264, "armor": 145, "reload": 5.5, "price": 7500},
-    "M48 Patton": {"hp": 2100, "damage": 350, "pen": 268, "armor": 152, "reload": 6.5, "price": 7000},
-    "M60": {"hp": 2000, "damage": 350, "pen": 268, "armor": 152, "reload": 6.5, "price": 7000},
-    "E 50 M": {"hp": 2050, "damage": 350, "pen": 270, "armor": 150, "reload": 7.5, "price": 7000},
-    "FV4202": {"hp": 1900, "damage": 350, "pen": 270, "armor": 120, "reload": 7.0, "price": 7000},
-    "STB-1": {"hp": 2000, "damage": 350, "pen": 258, "armor": 130, "reload": 7.0, "price": 7000},
-    "WZ-121": {"hp": 2000, "damage": 350, "pen": 264, "armor": 140, "reload": 7.5, "price": 7000},
-    "121B": {"hp": 2000, "damage": 350, "pen": 264, "armor": 140, "reload": 7.5, "price": 7500},
-    "AMX 30 B": {"hp": 1900, "damage": 350, "pen": 264, "armor": 120, "reload": 7.0, "price": 7000},
-    "Progetto 65": {"hp": 1900, "damage": 320, "pen": 268, "armor": 140, "reload": 13.0, "price": 8000},
-    "TVP T 50/51": {"hp": 1850, "damage": 320, "pen": 258, "armor": 100, "reload": 22.0, "price": 8000},
-    "CS-63": {"hp": 2000, "damage": 350, "pen": 264, "armor": 130, "reload": 7.0, "price": 7500},
-    "Carro 45t": {"hp": 1950, "damage": 400, "pen": 268, "armor": 140, "reload": 12.0, "price": 8000},
-    "Lion": {"hp": 2000, "damage": 350, "pen": 258, "armor": 140, "reload": 13.0, "price": 8000},
-    "T-100 LT": {"hp": 1700, "damage": 300, "pen": 240, "armor": 80, "reload": 6.0, "price": 6500},
-    "WZ-132-1": {"hp": 1700, "damage": 320, "pen": 240, "armor": 80, "reload": 6.5, "price": 6500},
-    "AMX 13 105": {"hp": 1600, "damage": 400, "pen": 240, "armor": 70, "reload": 21.0, "price": 7000},
-    "Sheridan": {"hp": 1700, "damage": 400, "pen": 240, "armor": 80, "reload": 9.5, "price": 7000},
-    "Rhm. Pzw.": {"hp": 1600, "damage": 320, "pen": 240, "armor": 80, "reload": 7.0, "price": 6500},
-    "Object 263": {"hp": 2000, "damage": 550, "pen": 290, "armor": 220, "reload": 11.0, "price": 8000},
-    "T110E3": {"hp": 2200, "damage": 750, "pen": 295, "armor": 250, "reload": 17.0, "price": 8500},
-    "T110E4": {"hp": 2000, "damage": 750, "pen": 295, "armor": 200, "reload": 16.0, "price": 8500},
-    "FV217 Badger": {"hp": 2100, "damage": 400, "pen": 272, "armor": 250, "reload": 6.5, "price": 8000},
-    "Object 705A": {"hp": 2450, "damage": 650, "pen": 265, "armor": 240, "reload": 15.0, "price": 8500},
-    "Super Conqueror": {"hp": 2300, "damage": 400, "pen": 259, "armor": 200, "reload": 9.0, "price": 8000},
-    "Object 277": {"hp": 2200, "damage": 490, "pen": 265, "armor": 150, "reload": 11.5, "price": 8000},
-    "WZ-111 5A": {"hp": 2250, "damage": 490, "pen": 265, "armor": 150, "reload": 11.5, "price": 8000},
-    "113": {"hp": 2200, "damage": 400, "pen": 250, "armor": 150, "reload": 9.0, "price": 8000},
-    "Type 5 Heavy": {"hp": 2600, "damage": 600, "pen": 250, "armor": 260, "reload": 17.0, "price": 8500},
-    "Pz.Kpfw. VII": {"hp": 2400, "damage": 490, "pen": 250, "armor": 240, "reload": 15.0, "price": 8500},
-    "Rheinmetall Skorpion G": {"hp": 1700, "damage": 490, "pen": 246, "armor": 80, "reload": 7.5, "price": 7500},
-    "Grille 15": {"hp": 1800, "damage": 750, "pen": 279, "armor": 80, "reload": 16.0, "price": 8000},
-    "WT auf E 100": {"hp": 2000, "damage": 560, "pen": 250, "armor": 120, "reload": 20.0, "price": 8500},
-    "Bat.-Châtillon 155 58": {"hp": 1600, "damage": 1250, "pen": 180, "armor": 60, "reload": 35.0, "price": 7000},
-    "Conqueror GC": {"hp": 1800, "damage": 1300, "pen": 180, "armor": 80, "reload": 38.0, "price": 7500},
-    "Foch 155": {"hp": 2100, "damage": 770, "pen": 293, "armor": 180, "reload": 20.0, "price": 8500},
-    "E 75": {"hp": 2000, "damage": 460, "pen": 235, "armor": 180, "reload": 11.5, "price": 6000},
-    "ST-I": {"hp": 2000, "damage": 440, "pen": 258, "armor": 200, "reload": 12.0, "price": 6000},
-    "T-10": {"hp": 1900, "damage": 440, "pen": 258, "armor": 150, "reload": 11.0, "price": 6000},
-    "T95": {"hp": 2000, "damage": 640, "pen": 276, "armor": 300, "reload": 16.0, "price": 6500},
-    "Object 704": {"hp": 1800, "damage": 750, "pen": 286, "armor": 150, "reload": 16.0, "price": 6500},
-    "AMX 50 120": {"hp": 1800, "damage": 400, "pen": 257, "armor": 100, "reload": 25.0, "price": 6500},
-    "Leopard PT A": {"hp": 1700, "damage": 350, "pen": 250, "armor": 100, "reload": 7.0, "price": 5500},
-    "Centurion 7/1": {"hp": 1750, "damage": 350, "pen": 258, "armor": 120, "reload": 7.0, "price": 5500},
-    "T-54": {"hp": 1600, "damage": 320, "pen": 201, "armor": 120, "reload": 8.0, "price": 5000},
-    "M46 Patton": {"hp": 1700, "damage": 320, "pen": 218, "armor": 120, "reload": 7.0, "price": 5500},
-    "E 50": {"hp": 1750, "damage": 350, "pen": 220, "armor": 140, "reload": 8.0, "price": 5500},
-    "WZ-120": {"hp": 1700, "damage": 350, "pen": 220, "armor": 130, "reload": 8.0, "price": 5500},
-    "Type 61": {"hp": 1650, "damage": 350, "pen": 218, "armor": 100, "reload": 7.5, "price": 5000},
-    "Object 430": {"hp": 1700, "damage": 320, "pen": 201, "armor": 130, "reload": 7.5, "price": 5500},
-    "AMX 13 90": {"hp": 1400, "damage": 320, "pen": 218, "armor": 70, "reload": 20.0, "price": 5000},
-    "T54E1": {"hp": 1800, "damage": 390, "pen": 232, "armor": 120, "reload": 22.0, "price": 6000},
-    "Conqueror": {"hp": 1800, "damage": 400, "pen": 259, "armor": 150, "reload": 9.5, "price": 5500},
-    "T-54 ltwt.": {"hp": 1500, "damage": 320, "pen": 218, "armor": 80, "reload": 6.5, "price": 5000},
-    "WT auf Pz. IV": {"hp": 1600, "damage": 490, "pen": 250, "armor": 80, "reload": 9.5, "price": 5500},
-    "Jagdtiger": {"hp": 1900, "damage": 560, "pen": 276, "armor": 250, "reload": 14.0, "price": 6000},
-    "Tiger II": {"hp": 1850, "damage": 310, "pen": 225, "armor": 150, "reload": 7.6, "price": 4000},
-    "AMX 50 100": {"hp": 1700, "damage": 310, "pen": 232, "armor": 100, "reload": 19.5, "price": 4500},
-    "IS-3": {"hp": 1500, "damage": 390, "pen": 225, "armor": 120, "reload": 11.0, "price": 4000},
-    "KV-4": {"hp": 1700, "damage": 320, "pen": 175, "armor": 180, "reload": 9.5, "price": 3800},
-    "Pershing": {"hp": 1450, "damage": 240, "pen": 180, "armor": 100, "reload": 6.5, "price": 3800},
-    "Panther II": {"hp": 1500, "damage": 240, "pen": 198, "armor": 100, "reload": 5.8, "price": 3800},
-    "T-44": {"hp": 1450, "damage": 250, "pen": 175, "armor": 100, "reload": 6.5, "price": 3500},
-    "Tiger (P)": {"hp": 1650, "damage": 240, "pen": 203, "armor": 130, "reload": 6.5, "price": 3800},
-    "Caernarvon": {"hp": 1600, "damage": 230, "pen": 202, "armor": 152, "reload": 6.0, "price": 3800},
-    "IS-6": {"hp": 1550, "damage": 390, "pen": 175, "armor": 120, "reload": 11.0, "price": 4200},
-    "T26E4 SuperPershing": {"hp": 1450, "damage": 240, "pen": 192, "armor": 130, "reload": 6.5, "price": 4000},
-    "T-34-2": {"hp": 1350, "damage": 250, "pen": 175, "armor": 100, "reload": 6.0, "price": 3500},
-    "Charioteer": {"hp": 1400, "damage": 390, "pen": 268, "armor": 80, "reload": 9.0, "price": 4000},
-    "Spähpanzer SP I C": {"hp": 1200, "damage": 160, "pen": 184, "armor": 60, "reload": 6.0, "price": 3500},
-    "WZ-132": {"hp": 1300, "damage": 250, "pen": 200, "armor": 80, "reload": 6.5, "price": 3800},
-    "Tiger I": {"hp": 1450, "damage": 240, "pen": 203, "armor": 120, "reload": 6.0, "price": 3000},
-    "IS": {"hp": 1300, "damage": 390, "pen": 175, "armor": 100, "reload": 11.5, "price": 3000},
-    "T29": {"hp": 1350, "damage": 320, "pen": 198, "armor": 152, "reload": 9.0, "price": 3000},
-    "Panther": {"hp": 1250, "damage": 135, "pen": 150, "armor": 85, "reload": 4.5, "price": 2500},
-    "KV-3": {"hp": 1450, "damage": 320, "pen": 175, "armor": 150, "reload": 10.0, "price": 2800},
-    "T-43": {"hp": 1250, "damage": 230, "pen": 175, "armor": 100, "reload": 6.0, "price": 2500},
-    "Black Prince": {"hp": 1400, "damage": 230, "pen": 171, "armor": 152, "reload": 5.5, "price": 2800},
-    "AMX M4 45": {"hp": 1300, "damage": 240, "pen": 192, "armor": 100, "reload": 6.5, "price": 2700},
-    "AT 15": {"hp": 1300, "damage": 230, "pen": 202, "armor": 152, "reload": 5.5, "price": 2800},
-    "Jagdpanther": {"hp": 1300, "damage": 240, "pen": 203, "armor": 100, "reload": 6.0, "price": 2700},
-    "T25 AT": {"hp": 1250, "damage": 320, "pen": 198, "armor": 150, "reload": 9.0, "price": 2800},
-    "SU-152": {"hp": 1200, "damage": 750, "pen": 250, "armor": 75, "reload": 18.0, "price": 3000},
-    "T-34-85": {"hp": 930, "damage": 200, "pen": 128, "armor": 45, "reload": 6.6, "price": 1500},
+    "MS-1": {
+        "tier": 1,
+        "hp": 250,
+        "damage": 40,
+        "pen": 34,
+        "armor": 18,
+        "reload": 3.5,
+        "price": 100
+    },
+    "Pz. II": {
+        "tier": 1,
+        "hp": 260,
+        "damage": 35,
+        "pen": 32,
+        "armor": 30,
+        "reload": 3.8,
+        "price": 100
+    },
+    "M2 Light": {
+        "tier": 1,
+        "hp": 250,
+        "damage": 40,
+        "pen": 36,
+        "armor": 25,
+        "reload": 3.2,
+        "price": 100
+    },
+    "Cruiser II": {
+        "tier": 1,
+        "hp": 270,
+        "damage": 45,
+        "pen": 40,
+        "armor": 22,
+        "reload": 4.0,
+        "price": 100
+    },
+    "BT-2": {
+        "tier": 2,
+        "hp": 320,
+        "damage": 45,
+        "pen": 46,
+        "armor": 20,
+        "reload": 3.4,
+        "price": 250
+    },
+    "Pz. III A": {
+        "tier": 2,
+        "hp": 340,
+        "damage": 45,
+        "pen": 46,
+        "armor": 30,
+        "reload": 3.6,
+        "price": 250
+    },
+    "M3 Stuart": {
+        "tier": 2,
+        "hp": 330,
+        "damage": 45,
+        "pen": 51,
+        "armor": 38,
+        "reload": 3.3,
+        "price": 250
+    },
+    "T-26": {
+        "tier": 2,
+        "hp": 310,
+        "damage": 45,
+        "pen": 51,
+        "armor": 15,
+        "reload": 3.5,
+        "price": 250
+    },
+    "BT-7": {
+        "tier": 3,
+        "hp": 410,
+        "damage": 55,
+        "pen": 66,
+        "armor": 20,
+        "reload": 3.6,
+        "price": 450
+    },
+    "Pz. III": {
+        "tier": 3,
+        "hp": 450,
+        "damage": 60,
+        "pen": 67,
+        "armor": 50,
+        "reload": 4.0,
+        "price": 450
+    },
+    "M5 Stuart": {
+        "tier": 3,
+        "hp": 420,
+        "damage": 50,
+        "pen": 62,
+        "armor": 44,
+        "reload": 3.5,
+        "price": 450
+    },
+    "SU-76I": {
+        "tier": 3,
+        "hp": 380,
+        "damage": 90,
+        "pen": 86,
+        "armor": 35,
+        "reload": 4.8,
+        "price": 500
+    },
+    "T-28": {
+        "tier": 4,
+        "hp": 540,
+        "damage": 85,
+        "pen": 86,
+        "armor": 30,
+        "reload": 4.2,
+        "price": 750
+    },
+    "Pz. IV D": {
+        "tier": 4,
+        "hp": 550,
+        "damage": 110,
+        "pen": 91,
+        "armor": 50,
+        "reload": 5.2,
+        "price": 750
+    },
+    "Matilda": {
+        "tier": 4,
+        "hp": 610,
+        "damage": 55,
+        "pen": 121,
+        "armor": 75,
+        "reload": 3.0,
+        "price": 800
+    },
+    "Hetzer": {
+        "tier": 4,
+        "hp": 470,
+        "damage": 160,
+        "pen": 110,
+        "armor": 60,
+        "reload": 6.8,
+        "price": 800
+    },
+    "M3 Lee": {
+        "tier": 4,
+        "hp": 560,
+        "damage": 110,
+        "pen": 92,
+        "armor": 51,
+        "reload": 4.8,
+        "price": 750
+    },
+    "KV-1": {
+        "tier": 5,
+        "hp": 840,
+        "damage": 160,
+        "pen": 120,
+        "armor": 75,
+        "reload": 6.7,
+        "price": 1200
+    },
+    "T-34": {
+        "tier": 5,
+        "hp": 680,
+        "damage": 90,
+        "pen": 112,
+        "armor": 45,
+        "reload": 4.0,
+        "price": 1100
+    },
+    "Pz. IV G": {
+        "tier": 5,
+        "hp": 690,
+        "damage": 160,
+        "pen": 110,
+        "armor": 80,
+        "reload": 6.5,
+        "price": 1100
+    },
+    "M4 Sherman": {
+        "tier": 5,
+        "hp": 680,
+        "damage": 160,
+        "pen": 128,
+        "armor": 63,
+        "reload": 6.2,
+        "price": 1100
+    },
+    "StuG III G": {
+        "tier": 5,
+        "hp": 570,
+        "damage": 160,
+        "pen": 150,
+        "armor": 80,
+        "reload": 5.6,
+        "price": 1150
+    },
+    "BDR G1 B": {
+        "tier": 5,
+        "hp": 780,
+        "damage": 225,
+        "pen": 135,
+        "armor": 60,
+        "reload": 8.8,
+        "price": 1200
+    },
+    "Chi-Nu": {
+        "tier": 5,
+        "hp": 670,
+        "damage": 160,
+        "pen": 124,
+        "armor": 50,
+        "reload": 6.3,
+        "price": 1100
+    },
+    "T-34-85": {
+        "tier": 6,
+        "hp": 930,
+        "damage": 200,
+        "pen": 144,
+        "armor": 45,
+        "reload": 6.6,
+        "price": 1600
+    },
+    "T-34-85 Рыжий": {
+        "tier": 6,
+        "hp": 950,
+        "damage": 200,
+        "pen": 144,
+        "armor": 45,
+        "reload": 6.4,
+        "price": 1800
+    },
+    "KV-2": {
+        "tier": 6,
+        "hp": 1100,
+        "damage": 640,
+        "pen": 136,
+        "armor": 75,
+        "reload": 20.5,
+        "price": 1900
+    },
+    "KV-1S": {
+        "tier": 6,
+        "hp": 1050,
+        "damage": 400,
+        "pen": 175,
+        "armor": 75,
+        "reload": 14.2,
+        "price": 1800
+    },
+    "Cromwell": {
+        "tier": 6,
+        "hp": 920,
+        "damage": 160,
+        "pen": 145,
+        "armor": 64,
+        "reload": 4.9,
+        "price": 1600
+    },
+    "Cromwell B": {
+        "tier": 6,
+        "hp": 940,
+        "damage": 160,
+        "pen": 145,
+        "armor": 64,
+        "reload": 4.8,
+        "price": 1800
+    },
+    "VK 36.01 (H)": {
+        "tier": 6,
+        "hp": 1150,
+        "damage": 220,
+        "pen": 157,
+        "armor": 100,
+        "reload": 7.1,
+        "price": 1750
+    },
+    "M6": {
+        "tier": 6,
+        "hp": 1120,
+        "damage": 225,
+        "pen": 160,
+        "armor": 102,
+        "reload": 7.4,
+        "price": 1700
+    },
+    "ARL 44": {
+        "tier": 6,
+        "hp": 1100,
+        "damage": 225,
+        "pen": 212,
+        "armor": 120,
+        "reload": 7.8,
+        "price": 1800
+    },
+    "Hellcat": {
+        "tier": 6,
+        "hp": 800,
+        "damage": 225,
+        "pen": 160,
+        "armor": 25,
+        "reload": 6.8,
+        "price": 1700
+    },
+    "SU-100": {
+        "tier": 6,
+        "hp": 830,
+        "damage": 400,
+        "pen": 175,
+        "armor": 75,
+        "reload": 12.5,
+        "price": 1750
+    },
+    "Chi-To": {
+        "tier": 6,
+        "hp": 940,
+        "damage": 160,
+        "pen": 155,
+        "armor": 75,
+        "reload": 5.2,
+        "price": 1600
+    },
+    "Type 58": {
+        "tier": 6,
+        "hp": 930,
+        "damage": 200,
+        "pen": 128,
+        "armor": 45,
+        "reload": 6.5,
+        "price": 1600
+    },
+    "Tiger I": {
+        "tier": 7,
+        "hp": 1550,
+        "damage": 220,
+        "pen": 203,
+        "armor": 100,
+        "reload": 5.8,
+        "price": 3000
+    },
+    "IS": {
+        "tier": 7,
+        "hp": 1400,
+        "damage": 400,
+        "pen": 175,
+        "armor": 120,
+        "reload": 12.2,
+        "price": 3000
+    },
+    "T29": {
+        "tier": 7,
+        "hp": 1450,
+        "damage": 310,
+        "pen": 198,
+        "armor": 152,
+        "reload": 9.2,
+        "price": 3000
+    },
+    "Panther": {
+        "tier": 7,
+        "hp": 1250,
+        "damage": 160,
+        "pen": 198,
+        "armor": 85,
+        "reload": 4.6,
+        "price": 2600
+    },
+    "KV-3": {
+        "tier": 7,
+        "hp": 1500,
+        "damage": 400,
+        "pen": 175,
+        "armor": 130,
+        "reload": 12.5,
+        "price": 2800
+    },
+    "T-43": {
+        "tier": 7,
+        "hp": 1200,
+        "damage": 200,
+        "pen": 144,
+        "armor": 75,
+        "reload": 5.6,
+        "price": 2600
+    },
+    "Black Prince": {
+        "tier": 7,
+        "hp": 1500,
+        "damage": 160,
+        "pen": 171,
+        "armor": 152,
+        "reload": 4.2,
+        "price": 2800
+    },
+    "AMX M4 45": {
+        "tier": 7,
+        "hp": 1350,
+        "damage": 225,
+        "pen": 212,
+        "armor": 90,
+        "reload": 6.8,
+        "price": 2700
+    },
+    "Jagdpanther": {
+        "tier": 7,
+        "hp": 1150,
+        "damage": 310,
+        "pen": 203,
+        "armor": 80,
+        "reload": 7.6,
+        "price": 2700
+    },
+    "T25 AT": {
+        "tier": 7,
+        "hp": 1100,
+        "damage": 310,
+        "pen": 198,
+        "armor": 88,
+        "reload": 7.8,
+        "price": 2800
+    },
+    "SU-152": {
+        "tier": 7,
+        "hp": 1050,
+        "damage": 640,
+        "pen": 135,
+        "armor": 75,
+        "reload": 16.5,
+        "price": 3000
+    },
+    "Chi-Ri": {
+        "tier": 7,
+        "hp": 1250,
+        "damage": 160,
+        "pen": 155,
+        "armor": 75,
+        "reload": 8.5,
+        "price": 2600
+    },
+    "AMX 13 75": {
+        "tier": 7,
+        "hp": 1050,
+        "damage": 160,
+        "pen": 144,
+        "armor": 40,
+        "reload": 11.5,
+        "price": 2600
+    },
+    "Smasher": {
+        "tier": 7,
+        "hp": 1350,
+        "damage": 640,
+        "pen": 202,
+        "armor": 95,
+        "reload": 15.8,
+        "price": 3500
+    },
+    "Helsing": {
+        "tier": 7,
+        "hp": 1150,
+        "damage": 200,
+        "pen": 170,
+        "armor": 70,
+        "reload": 6.8,
+        "price": 3400
+    },
+    "Dracula": {
+        "tier": 7,
+        "hp": 1200,
+        "damage": 225,
+        "pen": 170,
+        "armor": 65,
+        "reload": 6.2,
+        "price": 3400
+    },
+    "Tiger II": {
+        "tier": 8,
+        "hp": 1850,
+        "damage": 310,
+        "pen": 225,
+        "armor": 160,
+        "reload": 7.6,
+        "price": 4200
+    },
+    "AMX 50 100": {
+        "tier": 8,
+        "hp": 1700,
+        "damage": 310,
+        "pen": 232,
+        "armor": 90,
+        "reload": 19.5,
+        "price": 4500
+    },
+    "IS-3": {
+        "tier": 8,
+        "hp": 1650,
+        "damage": 400,
+        "pen": 225,
+        "armor": 110,
+        "reload": 11.8,
+        "price": 4200
+    },
+    "KV-4": {
+        "tier": 8,
+        "hp": 1950,
+        "damage": 310,
+        "pen": 227,
+        "armor": 180,
+        "reload": 8.8,
+        "price": 4000
+    },
+    "Pershing": {
+        "tier": 8,
+        "hp": 1450,
+        "damage": 225,
+        "pen": 190,
+        "armor": 102,
+        "reload": 6.5,
+        "price": 3900
+    },
+    "Panther II": {
+        "tier": 8,
+        "hp": 1500,
+        "damage": 220,
+        "pen": 203,
+        "armor": 100,
+        "reload": 5.8,
+        "price": 3900
+    },
+    "T-44": {
+        "tier": 8,
+        "hp": 1450,
+        "damage": 280,
+        "pen": 183,
+        "armor": 90,
+        "reload": 7.5,
+        "price": 3900
+    },
+    "Tiger (P)": {
+        "tier": 7,
+        "hp": 1550,
+        "damage": 220,
+        "pen": 203,
+        "armor": 200,
+        "reload": 6.1,
+        "price": 3000
+    },
+    "Caernarvon": {
+        "tier": 8,
+        "hp": 1750,
+        "damage": 190,
+        "pen": 226,
+        "armor": 152,
+        "reload": 4.9,
+        "price": 4100
+    },
+    "IS-6": {
+        "tier": 8,
+        "hp": 1700,
+        "damage": 400,
+        "pen": 221,
+        "armor": 110,
+        "reload": 11.2,
+        "price": 4400
+    },
+    "T26E4 SuperPershing": {
+        "tier": 8,
+        "hp": 1550,
+        "damage": 225,
+        "pen": 192,
+        "armor": 140,
+        "reload": 6.4,
+        "price": 4200
+    },
+    "T-34-2": {
+        "tier": 8,
+        "hp": 1400,
+        "damage": 400,
+        "pen": 181,
+        "armor": 90,
+        "reload": 11.5,
+        "price": 3900
+    },
+    "Charioteer": {
+        "tier": 8,
+        "hp": 1200,
+        "damage": 350,
+        "pen": 268,
+        "armor": 64,
+        "reload": 8.4,
+        "price": 4100
+    },
+    "AT 15": {
+        "tier": 8,
+        "hp": 1550,
+        "damage": 230,
+        "pen": 226,
+        "armor": 228,
+        "reload": 4.8,
+        "price": 4100
+    },
+    "Spähpanzer SP I C": {
+        "tier": 7,
+        "hp": 1050,
+        "damage": 225,
+        "pen": 180,
+        "armor": 30,
+        "reload": 9.8,
+        "price": 2700
+    },
+    "WZ-132": {
+        "tier": 8,
+        "hp": 1250,
+        "damage": 280,
+        "pen": 189,
+        "armor": 50,
+        "reload": 7.4,
+        "price": 4000
+    },
+    "T32": {
+        "tier": 8,
+        "hp": 1750,
+        "damage": 310,
+        "pen": 198,
+        "armor": 127,
+        "reload": 8.6,
+        "price": 4100
+    },
+    "T34": {
+        "tier": 8,
+        "hp": 1750,
+        "damage": 400,
+        "pen": 248,
+        "armor": 127,
+        "reload": 11.8,
+        "price": 4400
+    },
+    "T69": {
+        "tier": 8,
+        "hp": 1400,
+        "damage": 225,
+        "pen": 181,
+        "armor": 102,
+        "reload": 15.0,
+        "price": 4000
+    },
+    "T95E2": {
+        "tier": 8,
+        "hp": 1450,
+        "damage": 225,
+        "pen": 181,
+        "armor": 110,
+        "reload": 6.4,
+        "price": 4100
+    },
+    "Lorraine 40 t": {
+        "tier": 8,
+        "hp": 1350,
+        "damage": 225,
+        "pen": 232,
+        "armor": 45,
+        "reload": 16.5,
+        "price": 4300
+    },
+    "Type 59": {
+        "tier": 8,
+        "hp": 1450,
+        "damage": 280,
+        "pen": 181,
+        "armor": 100,
+        "reload": 7.6,
+        "price": 4200
+    },
+    "ISU-152": {
+        "tier": 8,
+        "hp": 1250,
+        "damage": 640,
+        "pen": 286,
+        "armor": 90,
+        "reload": 14.8,
+        "price": 4300
+    },
+    "Rhm.-Borsig Waffenträger": {
+        "tier": 8,
+        "hp": 1150,
+        "damage": 460,
+        "pen": 246,
+        "armor": 20,
+        "reload": 10.6,
+        "price": 4200
+    },
+    "Obj. 252U": {
+        "tier": 8,
+        "hp": 1750,
+        "damage": 420,
+        "pen": 225,
+        "armor": 130,
+        "reload": 12.4,
+        "price": 4600
+    },
+    "Chimera": {
+        "tier": 8,
+        "hp": 1500,
+        "damage": 440,
+        "pen": 218,
+        "armor": 114,
+        "reload": 11.8,
+        "price": 4600
+    },
+    "Action X": {
+        "tier": 8,
+        "hp": 1800,
+        "damage": 190,
+        "pen": 226,
+        "armor": 152,
+        "reload": 4.5,
+        "price": 4500
+    },
+    "T54E2 Shark": {
+        "tier": 8,
+        "hp": 1750,
+        "damage": 310,
+        "pen": 220,
+        "armor": 130,
+        "reload": 8.2,
+        "price": 4500
+    },
+    "Škoda T 56": {
+        "tier": 8,
+        "hp": 1750,
+        "damage": 450,
+        "pen": 215,
+        "armor": 120,
+        "reload": 18.0,
+        "price": 4600
+    },
+    "Progetto 46": {
+        "tier": 8,
+        "hp": 1400,
+        "damage": 240,
+        "pen": 212,
+        "armor": 60,
+        "reload": 7.2,
+        "price": 4500
+    },
+    "Rheinmetall Skorpion G": {
+        "tier": 8,
+        "hp": 1150,
+        "damage": 460,
+        "pen": 246,
+        "armor": 30,
+        "reload": 10.4,
+        "price": 4500
+    },
+    "E 75": {
+        "tier": 9,
+        "hp": 2150,
+        "damage": 460,
+        "pen": 246,
+        "armor": 160,
+        "reload": 12.2,
+        "price": 6000
+    },
+    "VK 45.02 B": {
+        "tier": 9,
+        "hp": 2150,
+        "damage": 460,
+        "pen": 246,
+        "armor": 200,
+        "reload": 12.4,
+        "price": 6000
+    },
+    "ST-I": {
+        "tier": 9,
+        "hp": 2100,
+        "damage": 420,
+        "pen": 258,
+        "armor": 140,
+        "reload": 11.8,
+        "price": 6000
+    },
+    "T-10": {
+        "tier": 9,
+        "hp": 1950,
+        "damage": 420,
+        "pen": 258,
+        "armor": 120,
+        "reload": 10.8,
+        "price": 6000
+    },
+    "T95": {
+        "tier": 9,
+        "hp": 1800,
+        "damage": 640,
+        "pen": 276,
+        "armor": 305,
+        "reload": 15.2,
+        "price": 6500
+    },
+    "Object 704": {
+        "tier": 9,
+        "hp": 1600,
+        "damage": 640,
+        "pen": 286,
+        "armor": 120,
+        "reload": 14.2,
+        "price": 6500
+    },
+    "AMX 50 120": {
+        "tier": 9,
+        "hp": 1850,
+        "damage": 400,
+        "pen": 257,
+        "armor": 90,
+        "reload": 22.0,
+        "price": 6500
+    },
+    "Leopard PT A": {
+        "tier": 9,
+        "hp": 1650,
+        "damage": 350,
+        "pen": 255,
+        "armor": 70,
+        "reload": 7.6,
+        "price": 5600
+    },
+    "Centurion 7/1": {
+        "tier": 9,
+        "hp": 1750,
+        "damage": 350,
+        "pen": 268,
+        "armor": 121,
+        "reload": 8.0,
+        "price": 5600
+    },
+    "Conway": {
+        "tier": 9,
+        "hp": 1550,
+        "damage": 600,
+        "pen": 260,
+        "armor": 132,
+        "reload": 13.5,
+        "price": 6000
+    },
+    "Tortoise": {
+        "tier": 9,
+        "hp": 1850,
+        "damage": 400,
+        "pen": 259,
+        "armor": 228,
+        "reload": 7.1,
+        "price": 6200
+    },
+    "T-54": {
+        "tier": 9,
+        "hp": 1650,
+        "damage": 310,
+        "pen": 219,
+        "armor": 120,
+        "reload": 7.2,
+        "price": 5500
+    },
+    "M46 Patton": {
+        "tier": 9,
+        "hp": 1700,
+        "damage": 350,
+        "pen": 218,
+        "armor": 102,
+        "reload": 7.8,
+        "price": 5600
+    },
+    "E 50": {
+        "tier": 9,
+        "hp": 1800,
+        "damage": 310,
+        "pen": 220,
+        "armor": 150,
+        "reload": 7.2,
+        "price": 5800
+    },
+    "WZ-120": {
+        "tier": 9,
+        "hp": 1650,
+        "damage": 400,
+        "pen": 249,
+        "armor": 100,
+        "reload": 9.8,
+        "price": 5600
+    },
+    "Type 61": {
+        "tier": 9,
+        "hp": 1650,
+        "damage": 350,
+        "pen": 245,
+        "armor": 70,
+        "reload": 7.8,
+        "price": 5500
+    },
+    "Object 430": {
+        "tier": 9,
+        "hp": 1650,
+        "damage": 310,
+        "pen": 219,
+        "armor": 120,
+        "reload": 7.0,
+        "price": 5600
+    },
+    "AMX 13 90": {
+        "tier": 8,
+        "hp": 1200,
+        "damage": 225,
+        "pen": 170,
+        "armor": 40,
+        "reload": 14.5,
+        "price": 4000
+    },
+    "T54E1": {
+        "tier": 9,
+        "hp": 1750,
+        "damage": 310,
+        "pen": 210,
+        "armor": 110,
+        "reload": 17.5,
+        "price": 6000
+    },
+    "Conqueror": {
+        "tier": 9,
+        "hp": 1950,
+        "damage": 400,
+        "pen": 259,
+        "armor": 152,
+        "reload": 9.2,
+        "price": 5800
+    },
+    "T-54 ltwt.": {
+        "tier": 8,
+        "hp": 1300,
+        "damage": 280,
+        "pen": 175,
+        "armor": 80,
+        "reload": 7.2,
+        "price": 4000
+    },
+    "WT auf Pz. IV": {
+        "tier": 9,
+        "hp": 1400,
+        "damage": 560,
+        "pen": 276,
+        "armor": 30,
+        "reload": 11.4,
+        "price": 5800
+    },
+    "Jagdtiger": {
+        "tier": 9,
+        "hp": 1850,
+        "damage": 560,
+        "pen": 276,
+        "armor": 250,
+        "reload": 10.5,
+        "price": 6200
+    },
+    "Kpz 70": {
+        "tier": 9,
+        "hp": 1950,
+        "damage": 560,
+        "pen": 240,
+        "armor": 150,
+        "reload": 14.5,
+        "price": 6400
+    },
+    "T30": {
+        "tier": 9,
+        "hp": 1700,
+        "damage": 640,
+        "pen": 276,
+        "armor": 127,
+        "reload": 15.8,
+        "price": 6300
+    },
+    "Standard B": {
+        "tier": 9,
+        "hp": 1650,
+        "damage": 350,
+        "pen": 242,
+        "armor": 70,
+        "reload": 8.4,
+        "price": 5800
+    },
+    "Emil II": {
+        "tier": 9,
+        "hp": 1900,
+        "damage": 400,
+        "pen": 252,
+        "armor": 145,
+        "reload": 18.5,
+        "price": 6100
+    },
+    "FV215B 183": {
+        "tier": 10,
+        "hp": 1850,
+        "damage": 930,
+        "pen": 300,
+        "armor": 152,
+        "reload": 18.5,
+        "price": 0
+    },
+    "FV215b (183)": {
+        "tier": 10,
+        "hp": 1850,
+        "damage": 930,
+        "pen": 300,
+        "armor": 152,
+        "reload": 18.5,
+        "price": 8500
+    },
+    "E 100": {
+        "tier": 10,
+        "hp": 2500,
+        "damage": 640,
+        "pen": 258,
+        "armor": 200,
+        "reload": 15.2,
+        "price": 8000
+    },
+    "Maus": {
+        "tier": 10,
+        "hp": 2800,
+        "damage": 460,
+        "pen": 246,
+        "armor": 240,
+        "reload": 12.8,
+        "price": 8500
+    },
+    "IS-7": {
+        "tier": 10,
+        "hp": 2450,
+        "damage": 460,
+        "pen": 260,
+        "armor": 150,
+        "reload": 11.8,
+        "price": 8000
+    },
+    "ИС-7": {
+        "tier": 10,
+        "hp": 2450,
+        "damage": 460,
+        "pen": 260,
+        "armor": 150,
+        "reload": 11.8,
+        "price": 8000
+    },
+    "IS-4": {
+        "tier": 10,
+        "hp": 2500,
+        "damage": 420,
+        "pen": 258,
+        "armor": 160,
+        "reload": 10.6,
+        "price": 8000
+    },
+    "ИС-4": {
+        "tier": 10,
+        "hp": 2500,
+        "damage": 420,
+        "pen": 258,
+        "armor": 160,
+        "reload": 10.6,
+        "price": 8000
+    },
+    "T110E5": {
+        "tier": 10,
+        "hp": 2300,
+        "damage": 400,
+        "pen": 258,
+        "armor": 203,
+        "reload": 8.6,
+        "price": 8000
+    },
+    "T57 Heavy": {
+        "tier": 10,
+        "hp": 2250,
+        "damage": 400,
+        "pen": 258,
+        "armor": 152,
+        "reload": 19.5,
+        "price": 8500
+    },
+    "JgPz E 100": {
+        "tier": 10,
+        "hp": 2150,
+        "damage": 800,
+        "pen": 299,
+        "armor": 250,
+        "reload": 16.2,
+        "price": 8500
+    },
+    "Object 268": {
+        "tier": 10,
+        "hp": 1850,
+        "damage": 640,
+        "pen": 303,
+        "armor": 187,
+        "reload": 13.4,
+        "price": 8000
+    },
+    "FV4005": {
+        "tier": 10,
+        "hp": 1850,
+        "damage": 460,
+        "pen": 268,
+        "armor": 76,
+        "reload": 17.5,
+        "price": 8500
+    },
+    "Leopard 1": {
+        "tier": 10,
+        "hp": 1850,
+        "damage": 350,
+        "pen": 255,
+        "armor": 70,
+        "reload": 6.4,
+        "price": 7500
+    },
+    "AMX 50 B": {
+        "tier": 10,
+        "hp": 2150,
+        "damage": 400,
+        "pen": 257,
+        "armor": 170,
+        "reload": 21.0,
+        "price": 8500
+    },
+    "AMX M4 54": {
+        "tier": 10,
+        "hp": 2350,
+        "damage": 480,
+        "pen": 264,
+        "armor": 220,
+        "reload": 11.4,
+        "price": 8500
+    },
+    "Foch B": {
+        "tier": 10,
+        "hp": 1850,
+        "damage": 640,
+        "pen": 293,
+        "armor": 180,
+        "reload": 17.5,
+        "price": 8500
+    },
+    "Batchat 25t": {
+        "tier": 10,
+        "hp": 1750,
+        "damage": 310,
+        "pen": 245,
+        "armor": 60,
+        "reload": 15.5,
+        "price": 8000
+    },
+    "Object 140": {
+        "tier": 10,
+        "hp": 1900,
+        "damage": 310,
+        "pen": 250,
+        "armor": 110,
+        "reload": 5.6,
+        "price": 7500
+    },
+    "Об. 140": {
+        "tier": 10,
+        "hp": 1900,
+        "damage": 310,
+        "pen": 250,
+        "armor": 110,
+        "reload": 5.6,
+        "price": 7500
+    },
+    "T-62A": {
+        "tier": 10,
+        "hp": 1900,
+        "damage": 310,
+        "pen": 250,
+        "armor": 115,
+        "reload": 5.7,
+        "price": 7500
+    },
+    "Т-62А": {
+        "tier": 10,
+        "hp": 1900,
+        "damage": 310,
+        "pen": 250,
+        "armor": 115,
+        "reload": 5.7,
+        "price": 7500
+    },
+    "Object 907": {
+        "tier": 10,
+        "hp": 1950,
+        "damage": 310,
+        "pen": 250,
+        "armor": 120,
+        "reload": 5.7,
+        "price": 8000
+    },
+    "Об. 907": {
+        "tier": 10,
+        "hp": 1950,
+        "damage": 310,
+        "pen": 250,
+        "armor": 120,
+        "reload": 5.7,
+        "price": 8000
+    },
+    "Т-22 ср.": {
+        "tier": 10,
+        "hp": 1950,
+        "damage": 310,
+        "pen": 250,
+        "armor": 130,
+        "reload": 5.9,
+        "price": 8200
+    },
+    "Об. 430Б": {
+        "tier": 10,
+        "hp": 1950,
+        "damage": 310,
+        "pen": 250,
+        "armor": 125,
+        "reload": 5.8,
+        "price": 8000
+    },
+    "M48 Patton": {
+        "tier": 10,
+        "hp": 2000,
+        "damage": 350,
+        "pen": 258,
+        "armor": 152,
+        "reload": 6.4,
+        "price": 7500
+    },
+    "M60": {
+        "tier": 10,
+        "hp": 2000,
+        "damage": 350,
+        "pen": 258,
+        "armor": 140,
+        "reload": 6.3,
+        "price": 7800
+    },
+    "E 50 M": {
+        "tier": 10,
+        "hp": 2050,
+        "damage": 350,
+        "pen": 255,
+        "armor": 150,
+        "reload": 6.8,
+        "price": 7800
+    },
+    "Kpz 50 t": {
+        "tier": 10,
+        "hp": 1950,
+        "damage": 350,
+        "pen": 258,
+        "armor": 140,
+        "reload": 6.6,
+        "price": 8200
+    },
+    "FV4202": {
+        "tier": 10,
+        "hp": 1900,
+        "damage": 350,
+        "pen": 268,
+        "armor": 121,
+        "reload": 6.5,
+        "price": 7500
+    },
+    "STB-1": {
+        "tier": 10,
+        "hp": 1950,
+        "damage": 350,
+        "pen": 258,
+        "armor": 110,
+        "reload": 6.5,
+        "price": 7800
+    },
+    "WZ-121": {
+        "tier": 10,
+        "hp": 1950,
+        "damage": 420,
+        "pen": 255,
+        "armor": 120,
+        "reload": 7.8,
+        "price": 7800
+    },
+    "121B": {
+        "tier": 10,
+        "hp": 1950,
+        "damage": 350,
+        "pen": 255,
+        "armor": 130,
+        "reload": 6.5,
+        "price": 8000
+    },
+    "AMX 30 B": {
+        "tier": 10,
+        "hp": 1850,
+        "damage": 350,
+        "pen": 248,
+        "armor": 80,
+        "reload": 6.4,
+        "price": 7500
+    },
+    "Progetto 65": {
+        "tier": 10,
+        "hp": 1850,
+        "damage": 350,
+        "pen": 255,
+        "armor": 90,
+        "reload": 8.8,
+        "price": 8000
+    },
+    "TVP T 50/51": {
+        "tier": 10,
+        "hp": 1850,
+        "damage": 310,
+        "pen": 248,
+        "armor": 70,
+        "reload": 18.5,
+        "price": 8200
+    },
+    "CS-63": {
+        "tier": 10,
+        "hp": 1900,
+        "damage": 350,
+        "pen": 255,
+        "armor": 100,
+        "reload": 6.6,
+        "price": 7800
+    },
+    "Carro 45t": {
+        "tier": 10,
+        "hp": 1900,
+        "damage": 380,
+        "pen": 258,
+        "armor": 120,
+        "reload": 10.5,
+        "price": 8200
+    },
+    "Lion": {
+        "tier": 10,
+        "hp": 1900,
+        "damage": 400,
+        "pen": 258,
+        "armor": 110,
+        "reload": 8.5,
+        "price": 8200
+    },
+    "T-100 LT": {
+        "tier": 10,
+        "hp": 1750,
+        "damage": 300,
+        "pen": 240,
+        "armor": 90,
+        "reload": 5.8,
+        "price": 7500
+    },
+    "WZ-132-1": {
+        "tier": 10,
+        "hp": 1750,
+        "damage": 350,
+        "pen": 245,
+        "armor": 70,
+        "reload": 6.8,
+        "price": 7500
+    },
+    "AMX 13 105": {
+        "tier": 10,
+        "hp": 1650,
+        "damage": 360,
+        "pen": 240,
+        "armor": 50,
+        "reload": 16.5,
+        "price": 7600
+    },
+    "Sheridan": {
+        "tier": 10,
+        "hp": 1750,
+        "damage": 490,
+        "pen": 230,
+        "armor": 50,
+        "reload": 11.2,
+        "price": 7800
+    },
+    "Rhm. Pzw.": {
+        "tier": 10,
+        "hp": 1700,
+        "damage": 310,
+        "pen": 242,
+        "armor": 50,
+        "reload": 6.2,
+        "price": 7500
+    },
+    "Object 263": {
+        "tier": 10,
+        "hp": 1950,
+        "damage": 460,
+        "pen": 290,
+        "armor": 250,
+        "reload": 8.6,
+        "price": 8000
+    },
+    "T110E3": {
+        "tier": 10,
+        "hp": 2050,
+        "damage": 640,
+        "pen": 295,
+        "armor": 305,
+        "reload": 13.8,
+        "price": 8500
+    },
+    "T110E4": {
+        "tier": 10,
+        "hp": 2000,
+        "damage": 640,
+        "pen": 295,
+        "armor": 203,
+        "reload": 13.5,
+        "price": 8200
+    },
+    "FV217 Badger": {
+        "tier": 10,
+        "hp": 2050,
+        "damage": 460,
+        "pen": 272,
+        "armor": 260,
+        "reload": 8.2,
+        "price": 8400
+    },
+    "Object 705A": {
+        "tier": 10,
+        "hp": 2450,
+        "damage": 600,
+        "pen": 260,
+        "armor": 220,
+        "reload": 14.5,
+        "price": 8500
+    },
+    "Super Conqueror": {
+        "tier": 10,
+        "hp": 2350,
+        "damage": 400,
+        "pen": 259,
+        "armor": 200,
+        "reload": 8.2,
+        "price": 8300
+    },
+    "Object 277": {
+        "tier": 10,
+        "hp": 2300,
+        "damage": 460,
+        "pen": 265,
+        "armor": 140,
+        "reload": 10.6,
+        "price": 8200
+    },
+    "WZ-111 5A": {
+        "tier": 10,
+        "hp": 2300,
+        "damage": 460,
+        "pen": 260,
+        "armor": 140,
+        "reload": 10.2,
+        "price": 8200
+    },
+    "113": {
+        "tier": 10,
+        "hp": 2350,
+        "damage": 420,
+        "pen": 255,
+        "armor": 140,
+        "reload": 8.8,
+        "price": 8000
+    },
+    "Type 5 Heavy": {
+        "tier": 10,
+        "hp": 2750,
+        "damage": 600,
+        "pen": 252,
+        "armor": 260,
+        "reload": 15.8,
+        "price": 8600
+    },
+    "Pz.Kpfw. VII": {
+        "tier": 10,
+        "hp": 2450,
+        "damage": 560,
+        "pen": 258,
+        "armor": 240,
+        "reload": 14.2,
+        "price": 8500
+    },
+    "Grille 15": {
+        "tier": 10,
+        "hp": 1650,
+        "damage": 640,
+        "pen": 279,
+        "armor": 30,
+        "reload": 11.8,
+        "price": 8000
+    },
+    "Foch 155": {
+        "tier": 10,
+        "hp": 1950,
+        "damage": 640,
+        "pen": 293,
+        "armor": 180,
+        "reload": 15.5,
+        "price": 8400
+    },
+    "Kranvagn": {
+        "tier": 10,
+        "hp": 2300,
+        "damage": 400,
+        "pen": 252,
+        "armor": 180,
+        "reload": 17.5,
+        "price": 8400
+    },
+    "Minotauro": {
+        "tier": 10,
+        "hp": 2100,
+        "damage": 490,
+        "pen": 265,
+        "armor": 260,
+        "reload": 16.0,
+        "price": 8500
+    },
+    "Ho-Ri Type III": {
+        "tier": 10,
+        "hp": 1950,
+        "damage": 560,
+        "pen": 310,
+        "armor": 250,
+        "reload": 11.5,
+        "price": 8300
+    },
+    "Type 71": {
+        "tier": 10,
+        "hp": 2400,
+        "damage": 400,
+        "pen": 258,
+        "armor": 210,
+        "reload": 8.8,
+        "price": 8300
+    },
+    "M-VI-Yoh": {
+        "tier": 10,
+        "hp": 2250,
+        "damage": 450,
+        "pen": 255,
+        "armor": 170,
+        "reload": 16.5,
+        "price": 8300
+    },
+    "Vz. 55": {
+        "tier": 10,
+        "hp": 2300,
+        "damage": 440,
+        "pen": 260,
+        "armor": 160,
+        "reload": 16.0,
+        "price": 8300
+    },
+    "VK 90.01 (P)": {
+        "tier": 10,
+        "hp": 2550,
+        "damage": 460,
+        "pen": 258,
+        "armor": 240,
+        "reload": 11.8,
+        "price": 8600
+    },
+    "Chieftain Mk. 6": {
+        "tier": 10,
+        "hp": 2300,
+        "damage": 400,
+        "pen": 260,
+        "armor": 170,
+        "reload": 7.8,
+        "price": 8400
+    }
+}
