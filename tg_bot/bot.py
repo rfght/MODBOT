@@ -77,6 +77,14 @@ BANNED = {}
 FALLBACKS_PATH = "fallbacks.json"
 FALLBACKS = {}
 
+TIER_ROMAN = {
+    1: "I", 2: "II", 3: "III", 4: "IV", 5: "V",
+    6: "VI", 7: "VII", 8: "VIII", 9: "IX", 10: "X"
+}
+
+def tier_label(tier: int) -> str:
+    return f"{TIER_ROMAN.get(tier, str(tier))} ур."
+
 TANKS_DB = {}
 try:
     with open("tanks.json", encoding="utf-8") as f:
@@ -84,7 +92,10 @@ try:
     logger.info(f"Успешно загружено {len(TANKS_DB)} танков.")
 except Exception as e:
     logger.error(f"Ошибка загрузки tanks.json: {e}")
-    TANKS_DB = {"FV215B 183": {"hp": 1800, "damage": 950, "pen": 300, "armor": 152, "reload": 18.5, "price": 0}}
+    TANKS_DB = {"FV215B 183": {"tier": 10, "hp": 1850, "damage": 930, "pen": 300, "armor": 152, "reload": 18.5, "price": 0}}
+
+def get_tank_tier(tank_name: str) -> int:
+    return int(TANKS_DB.get(tank_name, {}).get("tier", 10))
 
 ROOMS = {}
 
@@ -379,23 +390,26 @@ def build_profile_message(uid: str) -> tuple[str, InlineKeyboardMarkup]:
     )
 
     safe_nick = html.escape(data["nickname"]) if data.get("nickname") else "Не задан"
+    sel_tank = data.get("selected_tank", "FV215B 183")
+    sel_tier = get_tank_tier(sel_tank)
+    tank_display = f"{html.escape(sel_tank)} ({tier_label(sel_tier)})"
+
     text = (
         f"{tr(uid, 'profile_title')}\n{tr(uid, 'profile_nick', nick=safe_nick)}\n{tr(uid, 'profile_id', uid=uid)}\n\n"
         f"{tr(uid, 'profile_rank', rank=rank_name)}\n{tr(uid, 'profile_xp', xp=data['xp'])}\n"
         f"{tr(uid, 'profile_stats', battles=data.get('battles', 0), wins=data.get('wins', 0), losses=data.get('losses', 0), downloads=data['downloads'], ideas=data['ideas'], questions=data['questions'], bans=data['bans'])}\n"
-        f"{tr(uid, 'profile_tank', tank=html.escape(data.get('selected_tank', 'FV215B 183')))}\n{progress_text}\n\n{ach_text}"
+        f"{tr(uid, 'profile_tank', tank=tank_display)}\n{progress_text}\n\n{ach_text}"
     )
 
     kb = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="⚔️ Бои", callback_data="battle_menu")],
+        [InlineKeyboardButton(text="⚔️ Бои", callback_data="battle_menu"), InlineKeyboardButton(text="🚜 Ангар", callback_data="hangar_menu")],
         [InlineKeyboardButton(text=tr(uid, "shop_btn"), callback_data="shop_menu")],
-        [InlineKeyboardButton(text=tr(uid, "btn_friends"), callback_data="friends_menu")],
-        [InlineKeyboardButton(text=tr(uid, "btn_invite"), callback_data="invite_friend")]
+        [InlineKeyboardButton(text=tr(uid, "btn_friends"), callback_data="friends_menu"), InlineKeyboardButton(text=tr(uid, "btn_invite"), callback_data="invite_friend")]
     ])
     return text, kb
 
 
-# --- ПРОФИЛЬ ---
+# --- ПРОФИЛЬ И АНГАР ---
 @dp.message(Command("profile"))
 async def cmd_profile(message: Message, state: FSMContext):
     await state.clear()
@@ -421,6 +435,44 @@ async def cb_back_to_profile(callback: CallbackQuery, state: FSMContext):
     uid = str(callback.from_user.id)
     text, kb = build_profile_message(uid)
     await callback.message.answer(text, parse_mode="HTML", reply_markup=kb)
+
+@dp.callback_query(F.data == "hangar_menu")
+async def cb_hangar_menu(callback: CallbackQuery):
+    uid = str(callback.from_user.id)
+    data = ensure_user(uid)
+    owned = data.get("tanks", ["FV215B 183"])
+    selected = data.get("selected_tank", "FV215B 183")
+
+    sorted_owned = sorted(owned, key=lambda t: (get_tank_tier(t), t))
+
+    kb = InlineKeyboardMarkup(inline_keyboard=[])
+    for t in sorted_owned:
+        t_tier = get_tank_tier(t)
+        mark = "✅ " if t == selected else ""
+        kb.inline_keyboard.append([
+            InlineKeyboardButton(text=f"{mark}[{TIER_ROMAN.get(t_tier, t_tier)}] {t}", callback_data=f"hangar_select_{t}")
+        ])
+    kb.inline_keyboard.append([InlineKeyboardButton(text="🔙 В профиль", callback_data="back_to_profile")])
+
+    await callback.message.edit_text(
+        f"🚜 <b>Твой ангар ({len(owned)} шт.)</b>\n\n"
+        f"Текущий танк: <b>{html.escape(selected)}</b> ({tier_label(get_tank_tier(selected))})\n"
+        f"Выбери танк для боёв:",
+        parse_mode="HTML",
+        reply_markup=kb
+    )
+    await callback.answer()
+
+@dp.callback_query(F.data.startswith("hangar_select_"))
+async def cb_hangar_select(callback: CallbackQuery):
+    uid = str(callback.from_user.id)
+    tank_name = callback.data.replace("hangar_select_", "")
+    data = ensure_user(uid)
+    if tank_name in data.get("tanks", []):
+        data["selected_tank"] = tank_name
+        save_users()
+        await callback.answer(f"Выбран танк: {tank_name} ({tier_label(get_tank_tier(tank_name))})", show_alert=True)
+    await cb_hangar_menu(callback)
 
 @dp.callback_query(F.data == "invite_friend")
 async def cb_invite_friend(callback: CallbackQuery):
@@ -556,16 +608,16 @@ async def process_friend_msg(message: Message, state: FSMContext):
 
 # --- МАГАЗИН ---
 CONTAINERS_DB = {
-    "ussr": {"name": "📦 Контейнер СССР", "price": 2000, "tanks": ["Т-62А", "Об. 907", "Об. 140", "Т-22 ср.", "Об. 430Б", "ИС-7", "ИС-4", "ИС-3", "КВ-4", "Т-54"]},
+    "ussr": {"name": "📦 Контейнер СССР", "price": 2000, "tanks": ["Т-62А", "Об. 907", "Об. 140", "Т-22 ср.", "Об. 430Б", "ИС-7", "ИС-4", "IS-3", "KV-4", "T-54"]},
     "germany": {"name": "📦 Контейнер Германии", "price": 2000, "tanks": ["Leopard 1", "E 50 M", "Kpz 50 t", "Maus", "E 100", "E 75", "VK 45.02 B", "Tiger II", "Panther II", "JgPz E 100"]},
     "usa": {"name": "📦 Контейнер США", "price": 2000, "tanks": ["M48 Patton", "M60", "T110E5", "T57 Heavy", "T29", "T32", "T34", "Pershing", "T69", "T95E2"]},
     "uk": {"name": "📦 Контейнер Британии", "price": 2000, "tanks": ["FV4202", "FV4005", "FV215b (183)", "Conway", "Cromwell", "Centurion 7/1", "AT 15", "Charioteer", "Black Prince", "Tortoise"]},
     "france": {"name": "📦 Контейнер Франции", "price": 2000, "tanks": ["AMX 50 B", "AMX M4 54", "Foch B", "Batchat 25t", "AMX 13 90", "AMX 50 100", "Lorraine 40 t", "AMX 13 75", "BDR G1 B", "ARL 44"]},
-    "asia": {"name": "📦 Контейнер Азии", "price": 2000, "tanks": ["Type 5 Heavy", "STB-1", "WZ-121", "121B", "Type 61", "WZ-120", "Chi-To", "Chi-Ri", "Type 58", "Type 97 Chi-Ha"]},
+    "asia": {"name": "📦 Контейнер Азии", "price": 2000, "tanks": ["Type 5 Heavy", "STB-1", "WZ-121", "121B", "Type 61", "WZ-120", "Chi-To", "Chi-Ri", "Type 58", "Ha-Go"]},
     "europe": {"name": "📦 Контейнер Европы", "price": 2000, "tanks": ["Progetto 65", "TVP T 50/51", "CS-63", "Carro 45t", "Lion", "Object 263", "T110E3", "T110E4", "FV217 Badger", "Object 705A"]},
     "premium": {"name": "💎 Премиум контейнер", "price": 5000, "tanks": ["Object 277", "Object 907", "M60", "121B", "Carro 45t", "T95E2", "IS-6", "T26E4 SuperPershing", "Type 59", "T-34-85 Рыжий"]},
-    "top": {"name": "🏆 Топовый контейнер (10 лвл)", "price": 8000, "tanks": ["ИС-7", "Маус", "E 100", "T110E5", "T57 Heavy", "FV215B 183", "FV4005", "Object 268", "Leopard 1", "AMX 50 B"]},
-    "secret": {"name": "🕶 Секретный контейнер", "price": 10000, "tanks": ["Type 5 Heavy", "FV4005", "Object 277", "Kpz 50 t"]}
+    "top": {"name": "🏆 Топовый контейнер (X ур.)", "price": 8000, "tanks": ["IS-7", "Maus", "E 100", "T110E5", "T57 Heavy", "FV215B 183", "FV4005", "Object 268", "Leopard 1", "AMX 50 B"]},
+    "secret": {"name": "🕶 Секретный контейнер", "price": 10000, "tanks": ["Type 5 Heavy", "FV4005", "Object 277", "Kpz 50 t", "VK 90.01 (P)", "Chieftain Mk. 6"]}
 }
 
 @dp.callback_query(F.data == "shop_menu")
@@ -573,7 +625,7 @@ async def cb_shop_menu(callback: CallbackQuery):
     uid = str(callback.from_user.id)
     data = ensure_user(uid)
     kb = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="🛒 Танки", callback_data="shop_tanks_menu")],
+        [InlineKeyboardButton(text="🛒 Танки по уровням (I–X)", callback_data="shop_tanks_menu")],
         [InlineKeyboardButton(text="📦 Контейнеры", callback_data="shop_containers_menu")],
         [InlineKeyboardButton(text="🔙 Назад", callback_data="back_to_profile")]
     ])
@@ -584,19 +636,53 @@ async def cb_shop_menu(callback: CallbackQuery):
 async def cb_shop_tanks_menu(callback: CallbackQuery):
     uid = str(callback.from_user.id)
     data = ensure_user(uid)
-    owned = data.get("tanks", [])
-    available = {name: stats for name, stats in TANKS_DB.items() if name not in owned and not stats.get("exclusive", False)}
-    lvl_tanks = [(name, stats) for name, stats in available.items() if stats.get("price", 0) < 4000]
+    kb = InlineKeyboardMarkup(inline_keyboard=[])
+    row = []
+    for t in range(1, 11):
+        row.append(InlineKeyboardButton(text=f"{TIER_ROMAN[t]} ур.", callback_data=f"shop_tier_{t}"))
+        if len(row) == 5:
+            kb.inline_keyboard.append(row)
+            row = []
+    if row:
+        kb.inline_keyboard.append(row)
+    kb.inline_keyboard.append([InlineKeyboardButton(text="🔙 Назад", callback_data="shop_menu")])
+    await callback.message.edit_text(
+        f"🛒 <b>Магазин танков</b>\n\nТвой баланс: <b>{data['xp']} XP</b>\nВыбери уровень техники (I–X):",
+        parse_mode="HTML",
+        reply_markup=kb
+    )
+    await callback.answer()
 
-    if not lvl_tanks:
-        await callback.answer("Все обычные танки скуплены!", show_alert=True)
+@dp.callback_query(F.data.startswith("shop_tier_"))
+async def cb_shop_tier(callback: CallbackQuery):
+    uid = str(callback.from_user.id)
+    tier = int(callback.data.replace("shop_tier_", ""))
+    data = ensure_user(uid)
+    owned = data.get("tanks", [])
+
+    tier_tanks = [
+        (name, stats) for name, stats in TANKS_DB.items()
+        if int(stats.get("tier", 10)) == tier and not stats.get("exclusive", False)
+    ]
+    tier_tanks.sort(key=lambda x: x[1].get("price", 0))
+
+    if not tier_tanks:
+        await callback.answer(f"На {tier_label(tier)} нет доступных танков.", show_alert=True)
         return
 
     kb = InlineKeyboardMarkup(inline_keyboard=[])
-    for name, stats in lvl_tanks[:6]:
-        kb.inline_keyboard.append([InlineKeyboardButton(text=f"{name} ({stats.get('price', 0)} XP)", callback_data=f"shop_view_{name}")])
-    kb.inline_keyboard.append([InlineKeyboardButton(text="🔙 Назад", callback_data="shop_menu")])
-    await callback.message.edit_text("🛒 <b>Магазин танков (V-VII ур.)</b>\n\nВыбери танк:", parse_mode="HTML", reply_markup=kb)
+    for name, stats in tier_tanks[:12]:
+        prefix = "✅ " if name in owned else ""
+        kb.inline_keyboard.append([
+            InlineKeyboardButton(text=f"{prefix}{name} ({stats.get('price', 0)} XP)", callback_data=f"shop_view_{name}")
+        ])
+    kb.inline_keyboard.append([InlineKeyboardButton(text="🔙 К выбору уровня", callback_data="shop_tanks_menu")])
+
+    await callback.message.edit_text(
+        f"🛒 <b>Танки {tier_label(tier)}</b>\n\nТвой баланс: <b>{data['xp']} XP</b>\nВыбери танк:",
+        parse_mode="HTML",
+        reply_markup=kb
+    )
     await callback.answer()
 
 @dp.callback_query(F.data == "shop_containers_menu")
@@ -618,7 +704,7 @@ async def cb_shop_container_view(callback: CallbackQuery):
         await callback.answer("Контейнер не найден", show_alert=True)
         return
     text = f"<b>{c_data['name']}</b>\n\nЦена: <b>{c_data['price']} XP</b>\n\n<b>Возможные танки:</b>\n"
-    text += "\n".join([f"• {html.escape(t)}" for t in c_data['tanks']])
+    text += "\n".join([f"• {html.escape(t)} ({tier_label(get_tank_tier(t))})" for t in c_data['tanks']])
     kb = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="Купить и открыть", callback_data=f"buy_container_{c_id}")],
         [InlineKeyboardButton(text="🔙 Назад", callback_data="shop_containers_menu")]
@@ -667,17 +753,25 @@ async def open_container(message: Message, uid: str, c_id: str):
 
     await asyncio.sleep(2.5)
     tank_name = random.choice(c_data["tanks"])
-    default_tank_stats = {"hp": 1500, "damage": 400, "pen": 240, "armor": 120, "reload": 10.0}
+    default_tank_stats = {"tier": 10, "hp": 1500, "damage": 400, "pen": 240, "armor": 120, "reload": 10.0}
     stats = {**default_tank_stats, **TANKS_DB.get(tank_name, {})}
+    t_tier = int(stats.get("tier", 10))
 
     if tank_name in data.get("tanks", []):
         compensation = 500
         add_xp(uid, compensation)
-        result_text = f"🎁 Из контейнера выпал <b>{html.escape(tank_name)}</b>, но он у тебя уже есть!\n💰 Ты получаешь компенсацию: <b>+{compensation} XP</b>."
+        result_text = (
+            f"🎁 Из контейнера выпал <b>{html.escape(tank_name)}</b> ({tier_label(t_tier)}), но он у тебя уже есть!\n"
+            f"💰 Ты получаешь компенсацию: <b>+{compensation} XP</b>."
+        )
     else:
         data.setdefault("tanks", []).append(tank_name)
         save_users()
-        result_text = f"🎉 <b>Поздравляю!</b>\nИз контейнера выпал новый танк: <b>{html.escape(tank_name)}</b>!\n\n" + tr(uid, "tank_stats", **stats)
+        result_text = (
+            f"🎉 <b>Поздравляю!</b>\n"
+            f"Из контейнера выпал новый танк: <b>{html.escape(tank_name)}</b> ({tier_label(t_tier)})!\n\n"
+            + tr(uid, "tank_stats", **stats)
+        )
 
     kb = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="📦 Открыть еще", callback_data="shop_containers_menu")],
@@ -699,7 +793,8 @@ async def cb_shop_view(callback: CallbackQuery):
         return
     data = ensure_user(uid)
     is_owned = tank_name in data.get("tanks", [])
-    text = f"<b>{html.escape(tank_name)}</b>\n\n" + tr(uid, "tank_stats", **stats)
+    t_tier = int(stats.get("tier", 10))
+    text = f"<b>{html.escape(tank_name)}</b> — Уровень: <b>{tier_label(t_tier)}</b>\n\n" + tr(uid, "tank_stats", **stats)
     kb = InlineKeyboardMarkup(inline_keyboard=[])
     if is_owned:
         if data.get("selected_tank") == tank_name:
@@ -708,7 +803,7 @@ async def cb_shop_view(callback: CallbackQuery):
             kb.inline_keyboard.append([InlineKeyboardButton(text=tr(uid, "shop_select"), callback_data=f"shop_select_{tank_name}")])
     else:
         kb.inline_keyboard.append([InlineKeyboardButton(text=tr(uid, "shop_buy", price=stats.get("price", 0)), callback_data=f"shop_buy_{tank_name}")])
-    kb.inline_keyboard.append([InlineKeyboardButton(text="🔙 Назад", callback_data="shop_tanks_menu")])
+    kb.inline_keyboard.append([InlineKeyboardButton(text="🔙 Назад", callback_data=f"shop_tier_{t_tier}")])
     await callback.message.edit_text(text, parse_mode="HTML", reply_markup=kb)
     await callback.answer()
 
@@ -749,19 +844,30 @@ async def cb_shop_select(callback: CallbackQuery):
     await cb_shop_view(callback)
 
 
-# --- БОИ ---
+# --- БОИ (СТРОГО ПО УРОВНЯМ) ---
 @dp.callback_query(F.data == "battle_menu")
 async def cb_battle_menu(callback: CallbackQuery, state: FSMContext):
     await state.clear()
     uid = str(callback.from_user.id)
+    data = ensure_user(uid)
+    sel_tank = data.get("selected_tank", "FV215B 183")
+    sel_tier = get_tank_tier(sel_tank)
+
     kb = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text=tr(uid, "battle_bot"), callback_data="battle_vs_bot")],
-        [InlineKeyboardButton(text=tr(uid, "battle_create"), callback_data="create_room")],
+        [InlineKeyboardButton(text=f"🏠 Создать комнату ({tier_label(sel_tier)})", callback_data="create_room")],
         [InlineKeyboardButton(text=tr(uid, "battle_join"), callback_data="join_by_code")],
         [InlineKeyboardButton(text=tr(uid, "battle_list"), callback_data="list_rooms")],
+        [InlineKeyboardButton(text="🚜 Сменить танк / уровень", callback_data="hangar_menu")],
         [InlineKeyboardButton(text=tr(uid, "battle_back"), callback_data="back_to_profile")]
     ])
-    await callback.message.edit_text(tr(uid, "battle_desc") + "\n\n" + tr(uid, "battle_choose"), parse_mode="HTML", reply_markup=kb)
+    header = (
+        f"{tr(uid, 'battle_desc')}\n\n"
+        f"🚜 Выбранный танк: <b>{html.escape(sel_tank)}</b> ({tier_label(sel_tier)})\n"
+        f"⚖️ <i>Балансировщик: бои проходят строго против техники своего уровня!</i>\n\n"
+        f"{tr(uid, 'battle_choose')}"
+    )
+    await callback.message.edit_text(header, parse_mode="HTML", reply_markup=kb)
     await callback.answer()
 
 def calculate_shot(attacker_stats, target_stats, ammo_type):
@@ -785,14 +891,21 @@ def calculate_shot(attacker_stats, target_stats, ammo_type):
 async def cb_battle_vs_bot(callback: CallbackQuery, state: FSMContext):
     uid = str(callback.from_user.id)
     data = ensure_user(uid)
-    owned_tanks = data.get("tanks", ["FV215B 183"])
+    owned_tanks = sorted(data.get("tanks", ["FV215B 183"]), key=lambda t: (get_tank_tier(t), t))
 
     kb = InlineKeyboardMarkup(inline_keyboard=[])
-    for tank in owned_tanks[:10]:
-        kb.inline_keyboard.append([InlineKeyboardButton(text=tank, callback_data=f"start_bot_fight_{tank}")])
+    for tank in owned_tanks[:12]:
+        t_tier = get_tank_tier(tank)
+        kb.inline_keyboard.append([
+            InlineKeyboardButton(text=f"[{TIER_ROMAN.get(t_tier, t_tier)}] {tank}", callback_data=f"start_bot_fight_{tank}")
+        ])
     kb.inline_keyboard.append([InlineKeyboardButton(text="🔙 Назад", callback_data="battle_menu")])
 
-    await callback.message.edit_text("🤖 <b>Бой с ботом</b>\n\nВыбери танк из своего ангара:", parse_mode="HTML", reply_markup=kb)
+    await callback.message.edit_text(
+        "🤖 <b>Бой с ботом</b>\n\nВыбери танк из своего ангара (противник подберётся строго твоего уровня):",
+        parse_mode="HTML",
+        reply_markup=kb
+    )
     await callback.answer()
 
 @dp.callback_query(F.data.startswith("start_bot_fight_"))
@@ -801,11 +914,18 @@ async def cb_start_bot_fight(callback: CallbackQuery, state: FSMContext):
     tank_name = callback.data.replace("start_bot_fight_", "")
     user_data = ensure_user(uid)
 
-    default_stats = {"hp": 1800, "damage": 950, "pen": 300, "armor": 152, "reload": 18.5}
+    default_stats = {"tier": 10, "hp": 1850, "damage": 930, "pen": 300, "armor": 152, "reload": 18.5}
     tank_stats = TANKS_DB.get(tank_name, default_stats).copy()
+    player_tier = int(tank_stats.get("tier", 10))
 
-    other_tanks = [n for n in TANKS_DB if n != tank_name]
-    bot_tank_name = random.choice(other_tanks) if other_tanks else tank_name
+    same_tier_tanks = [
+        n for n, st in TANKS_DB.items()
+        if int(st.get("tier", 10)) == player_tier and n != tank_name
+    ]
+    if not same_tier_tanks:
+        same_tier_tanks = [n for n, st in TANKS_DB.items() if int(st.get("tier", 10)) == player_tier] or [tank_name]
+
+    bot_tank_name = random.choice(same_tier_tanks)
     bot_stats = TANKS_DB.get(bot_tank_name, default_stats).copy()
 
     user_data["selected_tank"] = tank_name
@@ -814,6 +934,7 @@ async def cb_start_bot_fight(callback: CallbackQuery, state: FSMContext):
     await state.set_state(UserState.in_battle)
     await state.update_data(
         is_pve=True,
+        tier=player_tier,
         p_hp=tank_stats["hp"],
         e_hp=bot_stats["hp"],
         p_tank=tank_name,
@@ -823,7 +944,11 @@ async def cb_start_bot_fight(callback: CallbackQuery, state: FSMContext):
         e_stats=bot_stats,
     )
 
-    text = f"🤖 <b>Бой против бота</b>\n\nТвой танк: <b>{html.escape(tank_name)}</b> (HP: {tank_stats['hp']})\nТанк врага: <b>Неизвестно</b>\n\nТвой ход!"
+    text = (
+        f"🤖 <b>Бой против бота ({tier_label(player_tier)})</b>\n\n"
+        f"Твой танк: <b>{html.escape(tank_name)}</b> (HP: {tank_stats['hp']})\n"
+        f"Танк врага: <b>Неизвестно ({tier_label(player_tier)})</b>\n\nТвой ход!"
+    )
     kb = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="💥 Выстрел (ББ)", callback_data="pve_shoot_ap")],
         [InlineKeyboardButton(text="💥 Выстрел (ОФ)", callback_data="pve_shoot_he")],
@@ -852,6 +977,7 @@ async def cb_pve_shoot(callback: CallbackQuery, state: FSMContext):
     ammo = callback.data.replace("pve_shoot_", "")
     p_stats, e_stats = data["p_stats"], data["e_stats"]
     p_hp, e_hp = data["p_hp"], data["e_hp"]
+    battle_tier = data.get("tier", get_tank_tier(data.get("p_tank", "")))
 
     damage, msg = calculate_shot(p_stats, e_stats, ammo)
     e_hp -= damage
@@ -864,7 +990,10 @@ async def cb_pve_shoot(callback: CallbackQuery, state: FSMContext):
         user_data["battles"] += 1
         save_users()
         unlock_achievement(uid, "first_win")
-        text += f"\n💀 <b>Враг уничтожен!</b>\n🏆 Победа! +{xp_reward} XP.\n\n👀 Танк врага: <b>{html.escape(data['e_tank'])}</b>"
+        text += (
+            f"\n💀 <b>Враг уничтожен!</b>\n🏆 Победа! +{xp_reward} XP.\n\n"
+            f"👀 Танк врага: <b>{html.escape(data['e_tank'])}</b> ({tier_label(battle_tier)})"
+        )
         await callback.message.edit_text(
             text,
             parse_mode="HTML",
@@ -882,7 +1011,7 @@ async def cb_pve_shoot(callback: CallbackQuery, state: FSMContext):
         user_data["losses"] += 1
         user_data["battles"] += 1
         save_users()
-        text += f"\n💀 <b>Ты уничтожен!</b>\nТанк врага: <b>{html.escape(data['e_tank'])}</b>"
+        text += f"\n💀 <b>Ты уничтожен!</b>\nТанк врага: <b>{html.escape(data['e_tank'])}</b> ({tier_label(battle_tier)})"
         await callback.message.edit_text(
             text,
             parse_mode="HTML",
@@ -914,12 +1043,25 @@ async def cb_pve_surrender(callback: CallbackQuery, state: FSMContext):
 
 @dp.callback_query(F.data == "create_room")
 async def cb_create_room(callback: CallbackQuery, state: FSMContext):
+    uid = str(callback.from_user.id)
+    data = ensure_user(uid)
+    sel_tank = data.get("selected_tank", "FV215B 183")
+    sel_tier = get_tank_tier(sel_tank)
+
     kb = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="1 на 1", callback_data="create_2")],
-        [InlineKeyboardButton(text="2 на 2", callback_data="create_4")]
+        [InlineKeyboardButton(text="2 на 2", callback_data="create_4")],
+        [InlineKeyboardButton(text="🔙 Назад", callback_data="battle_menu")]
     ])
     await state.set_state(UserState.choosing_size)
-    await callback.message.edit_text("Выбери формат:", reply_markup=kb)
+    await callback.message.edit_text(
+        f"🏠 <b>Создание комнаты</b>\n\n"
+        f"Твой танк: <b>{html.escape(sel_tank)}</b> ({tier_label(sel_tier)})\n"
+        f"Уровень комнаты: <b>{tier_label(sel_tier)}</b> (войти смогут только игроки на танках {tier_label(sel_tier)})\n\n"
+        f"Выбери формат:",
+        parse_mode="HTML",
+        reply_markup=kb
+    )
     await callback.answer()
 
 @dp.callback_query(UserState.choosing_size, F.data.startswith("create_"))
@@ -927,12 +1069,17 @@ async def cb_create_size(callback: CallbackQuery, state: FSMContext):
     max_players = int(callback.data.replace("create_", ""))
     await state.clear()
     uid = str(callback.from_user.id)
+    data = ensure_user(uid)
+    sel_tank = data.get("selected_tank", "FV215B 183")
+    room_tier = get_tank_tier(sel_tank)
+
     code = ''.join(random.choices(string.ascii_uppercase + string.digits, k=4))
     while code in ROOMS:
         code = ''.join(random.choices(string.ascii_uppercase + string.digits, k=4))
     ROOMS[code] = {
         "players": [uid],
         "max_players": max_players,
+        "tier": room_tier,
         "is_private": False,
         "status": "waiting",
         "hp": {},
@@ -945,7 +1092,13 @@ async def cb_create_size(callback: CallbackQuery, state: FSMContext):
         [InlineKeyboardButton(text="Начать бой", callback_data=f"start_battle_{code}")],
         [InlineKeyboardButton(text="Выйти", callback_data=f"leave_{code}")]
     ])
-    await callback.message.edit_text(f"🏠 Комната: <code>{code}</code>\nИгроков: 1/{max_players}", parse_mode="HTML", reply_markup=kb)
+    await callback.message.edit_text(
+        f"🏠 Комната: <code>{code}</code>\n"
+        f"🎚 Уровень боёв: <b>{tier_label(room_tier)}</b>\n"
+        f"👥 Игроков: 1/{max_players}",
+        parse_mode="HTML",
+        reply_markup=kb
+    )
     await callback.answer()
 
 @dp.callback_query(F.data.startswith("hide_"))
@@ -987,24 +1140,55 @@ async def process_code(message: Message, state: FSMContext):
         return
     room = ROOMS[code]
     if room["status"] != "waiting" or len(room["players"]) >= room["max_players"]:
-        await message.answer("❌ Нельзя зайти.")
+        await message.answer("❌ Нельзя зайти (бой уже идёт или комната заполнена).")
         return
     if uid in room["players"]:
         await message.answer("Ты уже тут.")
         return
+
+    user_data = ensure_user(uid)
+    sel_tank = user_data.get("selected_tank", "FV215B 183")
+    player_tier = get_tank_tier(sel_tank)
+    room_tier = room.get("tier", 10)
+
+    if player_tier != room_tier:
+        await message.answer(
+            f"❌ <b>Неподходящий уровень техники!</b>\n\n"
+            f"Эта комната создана для боёв <b>{tier_label(room_tier)}</b>.\n"
+            f"Твой выбранный танк: <b>{html.escape(sel_tank)}</b> ({tier_label(player_tier)}).\n\n"
+            f"Выбери в ангаре танк <b>{tier_label(room_tier)}</b> и попробуй снова.",
+            parse_mode="HTML"
+        )
+        return
+
     room["players"].append(uid)
     if len(room["players"]) == room["max_players"]:
         await start_room_battle(code, message.chat.id)
     else:
-        await message.answer(f"✅ В комнате {code}. Ждем ({len(room['players'])}/{room['max_players']}).")
+        await message.answer(
+            f"✅ Ты вошёл в комнату <code>{code}</code> ({tier_label(room_tier)}).\n"
+            f"Ожидаем игроков ({len(room['players'])}/{room['max_players']}).",
+            parse_mode="HTML"
+        )
 
 @dp.callback_query(F.data == "list_rooms")
 async def cb_list_rooms(callback: CallbackQuery):
+    uid = str(callback.from_user.id)
+    user_data = ensure_user(uid)
+    sel_tank = user_data.get("selected_tank", "FV215B 183")
+    player_tier = get_tank_tier(sel_tank)
+
     open_rooms = {k: v for k, v in ROOMS.items() if v["status"] == "waiting" and not v["is_private"]}
     if not open_rooms:
-        await callback.answer("Нет комнат.", show_alert=True)
+        await callback.answer("Нет открытых комнат.", show_alert=True)
         return
-    lines = ["<b>Комнаты:</b>"] + [f"<code>{c}</code> | {len(r['players'])}/{r['max_players']}" for c, r in open_rooms.items()]
+
+    lines = [f"<b>Открытые комнаты</b> (твой танк: {tier_label(player_tier)}):\n"]
+    for c, r in open_rooms.items():
+        r_tier = r.get("tier", 10)
+        mark = "✅" if r_tier == player_tier else "🔒"
+        lines.append(f"{mark} <code>{c}</code> | <b>{tier_label(r_tier)}</b> | Игроков: {len(r['players'])}/{r['max_players']}")
+
     await callback.message.edit_text(
         "\n".join(lines),
         parse_mode="HTML",
@@ -1028,17 +1212,41 @@ async def cb_start_battle_manual(callback: CallbackQuery):
 
 async def start_room_battle(code, chat_id):
     room = ROOMS[code]
+    room_tier = room.get("tier", 10)
+
+    for uid in list(room["players"]):
+        tank_name = USERS.get(uid, {}).get("selected_tank", "FV215B 183")
+        if get_tank_tier(tank_name) != room_tier:
+            room["players"].remove(uid)
+            try:
+                await bot.send_message(
+                    int(uid),
+                    f"❌ Ты был исключён из комнаты <code>{code}</code>, так как сменил танк на другой уровень (нужен {tier_label(room_tier)}).",
+                    parse_mode="HTML"
+                )
+            except Exception:
+                pass
+
+    if len(room["players"]) < 2:
+        room["status"] = "waiting"
+        for uid in room["players"]:
+            try:
+                await bot.send_message(int(uid), "⚠️ Недостаточно игроков нужного уровня для старта боя. Ожидаем ещё игроков.")
+            except Exception:
+                pass
+        return
+
     room["status"] = "battle"
     room["turn_index"] = 0
     room["reload"] = {p: 0 for p in room["players"]}
-    text = "⚔️ <b>Бой начался!</b>\n\n"
+    text = f"⚔️ <b>Бой начался! ({tier_label(room_tier)})</b>\n\n"
     for uid in room["players"]:
         tank_name = USERS.get(uid, {}).get("selected_tank", "FV215B 183")
-        stats = TANKS_DB.get(tank_name, {"hp": 1800, "damage": 950, "pen": 300, "armor": 152, "reload": 18.5}).copy()
+        stats = TANKS_DB.get(tank_name, {"tier": room_tier, "hp": 1850, "damage": 930, "pen": 300, "armor": 152, "reload": 18.5}).copy()
         room["hp"][uid] = stats["hp"]
         room["tank"][uid] = tank_name
         room["stats"][uid] = stats
-        text += f"👤 <b>{get_display_name(uid)}</b> — {html.escape(tank_name)} (HP: {stats['hp']})\n"
+        text += f"👤 <b>{get_display_name(uid)}</b> — {html.escape(tank_name)} [{tier_label(room_tier)}] (HP: {stats['hp']})\n"
     first_uid = room["players"][0]
     text += f"\nХод игрока <b>{get_display_name(first_uid)}</b>!"
     for uid in room["players"]:
