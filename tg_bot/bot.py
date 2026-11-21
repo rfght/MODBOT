@@ -304,13 +304,15 @@ async def forward_to_admins(message: Message, header: str):
             await message.forward(chat_id)
         except Exception as exc: logger.error(f"Не удалось отправить в {chat_id}. Ошибка: {exc}")
 
+
 # --- ПРОФИЛЬ ---
 @dp.message(Command("profile"))
 async def cmd_profile(message: Message, state: FSMContext):
     await state.clear()
     if await check_ban_and_block(message): return
     uid = str(message.from_user.id)
-    if uid not in USERS or not USERS[uid].get("nickname"):
+    
+    if uid not in USERS:
         await cmd_start(message, state); return
 
     data = USERS[uid]
@@ -327,7 +329,7 @@ async def cmd_profile(message: Message, state: FSMContext):
     ach_text = tr(uid, "profile_achievements", list="\n".join([f"• {ACHIEVEMENTS.get(a, a)}" for a in data["achievements"]])) if data["achievements"] else tr(uid, "profile_no_achievements")
 
     text = (
-        f"{tr(uid, 'profile_title')}\n{tr(uid, 'profile_nick', nick=data['nickname'])}\n{tr(uid, 'profile_id', uid=uid)}\n\n"
+        f"{tr(uid, 'profile_title')}\n{tr(uid, 'profile_nick', nick=data.get('nickname') or 'Не задан')}\n{tr(uid, 'profile_id', uid=uid)}\n\n"
         f"{tr(uid, 'profile_rank', rank=rank_name)}\n{tr(uid, 'profile_xp', xp=data['xp'])}\n"
         f"{tr(uid, 'profile_stats', battles=data.get('battles',0), wins=data.get('wins',0), losses=data.get('losses',0), downloads=data['downloads'], ideas=data['ideas'], questions=data['questions'], bans=data['bans'])}\n"
         f"{tr(uid, 'profile_tank', tank=data.get('selected_tank', 'FV215B 183'))}\n{progress_text}\n\n{ach_text}"
@@ -349,7 +351,34 @@ async def btn_profile_click(message: Message, state: FSMContext):
 async def cb_back_to_profile(callback: CallbackQuery, state: FSMContext):
     await state.clear()
     await callback.answer()
-    await cmd_profile(callback.message, state)
+    # Прямой вызов отрисовки профиля без проверки на ник
+    uid = str(callback.from_user.id)
+    data = USERS.get(uid, default_user_data())
+    rank_name, req_xp, req_ideas, _ = get_rank_info(data["rank_id"])
+    next_id = data["rank_id"] + 1
+    if next_id in RANKS:
+        next_name, next_xp, next_ideas, next_type = RANKS[next_id]
+        if next_type == "user":
+            progress_text = tr(uid, "profile_next", xp_left=max(0, next_xp-data["xp"]), ideas_left=max(0, next_ideas-data["ideas"]))
+        else: progress_text = tr(uid, "profile_next_manual")
+    else: progress_text = "Максимальное звание"
+
+    ach_text = tr(uid, "profile_achievements", list="\n".join([f"• {ACHIEVEMENTS.get(a, a)}" for a in data["achievements"]])) if data["achievements"] else tr(uid, "profile_no_achievements")
+
+    text = (
+        f"{tr(uid, 'profile_title')}\n{tr(uid, 'profile_nick', nick=data.get('nickname') or 'Не задан')}\n{tr(uid, 'profile_id', uid=uid)}\n\n"
+        f"{tr(uid, 'profile_rank', rank=rank_name)}\n{tr(uid, 'profile_xp', xp=data['xp'])}\n"
+        f"{tr(uid, 'profile_stats', battles=data.get('battles',0), wins=data.get('wins',0), losses=data.get('losses',0), downloads=data['downloads'], ideas=data['ideas'], questions=data['questions'], bans=data['bans'])}\n"
+        f"{tr(uid, 'profile_tank', tank=data.get('selected_tank', 'FV215B 183'))}\n{progress_text}\n\n{ach_text}"
+    )
+    kb = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="⚔️ Бои", callback_data="battle_menu")],
+        [InlineKeyboardButton(text=tr(uid, "shop_btn"), callback_data="shop_menu")],
+        [InlineKeyboardButton(text=tr(uid, "btn_friends"), callback_data="friends_menu")],
+        [InlineKeyboardButton(text=tr(uid, "btn_invite"), callback_data="invite_friend")]
+    ])
+    await callback.message.answer(text, parse_mode="HTML", reply_markup=kb)
+
 
 # --- ДРУЗЬЯ ---
 @dp.callback_query(F.data == "friends_menu")
@@ -603,6 +632,7 @@ async def cb_shop_select(callback: CallbackQuery):
         await callback.answer(tr(uid, "shop_selected", tank=tank_name), show_alert=True)
     await cb_shop_view(callback)
 
+
 # --- БОИ ---
 @dp.callback_query(F.data == "battle_menu")
 async def cb_battle_menu(callback: CallbackQuery, state: FSMContext):
@@ -633,7 +663,6 @@ def calculate_shot(attacker_stats, target_stats, ammo_type):
         final_dmg = int(base_he * dmg_variance)
         return final_dmg, f"ОФ попал! Урон: {final_dmg}"
 
-# Меню выбора танка перед боем
 @dp.callback_query(F.data == "battle_vs_bot")
 async def cb_battle_vs_bot(callback: CallbackQuery, state: FSMContext):
     uid = str(callback.from_user.id)
@@ -641,7 +670,7 @@ async def cb_battle_vs_bot(callback: CallbackQuery, state: FSMContext):
     owned_tanks = data.get("tanks", ["FV215B 183"])
     
     kb = InlineKeyboardMarkup(inline_keyboard=[])
-    for tank in owned_tanks[:10]: # Показываем первые 10 танков для выбора
+    for tank in owned_tanks[:10]:
         kb.inline_keyboard.append([InlineKeyboardButton(text=tank, callback_data=f"start_bot_fight_{tank}")])
     kb.inline_keyboard.append([InlineKeyboardButton(text="🔙 Назад", callback_data="battle_menu")])
     
@@ -672,7 +701,6 @@ async def cb_start_bot_fight(callback: CallbackQuery, state: FSMContext):
     await callback.message.edit_text(text, parse_mode="HTML", reply_markup=kb)
     await callback.answer()
 
-# PVE логика
 @dp.callback_query(F.data.startswith("pve_shoot_"), UserState.in_battle)
 async def cb_pve_shoot(callback: CallbackQuery, state: FSMContext):
     await callback.answer()
@@ -731,7 +759,6 @@ async def cb_pve_surrender(callback: CallbackQuery, state: FSMContext):
     await state.clear()
     await callback.message.edit_text("🏳️ Ты сдался.", reply_markup=InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="В меню", callback_data="battle_menu")]]))
 
-# PVP логика (осталась без изменений, но теперь передаем выбранный танк)
 @dp.callback_query(F.data == "create_room")
 async def cb_create_room(callback: CallbackQuery, state: FSMContext):
     uid = str(callback.from_user.id)
