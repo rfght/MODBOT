@@ -55,7 +55,6 @@ DEFAULT_TANKS_DB: Dict[str, Dict[str, Any]] = {
     "Pz.Kpfw. VII": {"tier": 10, "hp": 2450, "damage": 560, "pen": 258, "armor": 240, "reload": 14.2, "price": 8500, "exclusive": True},
 }
 
-
 def load_json(path: str, default):
     if os.path.exists(path):
         try:
@@ -65,14 +64,12 @@ def load_json(path: str, default):
             logger.error("Failed to load %s: %s", path, e)
     return default
 
-
 def save_json(path: str, data):
     try:
         with open(path, "w", encoding="utf-8") as f:
             json.dump(data, f, ensure_ascii=False, indent=2)
     except Exception as e:
         logger.error("Failed to save %s: %s", path, e)
-
 
 TANKS_DB: Dict[str, Dict[str, Any]] = load_json(TANKS_FILE, DEFAULT_TANKS_DB)
 if not TANKS_DB:
@@ -82,10 +79,8 @@ USERS: Dict[str, Dict[str, Any]] = load_json(USERS_FILE, {})
 FALLBACKS: list = load_json(FALLBACKS_FILE, [])
 BANNED: list = load_json(BANNED_FILE, [])
 
-
 def save_users():
     save_json(USERS_FILE, USERS)
-
 
 CONTAINERS_DB: Dict[str, Dict[str, Any]] = {
     "ussr": {
@@ -198,18 +193,14 @@ TIER_ROMAN = {
     6: "VI", 7: "VII", 8: "VIII", 9: "IX", 10: "X",
 }
 
-
 class UserState(StatesGroup):
     in_battle = State()
-
 
 def get_tank_tier(tank_name: str) -> int:
     return int(TANKS_DB.get(tank_name, {}).get("tier", 10))
 
-
 def tier_label(tier: int) -> str:
     return f"{TIER_ROMAN.get(tier, tier)} ур."
-
 
 async def safe_edit_or_send(message: Message, text: str, reply_markup=None, parse_mode: str | None = "HTML"):
     try:
@@ -220,7 +211,6 @@ async def safe_edit_or_send(message: Message, text: str, reply_markup=None, pars
         except Exception:
             pass
         await message.answer(text, parse_mode=parse_mode, reply_markup=reply_markup)
-
 
 def ensure_user(uid: str) -> Dict[str, Any]:
     uid = str(uid)
@@ -256,21 +246,17 @@ def ensure_user(uid: str) -> Dict[str, Any]:
     u.setdefault("achievements", [])
     return u
 
-
 def get_rank_info(rank_id: int):
     return RANKS.get(rank_id, RANKS[1])
-
 
 def add_xp(uid: str, amount: int):
     u = ensure_user(uid)
     u["xp"] = max(0, u.get("xp", 0) + int(amount))
 
-
 def unlock_achievement(uid: str, ach_key: str):
     u = ensure_user(uid)
     if ach_key not in u["achievements"]:
         u["achievements"].append(ach_key)
-
 
 def tr(uid: str, key: str, **kwargs) -> str:
     templates = {
@@ -283,7 +269,7 @@ def tr(uid: str, key: str, **kwargs) -> str:
         "profile_tank": "Танк в ангаре: <b>{tank}</b>",
         "profile_next": "До след. звания: <b>{xp_left} XP</b> и <b>{ideas_left} идей</b>",
         "profile_next_manual": "Следующее звание выдаётся вручную",
-        "profile_achievements": "🏅 Достижения:{list}",
+        "profile_achievements": "🏅 Достижения:\n{list}",
         "profile_no_achievements": "🏅 Достижений пока нет",
         "shop_btn": "🛒 Магазин",
         "shop_title": "🛒 <b>Магазин</b> | Баланс: <b>{xp} XP</b>",
@@ -293,11 +279,9 @@ def tr(uid: str, key: str, **kwargs) -> str:
     tpl = templates.get(key, key)
     return tpl.format(**kwargs) if kwargs else tpl
 
-
 def build_profile_message(uid: str) -> tuple[str, InlineKeyboardMarkup]:
     data = ensure_user(uid)
     rank_name, _, _, _ = get_rank_info(data["rank_id"])
-
     next_id = data["rank_id"] + 1
     if next_id in RANKS:
         _, next_xp, next_ideas, next_type = RANKS[next_id]
@@ -312,41 +296,24 @@ def build_profile_message(uid: str) -> tuple[str, InlineKeyboardMarkup]:
             progress_text = tr(uid, "profile_next_manual")
     else:
         progress_text = "Максимальное звание"
-
     ach_text = (
-        tr(uid, "profile_achievements", list="
-".join([f"• {ACHIEVEMENTS.get(a, a)}" for a in data["achievements"]]))
+        tr(uid, "profile_achievements", list="\n".join([f"• {ACHIEVEMENTS.get(a, a)}" for a in data["achievements"]]))
         if data["achievements"]
         else tr(uid, "profile_no_achievements")
     )
-
     safe_nick = html.escape(data["nickname"]) if data.get("nickname") else "Не задан"
     sel_tank = data.get("selected_tank", "FV215B 183")
     sel_tier = get_tank_tier(sel_tank)
     tank_display = f"{html.escape(sel_tank)} ({tier_label(sel_tier)})"
-
     ev = get_active_event()
     ev_state = ensure_event_state(data, ev["id"])
-    event_line = f"
-🎪 {html.escape(ev['title'])}: <b>{ev_state['currency']}/{ev['goal']}</b> {ev['currency_emoji']}"
-
+    event_line = f"\n🎪 {html.escape(ev['title'])}: <b>{ev_state['currency']}/{ev['goal']}</b> {ev['currency_emoji']}"
     text = (
-        f"{tr(uid, 'profile_title')}
-{tr(uid, 'profile_nick', nick=safe_nick)}
-{tr(uid, 'profile_id', uid=uid)}
-
-"
-        f"{tr(uid, 'profile_rank', rank=rank_name)}
-{tr(uid, 'profile_xp', xp=data['xp'])}{event_line}
-"
-        f"{tr(uid, 'profile_stats', battles=data.get('battles', 0), wins=data.get('wins', 0), losses=data.get('losses', 0))}
-"
-        f"{tr(uid, 'profile_tank', tank=tank_display)}
-{progress_text}
-
-{ach_text}"
+        f"{tr(uid, 'profile_title')}\n{tr(uid, 'profile_nick', nick=safe_nick)}\n{tr(uid, 'profile_id', uid=uid)}\n\n"
+        f"{tr(uid, 'profile_rank', rank=rank_name)}\n{tr(uid, 'profile_xp', xp=data['xp'])}{event_line}\n"
+        f"{tr(uid, 'profile_stats', battles=data.get('battles', 0), wins=data.get('wins', 0), losses=data.get('losses', 0))}\n"
+        f"{tr(uid, 'profile_tank', tank=tank_display)}\n{progress_text}\n\n{ach_text}"
     )
-
     kb = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="⚔️ Бои", callback_data="battle_menu"), InlineKeyboardButton(text="🚜 Ангар", callback_data="hangar_menu")],
         [InlineKeyboardButton(text=tr(uid, "shop_btn"), callback_data="shop_menu"), InlineKeyboardButton(text=f"🎪 Ивент ({ev['currency_emoji']})", callback_data=f"ev_open_{ev['id']}")],
@@ -354,59 +321,45 @@ def build_profile_message(uid: str) -> tuple[str, InlineKeyboardMarkup]:
     ])
     return text, kb
 
-
 def calculate_shot(attacker: dict, defender: dict, ammo: str) -> tuple[int, str]:
     base_dmg = int(attacker.get("damage", 300))
     pen = int(attacker.get("pen", 200))
     armor = int(defender.get("armor", 100))
-
     if ammo == "he":
         dmg = int(base_dmg * random.uniform(0.75, 1.15))
         return max(25, dmg), f"фугас нанёс <b>{max(25, dmg)}</b> урона"
-
     if pen >= armor * 0.9:
         dmg = int(base_dmg * random.uniform(0.85, 1.15))
         return max(20, dmg), f"пробитие! Нанесено <b>{max(20, dmg)}</b> урона"
-
     if random.random() < 0.35:
         dmg = int(base_dmg * random.uniform(0.65, 0.95))
         return max(15, dmg), f"пробитие слабой зоны! <b>{max(15, dmg)}</b> урона"
-
     return 0, "рикошет / непробитие (<b>0</b> урона)"
 
-
 def _run_bot_turn_if_ready(data: dict) -> tuple[dict, int, str]:
-    """Бот стреляет только когда закончится его собственная перезарядка."""
     now = time.time()
     e_hp = int(data["e_hp"])
     p_hp = int(data["p_hp"])
     e_reload_ready = float(data.get("e_reload_ready", 0.0))
     e_stats = data["e_stats"]
     p_stats = data["p_stats"]
-
     if e_hp <= 0 or p_hp <= 0:
         return data, p_hp, ""
-
     if now < e_reload_ready:
         rem = round(max(0.1, e_reload_ready - now), 1)
-        return data, p_hp, f"⏳ Враг на перезарядке ({rem}с).
-"
-
+        return data, p_hp, f"⏳ Враг на перезарядке ({rem}с).\n"
     bot_ammo = random.choices(["ap", "he"], weights=[0.8, 0.2])[0]
     b_damage, b_msg = calculate_shot(e_stats, p_stats, bot_ammo)
     new_p_hp = max(0, p_hp - b_damage)
     new_e_reload_ready = now + float(e_stats.get("reload", 10.0))
     data["e_reload_ready"] = new_e_reload_ready
     data["p_hp"] = new_p_hp
-    line = f"🔫 Враг выстрелил ({'ББ' if bot_ammo == 'ap' else 'ОФ'}): {b_msg}
-"
+    line = f"🔫 Враг выстрелил ({'ББ' if bot_ammo == 'ap' else 'ОФ'}): {b_msg}\n"
     return data, new_p_hp, line
-
 
 storage = MemoryStorage()
 dp = Dispatcher(storage=storage)
 bot = Bot(token=BOT_TOKEN) if BOT_TOKEN else None
-
 
 @dp.message(CommandStart())
 async def cmd_start(message: Message, state: FSMContext):
@@ -416,7 +369,6 @@ async def cmd_start(message: Message, state: FSMContext):
     text, kb = build_profile_message(uid)
     await message.answer(text, parse_mode="HTML", reply_markup=kb)
 
-
 @dp.callback_query(F.data == "back_to_profile")
 async def cb_back_to_profile(callback: CallbackQuery, state: FSMContext):
     await state.clear()
@@ -425,14 +377,12 @@ async def cb_back_to_profile(callback: CallbackQuery, state: FSMContext):
     text, kb = build_profile_message(uid)
     await safe_edit_or_send(callback.message, text, reply_markup=kb, parse_mode="HTML")
 
-
 @dp.callback_query(F.data == "hangar_menu")
 async def cb_hangar_menu(callback: CallbackQuery):
     uid = str(callback.from_user.id)
     data = ensure_user(uid)
     owned = sorted(data.get("tanks", ["FV215B 183"]), key=lambda t: (get_tank_tier(t), t))
     sel = data.get("selected_tank", owned[0] if owned else "FV215B 183")
-
     rows = []
     for tank in owned[:20]:
         mark = "✅ " if tank == sel else ""
@@ -444,18 +394,13 @@ async def cb_hangar_menu(callback: CallbackQuery):
             )
         ])
     rows.append([InlineKeyboardButton(text="🔙 В профиль", callback_data="back_to_profile")])
-
     text = (
-        f"🚜 <b>Твой ангар ({len(owned)} шт.)</b>
-"
-        f"Выбранный танк: <b>{html.escape(sel)}</b>
-
-"
+        f"🚜 <b>Твой ангар ({len(owned)} шт.)</b>\n"
+        f"Выбранный танк: <b>{html.escape(sel)}</b>\n\n"
         f"Нажми на танк, чтобы выбрать его для боёв:"
     )
     await safe_edit_or_send(callback.message, text, reply_markup=InlineKeyboardMarkup(inline_keyboard=rows), parse_mode="HTML")
     await callback.answer()
-
 
 @dp.callback_query(F.data.startswith("select_tank_"))
 async def cb_select_tank(callback: CallbackQuery):
@@ -469,7 +414,6 @@ async def cb_select_tank(callback: CallbackQuery):
     else:
         await callback.answer("Танка нет в ангаре", show_alert=True)
         return
-
     owned = sorted(data.get("tanks", [tank_name]), key=lambda t: (get_tank_tier(t), t))
     rows = []
     for tank in owned[:20]:
@@ -483,15 +427,11 @@ async def cb_select_tank(callback: CallbackQuery):
         ])
     rows.append([InlineKeyboardButton(text="🔙 В профиль", callback_data="back_to_profile")])
     text = (
-        f"🚜 <b>Твой ангар ({len(owned)} шт.)</b>
-"
-        f"Выбранный танк: <b>{html.escape(tank_name)}</b>
-
-"
+        f"🚜 <b>Твой ангар ({len(owned)} шт.)</b>\n"
+        f"Выбранный танк: <b>{html.escape(tank_name)}</b>\n\n"
         f"Нажми на танк, чтобы выбрать его для боёв:"
     )
     await safe_edit_or_send(callback.message, text, reply_markup=InlineKeyboardMarkup(inline_keyboard=rows), parse_mode="HTML")
-
 
 @dp.callback_query(F.data == "shop_menu")
 async def cb_shop_menu(callback: CallbackQuery):
@@ -501,11 +441,8 @@ async def cb_shop_menu(callback: CallbackQuery):
         [InlineKeyboardButton(text="🛡 Танки", callback_data="shop_tanks_menu"), InlineKeyboardButton(text="📦 Контейнеры", callback_data="shop_containers_menu")],
         [InlineKeyboardButton(text="🔙 Назад", callback_data="back_to_profile")],
     ])
-    await safe_edit_or_send(callback.message, tr(uid, "shop_title", xp=data["xp"]) + "
-
-Выбери раздел:", reply_markup=kb, parse_mode="HTML")
+    await safe_edit_or_send(callback.message, tr(uid, "shop_title", xp=data["xp"]) + "\n\nВыбери раздел:", reply_markup=kb, parse_mode="HTML")
     await callback.answer()
-
 
 @dp.callback_query(F.data == "shop_tanks_menu")
 async def cb_shop_tanks_menu(callback: CallbackQuery):
@@ -520,15 +457,11 @@ async def cb_shop_tanks_menu(callback: CallbackQuery):
     rows.append([InlineKeyboardButton(text="🔙 Назад", callback_data="shop_menu")])
     await safe_edit_or_send(
         callback.message,
-        f"🛒 <b>Магазин танков</b>
-
-Твой баланс: <b>{data['xp']} XP</b>
-Выбери уровень техники (I–X):",
+        f"🛒 <b>Магазин танков</b>\n\nТвой баланс: <b>{data['xp']} XP</b>\nВыбери уровень техники (I–X):",
         reply_markup=InlineKeyboardMarkup(inline_keyboard=rows),
         parse_mode="HTML",
     )
     await callback.answer()
-
 
 @dp.callback_query(F.data.startswith("shop_tier_"))
 async def cb_shop_tier(callback: CallbackQuery):
@@ -540,7 +473,6 @@ async def cb_shop_tier(callback: CallbackQuery):
         if int(st.get("tier", 10)) == tier and not st.get("exclusive", False)
     ]
     tier_tanks.sort(key=lambda x: x[1].get("price", 0))
-
     rows = []
     for name, st in tier_tanks[:12]:
         price = int(st.get("price", 1000))
@@ -548,18 +480,13 @@ async def cb_shop_tier(callback: CallbackQuery):
         tag = " (в ангаре)" if owned else f" — {price} XP"
         rows.append([InlineKeyboardButton(text=f"{name}{tag}", callback_data=f"buy_tank_{name}")])
     rows.append([InlineKeyboardButton(text="🔙 Назад", callback_data="shop_tanks_menu")])
-
     await safe_edit_or_send(
         callback.message,
-        f"🛒 <b>Танки {tier_label(tier)}</b>
-
-Твой баланс: <b>{data['xp']} XP</b>
-Выбери танк:",
+        f"🛒 <b>Танки {tier_label(tier)}</b>\n\nТвой баланс: <b>{data['xp']} XP</b>\nВыбери танк:",
         reply_markup=InlineKeyboardMarkup(inline_keyboard=rows),
         parse_mode="HTML",
     )
     await callback.answer()
-
 
 @dp.callback_query(F.data.startswith("buy_tank_"))
 async def cb_buy_tank(callback: CallbackQuery):
@@ -584,7 +511,6 @@ async def cb_buy_tank(callback: CallbackQuery):
     save_users()
     await callback.answer(f"Куплен танк {tank_name}!", show_alert=True)
 
-
 @dp.callback_query(F.data == "shop_containers_menu")
 async def cb_shop_containers_menu(callback: CallbackQuery):
     uid = str(callback.from_user.id)
@@ -597,15 +523,11 @@ async def cb_shop_containers_menu(callback: CallbackQuery):
     rows.append([InlineKeyboardButton(text="🔙 Назад", callback_data="shop_menu")])
     await safe_edit_or_send(
         callback.message,
-        f"📦 <b>Контейнеры</b>
-
-Твой баланс: <b>{data['xp']} XP</b>
-Выбери контейнер:",
+        f"📦 <b>Контейнеры</b>\n\nТвой баланс: <b>{data['xp']} XP</b>\nВыбери контейнер:",
         reply_markup=InlineKeyboardMarkup(inline_keyboard=rows),
         parse_mode="HTML",
     )
     await callback.answer()
-
 
 @dp.callback_query(F.data.startswith("view_container_"))
 async def cb_view_container(callback: CallbackQuery):
@@ -614,16 +536,11 @@ async def cb_view_container(callback: CallbackQuery):
     if not cdata:
         await callback.answer("Контейнер не найден", show_alert=True)
         return
-    tanks_list = "
-".join(f"• {html.escape(t)}" for t in cdata["tanks"])
+    tanks_list = "\n".join(f"• {html.escape(t)}" for t in cdata["tanks"])
     text = (
-        f"{html.escape(cdata['name'])}
-"
-        f"Цена: <b>{cdata['price']} XP</b>
-
-"
-        f"<b>Возможный дроп:</b>
-{tanks_list}"
+        f"{html.escape(cdata['name'])}\n"
+        f"Цена: <b>{cdata['price']} XP</b>\n\n"
+        f"<b>Возможный дроп:</b>\n{tanks_list}"
     )
     kb = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text=f"🔓 Открыть ({cdata['price']} XP)", callback_data=f"buy_container_{cid}")],
@@ -631,7 +548,6 @@ async def cb_view_container(callback: CallbackQuery):
     ])
     await safe_edit_or_send(callback.message, text, reply_markup=kb, parse_mode="HTML")
     await callback.answer()
-
 
 @dp.callback_query(F.data.startswith("buy_container_"))
 async def cb_buy_container(callback: CallbackQuery):
@@ -646,7 +562,6 @@ async def cb_buy_container(callback: CallbackQuery):
     if data["xp"] < price:
         await callback.answer(f"Не хватает XP ({data['xp']}/{price}).", show_alert=True)
         return
-
     data["xp"] -= price
     won_tank = random.choice(cdata["tanks"])
     owned = data.setdefault("tanks", [])
@@ -657,22 +572,16 @@ async def cb_buy_container(callback: CallbackQuery):
         comp = 500
         data["xp"] += comp
         drop_msg = f"♻️ Танк <b>{html.escape(won_tank)}</b> уже есть в ангаре. Компенсация: <b>+{comp} XP</b>."
-
     if len(owned) >= 10:
         unlock_achievement(uid, "collector_10")
     save_users()
-
-    text = f"{html.escape(cdata['name'])} открыт!
-
-{drop_msg}
-Текущий баланс: <b>{data['xp']} XP</b>"
+    text = f"{html.escape(cdata['name'])} открыт!\n\n{drop_msg}\nТекущий баланс: <b>{data['xp']} XP</b>"
     kb = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="🔓 Открыть ещё", callback_data=f"buy_container_{cid}")],
         [InlineKeyboardButton(text="🔙 Назад", callback_data="shop_containers_menu")],
     ])
     await safe_edit_or_send(callback.message, text, reply_markup=kb, parse_mode="HTML")
     await callback.answer()
-
 
 @dp.callback_query(F.data == "battle_menu")
 async def cb_battle_menu(callback: CallbackQuery, state: FSMContext):
@@ -687,31 +596,25 @@ async def cb_battle_menu(callback: CallbackQuery, state: FSMContext):
     ])
     await safe_edit_or_send(
         callback.message,
-        f"⚔️ <b>Меню боёв</b>
-
-Твой танк: <b>{html.escape(sel_tank)}</b> ({tier_label(get_tank_tier(sel_tank))})",
+        f"⚔️ <b>Меню боёв</b>\n\nТвой танк: <b>{html.escape(sel_tank)}</b> ({tier_label(get_tank_tier(sel_tank))})",
         reply_markup=kb,
         parse_mode="HTML",
     )
     await callback.answer()
 
-
 async def _launch_bot_fight(callback: CallbackQuery, state: FSMContext, uid: str, tank_name: str):
     default_stats = {"tier": 10, "hp": 1850, "damage": 930, "pen": 300, "armor": 152, "reload": 18.5}
     tank_stats = TANKS_DB.get(tank_name, default_stats).copy()
     player_tier = int(tank_stats.get("tier", 10))
-
     same_tier_tanks = [
         n for n, st in TANKS_DB.items()
         if int(st.get("tier", 10)) == player_tier and n != tank_name
     ]
     if not same_tier_tanks:
         same_tier_tanks = [n for n, st in TANKS_DB.items() if int(st.get("tier", 10)) == player_tier] or [tank_name]
-
     bot_tank_name = random.choice(same_tier_tanks)
     bot_stats = TANKS_DB.get(bot_tank_name, default_stats).copy()
     now = time.time()
-
     await state.set_state(UserState.in_battle)
     await state.update_data(
         is_pve=True,
@@ -729,16 +632,10 @@ async def _launch_bot_fight(callback: CallbackQuery, state: FSMContext, uid: str
         p_damage_dealt=0,
         p_shots_hit=0,
     )
-
     text = (
-        f"🤖 <b>Бой против бота ({tier_label(player_tier)})</b>
-
-"
-        f"Твой танк: <b>{html.escape(tank_name)}</b> (HP: {tank_stats['hp']})
-"
-        f"Танк врага: <b>Неизвестно ({tier_label(player_tier)})</b>
-
-Орудие заряжено — можно стрелять!"
+        f"🤖 <b>Бой против бота ({tier_label(player_tier)})</b>\n\n"
+        f"Твой танк: <b>{html.escape(tank_name)}</b> (HP: {tank_stats['hp']})\n"
+        f"Танк врага: <b>Неизвестно ({tier_label(player_tier)})</b>\n\nОрудие заряжено — можно стрелять!"
     )
     kb = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="💥 Выстрел (ББ)", callback_data="pve_shoot_ap")],
@@ -749,14 +646,12 @@ async def _launch_bot_fight(callback: CallbackQuery, state: FSMContext, uid: str
     await safe_edit_or_send(callback.message, text, reply_markup=kb, parse_mode="HTML")
     await callback.answer()
 
-
 @dp.callback_query(F.data == "battle_vs_bot")
 async def cb_battle_vs_bot(callback: CallbackQuery, state: FSMContext):
     uid = str(callback.from_user.id)
     data = ensure_user(uid)
     tank_name = data.get("selected_tank", "FV215B 183")
     await _launch_bot_fight(callback, state, uid, tank_name)
-
 
 @dp.callback_query(UserState.in_battle, F.data == "pve_refresh")
 async def cb_pve_refresh(callback: CallbackQuery, state: FSMContext):
@@ -767,15 +662,12 @@ async def cb_pve_refresh(callback: CallbackQuery, state: FSMContext):
         await state.clear()
         await callback.answer("Бой завершён")
         return
-
-    # Если игрок успел отхилиться или если бот готов выстрелить — обрабатываем независимый выстрел бота
     data, p_hp, bot_line = _run_bot_turn_if_ready(data)
     battle_tier = int(data.get("tier", 10))
     e_hp = int(data["e_hp"])
     p_stats = data["p_stats"]
     total_dmg = int(data.get("p_damage_dealt", 0))
     shots_hit = int(data.get("p_shots_hit", 0))
-
     if p_hp <= 0:
         user_data["losses"] += 1
         user_data["battles"] += 1
@@ -791,11 +683,9 @@ async def cb_pve_refresh(callback: CallbackQuery, state: FSMContext):
             shots_hit=shots_hit,
             save_users_fn=save_users,
         )
-        ev_line = f"
-🎪 +{ev_earned} {ev_emoji}" if ev_earned > 0 else ""
+        ev_line = f"\n🎪 +{ev_earned} {ev_emoji}" if ev_earned > 0 else ""
         text = (
-            f"{bot_line}💀 <b>Ты уничтожен!</b>{ev_line}
-"
+            f"{bot_line}💀 <b>Ты уничтожен!</b>{ev_line}\n"
             f"Танк врага: <b>{html.escape(data['e_tank'])}</b> ({tier_label(battle_tier)})"
         )
         await safe_edit_or_send(
@@ -807,15 +697,12 @@ async def cb_pve_refresh(callback: CallbackQuery, state: FSMContext):
         await state.clear()
         await callback.answer()
         return
-
     now = time.time()
     p_rem = max(0.0, float(data.get("p_reload_ready", 0.0)) - now)
     p_status = "ГОТОВО" if p_rem <= 0 else f"{round(p_rem, 1)}с"
     text = (
-        f"{bot_line}
-"
-        f"❤️ HP: {p_hp} | 💀 HP врага: {e_hp}
-"
+        f"{bot_line}\n"
+        f"❤️ HP: {p_hp} | 💀 HP врага: {e_hp}\n"
         f"🔫 Твоё орудие: <b>{p_status}</b> (КД {p_stats['reload']}с)"
     )
     kb = InlineKeyboardMarkup(inline_keyboard=[
@@ -828,7 +715,6 @@ async def cb_pve_refresh(callback: CallbackQuery, state: FSMContext):
     await safe_edit_or_send(callback.message, text, reply_markup=kb, parse_mode="HTML")
     await callback.answer()
 
-
 @dp.callback_query(UserState.in_battle, F.data.startswith("pve_shoot_"))
 async def cb_pve_shoot(callback: CallbackQuery, state: FSMContext):
     uid = str(callback.from_user.id)
@@ -838,22 +724,18 @@ async def cb_pve_shoot(callback: CallbackQuery, state: FSMContext):
         await state.clear()
         await callback.answer("Бой не активен", show_alert=True)
         return
-
     now = time.time()
     p_reload_ready = float(data.get("p_reload_ready", 0.0))
-    # Независимая перезарядка: игрок стреляет сразу по готовности своего орудия, не дожидаясь бота
     if now < p_reload_ready:
         rem = round(max(0.1, p_reload_ready - now), 1)
         await callback.answer(f"⏳ Перезарядка: ещё {rem}с", show_alert=True)
         return
-
     ammo = "ap" if callback.data.endswith("ap") else "he"
     p_stats = data["p_stats"]
     e_stats = data["e_stats"]
     p_hp = int(data["p_hp"])
     e_hp = int(data["e_hp"])
     battle_tier = int(data.get("tier", 10))
-
     damage, msg = calculate_shot(p_stats, e_stats, ammo)
     e_hp = max(0, e_hp - damage)
     total_dmg = int(data.get("p_damage_dealt", 0)) + damage
@@ -862,10 +744,7 @@ async def cb_pve_shoot(callback: CallbackQuery, state: FSMContext):
     data["p_damage_dealt"] = total_dmg
     data["p_shots_hit"] = shots_hit
     data["p_reload_ready"] = now + float(p_stats.get("reload", 10.0))
-
-    text = f"Ты выстрелил ({'ББ' if ammo == 'ap' else 'ОФ'}): {msg}
-"
-
+    text = f"Ты выстрелил ({'ББ' if ammo == 'ap' else 'ОФ'}): {msg}\n"
     if e_hp <= 0:
         xp_reward = random.randint(50, 100)
         add_xp(uid, xp_reward)
@@ -884,14 +763,9 @@ async def cb_pve_shoot(callback: CallbackQuery, state: FSMContext):
             shots_hit=shots_hit,
             save_users_fn=save_users,
         )
-        ev_line = f"
-🎪 +{ev_earned} {ev_emoji}" if ev_earned > 0 else ""
+        ev_line = f"\n🎪 +{ev_earned} {ev_emoji}" if ev_earned > 0 else ""
         text += (
-            f"
-💀 <b>Враг уничтожен!</b>
-🏆 Победа! +{xp_reward} XP.{ev_line}
-
-"
+            f"\n💀 <b>Враг уничтожен!</b>\n🏆 Победа! +{xp_reward} XP.{ev_line}\n\n"
             f"👀 Танк врага: <b>{html.escape(data['e_tank'])}</b> ({tier_label(battle_tier)})"
         )
         await safe_edit_or_send(
@@ -903,11 +777,8 @@ async def cb_pve_shoot(callback: CallbackQuery, state: FSMContext):
         await state.clear()
         await callback.answer()
         return
-
-    # Бот делает выстрел только если его собственное КД уже прошло
     data, p_hp, bot_line = _run_bot_turn_if_ready(data)
     text += bot_line
-
     if p_hp <= 0:
         user_data["losses"] += 1
         user_data["battles"] += 1
@@ -923,11 +794,8 @@ async def cb_pve_shoot(callback: CallbackQuery, state: FSMContext):
             shots_hit=shots_hit,
             save_users_fn=save_users,
         )
-        ev_line = f"
-🎪 +{ev_earned} {ev_emoji}" if ev_earned > 0 else ""
-        text += f"
-💀 <b>Ты уничтожен!</b>{ev_line}
-Танк врага: <b>{html.escape(data['e_tank'])}</b> ({tier_label(battle_tier)})"
+        ev_line = f"\n🎪 +{ev_earned} {ev_emoji}" if ev_earned > 0 else ""
+        text += f"\n💀 <b>Ты уничтожен!</b>{ev_line}\nТанк врага: <b>{html.escape(data['e_tank'])}</b> ({tier_label(battle_tier)})"
         await safe_edit_or_send(
             callback.message,
             text,
@@ -937,15 +805,9 @@ async def cb_pve_shoot(callback: CallbackQuery, state: FSMContext):
         await state.clear()
         await callback.answer()
         return
-
     text += (
-        f"
-❤️ HP: {p_hp}
-💀 HP врага: {e_hp}
-"
-        f"⏱ Твоя перезарядка: {p_stats['reload']}с
-
-Стреляй сразу, как зарядишься!"
+        f"\n❤️ HP: {p_hp}\n💀 HP врага: {e_hp}\n"
+        f"⏱ Твоя перезарядка: {p_stats['reload']}с\n\nСтреляй сразу, как зарядишься!"
     )
     kb = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="💥 Выстрел (ББ)", callback_data="pve_shoot_ap")],
@@ -957,7 +819,6 @@ async def cb_pve_shoot(callback: CallbackQuery, state: FSMContext):
     await safe_edit_or_send(callback.message, text, reply_markup=kb, parse_mode="HTML")
     await callback.answer()
 
-
 @dp.callback_query(UserState.in_battle, F.data == "pve_surrender")
 async def cb_pve_surrender(callback: CallbackQuery, state: FSMContext):
     uid = str(callback.from_user.id)
@@ -967,11 +828,9 @@ async def cb_pve_surrender(callback: CallbackQuery, state: FSMContext):
     shots_hit = int(data.get("p_shots_hit", 0))
     p_stats = data.get("p_stats", {"hp": 1850})
     e_stats = data.get("e_stats", {"hp": 1850})
-
     user_data["losses"] += 1
     user_data["battles"] += 1
     save_users()
-
     ev_earned, ev_emoji, _ = reward_event_currency_after_battle(
         USERS,
         uid,
@@ -983,8 +842,7 @@ async def cb_pve_surrender(callback: CallbackQuery, state: FSMContext):
         shots_hit=shots_hit,
         save_users_fn=save_users,
     )
-    ev_line = f"
-🎪 +{ev_earned} {ev_emoji}" if ev_earned > 0 else ""
+    ev_line = f"\n🎪 +{ev_earned} {ev_emoji}" if ev_earned > 0 else ""
     await state.clear()
     await safe_edit_or_send(
         callback.message,
@@ -994,38 +852,30 @@ async def cb_pve_surrender(callback: CallbackQuery, state: FSMContext):
     )
     await callback.answer()
 
-
 @dp.callback_query(F.data == "friends_menu")
 async def cb_friends_menu(callback: CallbackQuery):
     await safe_edit_or_send(
         callback.message,
-        "👥 <b>Друзья</b>
-
-Список друзей пока пуст.",
+        "👥 <b>Друзья</b>\n\nСписок друзей пока пуст.",
         reply_markup=InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="🔙 В профиль", callback_data="back_to_profile")]]),
         parse_mode="HTML",
     )
     await callback.answer()
-
 
 @dp.callback_query(F.data == "invite_friend")
 async def cb_invite_friend(callback: CallbackQuery):
     uid = str(callback.from_user.id)
     await safe_edit_or_send(
         callback.message,
-        f"📩 <b>Приглашение друга</b>
-
-Твой ID для приглашения: <code>{uid}</code>",
+        f"📩 <b>Приглашение друга</b>\n\nТвой ID для приглашения: <code>{uid}</code>",
         reply_markup=InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="🔙 В профиль", callback_data="back_to_profile")]]),
         parse_mode="HTML",
     )
     await callback.answer()
 
-
 @dp.message(Command("id"))
 async def cmd_id(message: Message):
     await message.answer(f"Твой ID: <code>{message.from_user.id}</code>", parse_mode="HTML")
-
 
 async def main():
     if not BOT_TOKEN:
@@ -1033,7 +883,6 @@ async def main():
     register_event_handlers(dp, USERS, TANKS_DB, save_users)
     logger.info("Bot started")
     await dp.start_polling(bot)
-
 
 if __name__ == "__main__":
     asyncio.run(main())
