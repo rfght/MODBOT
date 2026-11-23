@@ -42,10 +42,8 @@ EVENTS_REGISTRY = {
 
 ACTIVE_EVENT_ID = "iron_colossus"
 
-
 def get_active_event() -> dict:
     return EVENTS_REGISTRY[ACTIVE_EVENT_ID]
-
 
 def ensure_event_state(user_data: dict, event_id: str | None = None) -> dict:
     eid = event_id or ACTIVE_EVENT_ID
@@ -68,14 +66,11 @@ def ensure_event_state(user_data: dict, event_id: str | None = None) -> dict:
         state["expires_at"] = float(state["started_at"]) + EVENT_DURATION_SECONDS
     return state
 
-
 def get_remaining_seconds(state: dict) -> float:
     return max(0.0, float(state.get("expires_at", 0.0)) - time.time())
 
-
 def is_event_expired(state: dict) -> bool:
     return get_remaining_seconds(state) <= 0.0
-
 
 def format_remaining_time(seconds: float) -> str:
     total = max(0, int(seconds))
@@ -90,7 +85,6 @@ def format_remaining_time(seconds: float) -> str:
         return f"{hours}ч {minutes}м {secs}с"
     return f"{minutes}м {secs}с"
 
-
 def calculate_event_currency(
     won: bool,
     damage_dealt: int,
@@ -101,7 +95,6 @@ def calculate_event_currency(
 ) -> int:
     dmg_ratio = damage_dealt / max(1, enemy_max_hp)
     hp_saved_ratio = max(0, player_hp_left) / max(1, player_max_hp)
-
     if won:
         points = 1
         if dmg_ratio >= 0.35 or shots_hit >= 2:
@@ -113,7 +106,6 @@ def calculate_event_currency(
         if dmg_ratio >= 0.25 or shots_hit >= 2:
             return 1
         return 0
-
 
 def reward_event_currency_after_battle(
     users_db: dict,
@@ -130,11 +122,9 @@ def reward_event_currency_after_battle(
     user_data = users_db.get(str(uid))
     if not user_data:
         return 0, ev["currency_emoji"], False
-
     st = ensure_event_state(user_data, ev["id"])
     if is_event_expired(st):
         return 0, ev["currency_emoji"], True
-
     earned = calculate_event_currency(
         won=won,
         damage_dealt=damage_dealt,
@@ -148,14 +138,12 @@ def reward_event_currency_after_battle(
         save_users_fn()
     return earned, ev["currency_emoji"], False
 
-
 def _claim_single_reward(user_data: dict, reward: dict, tanks_db: dict, ev: dict) -> str:
     rtype = reward["type"]
     if rtype == "xp":
         amt = int(reward["amount"])
         user_data["xp"] = user_data.get("xp", 0) + amt
         return f"+{amt} XP"
-
     if rtype == "tank":
         tname = reward["tank_name"]
         owned = user_data.setdefault("tanks", [])
@@ -164,7 +152,6 @@ def _claim_single_reward(user_data: dict, reward: dict, tanks_db: dict, ev: dict
             return f"танк <b>{html.escape(tname)}</b>"
         user_data["xp"] = user_data.get("xp", 0) + 1000
         return f"компенсация 1000 XP (<b>{html.escape(tname)}</b> уже есть)"
-
     if rtype == "scrappy_crate":
         base_xp = int(reward.get("xp", 200))
         user_data["xp"] = user_data.get("xp", 0) + base_xp
@@ -178,9 +165,7 @@ def _claim_single_reward(user_data: dict, reward: dict, tanks_db: dict, ev: dict
             user_data["xp"] += 250
             return f"Ржавый ящик: +{base_xp + 250} XP (повторка {html.escape(tank)})"
         return f"Ржавый ящик: +{base_xp} XP"
-
     return reward["label"]
-
 
 def get_claimable_indices(user_data: dict, ev: dict | None = None) -> list[int]:
     event = ev or get_active_event()
@@ -195,7 +180,6 @@ def get_claimable_indices(user_data: dict, ev: dict | None = None) -> list[int]:
             indices.append(idx)
     return indices
 
-
 def build_event_view(user_data: dict, event_id: str | None = None) -> tuple[str, InlineKeyboardMarkup]:
     ev = EVENTS_REGISTRY.get(event_id or ACTIVE_EVENT_ID, get_active_event())
     st = ensure_event_state(user_data, ev["id"])
@@ -204,46 +188,31 @@ def build_event_view(user_data: dict, event_id: str | None = None) -> tuple[str,
     emoji = ev["currency_emoji"]
     rem_sec = get_remaining_seconds(st)
     expired = rem_sec <= 0.0
-
     if expired:
         text = (
-            f"🎪 <b>{html.escape(ev['title'])}</b>
-
-"
+            f"🎪 <b>{html.escape(ev['title'])}</b>\n\n"
             f"⏳ <b>Событие завершено</b> (срок 25 дней истёк). Награды больше недоступны."
         )
         kb = InlineKeyboardMarkup(inline_keyboard=[
             [InlineKeyboardButton(text="🔙 В профиль", callback_data="back_to_profile")]
         ])
         return text, kb
-
     chain_parts = []
     for idx, r in enumerate(ev["rewards"], start=1):
         if idx in claimed:
             chain_parts.append("✅")
         else:
             chain_parts.append(f"{r['cost']}{emoji}: {r['label']}")
-
     chain_line = "—".join(chain_parts)
     claimable = get_claimable_indices(user_data, ev)
-
     text = (
-        f"🎪 <b>{html.escape(ev['title'])}</b>
-"
-        f"⏳ До конца события: <b>{format_remaining_time(rem_sec)}</b>
-
-"
-        f"Накоплено: <b>{html.escape(ev['currency_name'])}</b> — <b>{cur} / {ev['goal']}</b> {emoji}
-"
-        f"<i>Шкала накопительная: валюта не списывается при заборе наград.</i>
-"
-        f"<i>За победу: 1–3 {emoji}, за поражение: 0–1 {emoji} (зависит от эффективности в бою).</i>
-
-"
-        f"<b>Цепочка наград:</b>
-{chain_line}"
+        f"🎪 <b>{html.escape(ev['title'])}</b>\n"
+        f"⏳ До конца события: <b>{format_remaining_time(rem_sec)}</b>\n\n"
+        f"Накоплено: <b>{html.escape(ev['currency_name'])}</b> — <b>{cur} / {ev['goal']}</b> {emoji}\n"
+        f"<i>Шкала накопительная: валюта не списывается при заборе наград.</i>\n"
+        f"<i>За победу: 1–3 {emoji}, за поражение: 0–1 {emoji} (зависит от эффективности в бою).</i>\n\n"
+        f"<b>Цепочка наград:</b>\n{chain_line}"
     )
-
     rows = []
     if claimable:
         first_idx = claimable[0]
@@ -254,14 +223,11 @@ def build_event_view(user_data: dict, event_id: str | None = None) -> tuple[str,
             btn_text = f"Забрать №{first_idx}-{last_idx}"
         cb_data = f"ev_claim_{ev['id']}_{first_idx}_{last_idx}"
         rows.append([InlineKeyboardButton(text=btn_text, callback_data=cb_data)])
-
     rows.append([InlineKeyboardButton(text="🔙 В профиль", callback_data="back_to_profile")])
     return text, InlineKeyboardMarkup(inline_keyboard=rows)
 
-
 def register_event_handlers(dp, users_db: dict, tanks_db: dict, save_users_fn, admin_ids: list[int] | None = None):
     allowed_admins = set(admin_ids or [])
-
     @dp.message(Command("addnuts"))
     async def cmd_addnuts(message: Message):
         uid_sender = str(message.from_user.id)
@@ -286,12 +252,10 @@ def register_event_handlers(dp, users_db: dict, tanks_db: dict, save_users_fn, a
         st["currency"] = max(0, st.get("currency", 0) + amount)
         save_users_fn()
         await message.answer(
-            f"✅ Начислено <b>{amount}</b> {ev['currency_emoji']} игроку <code>{target_uid}</code>.
-"
+            f"✅ Начислено <b>{amount}</b> {ev['currency_emoji']} игроку <code>{target_uid}</code>.\n"
             f"Текущий баланс ивента: <b>{st['currency']}</b> {ev['currency_emoji']}",
             parse_mode="HTML",
         )
-
     @dp.callback_query(F.data.startswith("ev_open_"))
     async def cb_ev_open(callback: CallbackQuery):
         uid = str(callback.from_user.id)
@@ -310,7 +274,6 @@ def register_event_handlers(dp, users_db: dict, tanks_db: dict, save_users_fn, a
                 pass
             await callback.message.answer(text, parse_mode="HTML", reply_markup=kb)
         await callback.answer()
-
     @dp.callback_query(F.data.startswith("ev_claim_"))
     async def cb_ev_claim(callback: CallbackQuery):
         uid = str(callback.from_user.id)
@@ -321,13 +284,11 @@ def register_event_handlers(dp, users_db: dict, tanks_db: dict, save_users_fn, a
         start_idx = int(parts[-2])
         end_idx = int(parts[-1])
         event_id = "_".join(parts[2:-2])
-
         ev = EVENTS_REGISTRY.get(event_id, get_active_event())
         user_data = users_db.get(uid)
         if not user_data:
             await callback.answer("Профиль не найден", show_alert=True)
             return
-
         st = ensure_event_state(user_data, ev["id"])
         if is_event_expired(st):
             text, kb = build_event_view(user_data, ev["id"])
@@ -337,10 +298,8 @@ def register_event_handlers(dp, users_db: dict, tanks_db: dict, save_users_fn, a
                 pass
             await callback.answer("Ивент завершён (прошло 25 дней).", show_alert=True)
             return
-
         cur = st["currency"]
         claimed = set(st["claimed"])
-
         granted_summaries = []
         for idx in range(start_idx, end_idx + 1):
             if 1 <= idx <= len(ev["rewards"]):
@@ -348,14 +307,11 @@ def register_event_handlers(dp, users_db: dict, tanks_db: dict, save_users_fn, a
                 if idx not in claimed and cur >= reward["cost"]:
                     claimed.add(idx)
                     granted_summaries.append(f"№{idx}: {_claim_single_reward(user_data, reward, tanks_db, ev)}")
-
         if not granted_summaries:
             await callback.answer("Награды уже получены или не хватает валюты.", show_alert=True)
             return
-
         st["claimed"] = sorted(claimed)
         save_users_fn()
-
         text, kb = build_event_view(user_data, ev["id"])
         try:
             await callback.message.edit_text(text, parse_mode="HTML", reply_markup=kb)
@@ -365,6 +321,5 @@ def register_event_handlers(dp, users_db: dict, tanks_db: dict, save_users_fn, a
             except Exception:
                 pass
             await callback.message.answer(text, parse_mode="HTML", reply_markup=kb)
-
         plain_summary = ", ".join(re.sub(r"<[^>]+>", "", s) for s in granted_summaries)
         await callback.answer("Получено: " + plain_summary, show_alert=True)
