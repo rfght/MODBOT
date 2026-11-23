@@ -283,8 +283,7 @@ def tr(uid: str, key: str, **kwargs) -> str:
         "profile_tank": "Танк в ангаре: <b>{tank}</b>",
         "profile_next": "До след. звания: <b>{xp_left} XP</b> и <b>{ideas_left} идей</b>",
         "profile_next_manual": "Следующее звание выдаётся вручную",
-        "profile_achievements": "🏅 Достижения:
-{list}",
+        "profile_achievements": "🏅 Достижения:{list}",
         "profile_no_achievements": "🏅 Достижений пока нет",
         "shop_btn": "🛒 Магазин",
         "shop_title": "🛒 <b>Магазин</b> | Баланс: <b>{xp} XP</b>",
