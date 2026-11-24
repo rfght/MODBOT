@@ -258,7 +258,7 @@ def unlock_achievement(uid: str, ach_key: str):
     if ach_key not in u["achievements"]:
         u["achievements"].append(ach_key)
 
-def tr(uid: str, key: str, **kwargs) -> str:
+def tr(_uid: str, key: str, **kwargs) -> str:
     templates = {
         "profile_title": "🎖 <b>Профиль танкиста</b>",
         "profile_nick": "Позывной: <b>{nick}</b>",
