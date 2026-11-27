@@ -14,14 +14,14 @@ TOTAL_TOKENS_FOR_MAIN = 255
 # Чтобы получить главную, надо собрать ВСЕ награды по цепочке (сумма цен = 255)
 EVENT_REWARDS = [
     {"id": 1, "name": "2000 XP", "cost": 20, "type": "xp", "value": 2000},
-    {"id": 2, "name": "Контейнер (шанс танка)", "cost": 35, "type": "container", "value": "premium"},
+    {"id": 2, "name": "Песочный контейнер", "cost": 35, "type": "container", "value": "premium"},
     {"id": 3, "name": "3000 XP", "cost": 45, "type": "xp", "value": 3000},
-    {"id": 4, "name": "Контейнер (шанс танка)", "cost": 55, "type": "container", "value": "premium"},
+    {"id": 4, "name": "Песочный контейнер", "cost": 55, "type": "container", "value": "premium"},
     {"id": 5, "name": "5000 XP", "cost": 100, "type": "xp", "value": 5000},
-    {"id": 6, "name": "Pz.Kpfw. VII", "cost": 0, "type": "tank", "value": "Pz.Kpfw. VII"} # Главная награда (выдается после предыдущих)
+    {"id": 6, "name": "Pz.Kpfw. VII", "cost": 255, "type": "tank", "value": "Pz.Kpfw. VII"} # Главная награда (выдается после предыдущих)
 ]
 
-# Сумма всех cost = 255. (20+35+45+55+100 = 255). Шестая награда бесплатно, так как сумма собрана.
+# Сумма всех cost = 255. (20+35+45+55+100+255 = 510). Шестая награда бесплатно, так как сумма собрана.
 TOTAL_COST = sum(r["cost"] for r in EVENT_REWARDS[:-1])
 
 # Даты ивента (поставим 25 дней от текущего момента)
